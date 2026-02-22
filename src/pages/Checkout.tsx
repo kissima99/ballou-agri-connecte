@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle2, CreditCard, Banknote, ArrowRight, Mail, QrCode, Truck, Loader2, Home } from 'lucide-react';
+import { CheckCircle2, CreditCard, Banknote, ArrowRight, Mail, QrCode, Truck, Loader2, Home, ExternalLink } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 
@@ -34,6 +34,8 @@ const Checkout = () => {
     email: "",
     address: ""
   });
+
+  const wavePaymentUrl = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
 
   const handleVerifyPayment = () => {
     setIsVerifying(true);
@@ -72,8 +74,7 @@ const Checkout = () => {
     showSuccess(`Commande ${newOrderId} confirmée ! Reçu envoyé à ${formData.email}.`);
   };
 
-  const waveNumber = "782254548";
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=tel:${waveNumber}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(wavePaymentUrl)}`;
 
   if (isOrdered) {
     return (
@@ -177,39 +178,49 @@ const Checkout = () => {
                   </div>
                 </RadioGroup>
 
-                {paymentMethod !== 'cash' && (
-                  <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100">
-                    <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
-                      <div className="bg-white p-3 rounded-xl shadow-sm">
-                        <img src={qrCodeUrl} alt="QR Code Wave" className="w-32 h-32" />
+                {paymentMethod === 'wave' && (
+                  <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 animate-in fade-in slide-in-from-top-2">
+                    <div className="flex flex-col items-center text-center gap-6 mb-6">
+                      <h4 className="font-bold text-blue-900 flex items-center">
+                        <QrCode className="mr-2 h-5 w-5" /> Paiement sécurisé Wave
+                      </h4>
+                      <div className="bg-white p-4 rounded-2xl shadow-md border border-blue-200">
+                        <img src={qrCodeUrl} alt="QR Code de paiement" className="w-40 h-40" />
                       </div>
-                      <div className="text-center md:text-left">
-                        <h4 className="font-bold text-blue-900 flex items-center justify-center md:justify-start">
-                          <QrCode className="mr-2 h-5 w-5" /> Scannez pour payer
-                        </h4>
-                        <p className="text-sm text-blue-700 mt-1">
-                          Envoyez <strong>{totalPrice.toLocaleString()} FCFA</strong> au <strong>{waveNumber}</strong>.
+                      <div className="space-y-4 w-full">
+                        <p className="text-sm text-blue-700">
+                          Cliquez sur le bouton ci-dessous pour ouvrir l'application Wave et payer <strong>{totalPrice.toLocaleString()} FCFA</strong>.
+                        </p>
+                        <Button 
+                          asChild
+                          className="w-full bg-blue-600 hover:bg-blue-700 h-14 text-lg font-bold shadow-lg"
+                        >
+                          <a href={wavePaymentUrl} target="_blank" rel="noopener noreferrer" onClick={() => setIsVerified(true)}>
+                            Payer avec Wave <ExternalLink className="ml-2 h-5 w-5" />
+                          </a>
+                        </Button>
+                        <p className="text-[10px] text-blue-500 italic">
+                          Une fois le paiement effectué, revenez ici pour confirmer votre commande.
                         </p>
                       </div>
                     </div>
-                    
-                    <div className="space-y-4 border-t border-blue-200 pt-4">
-                      {!isVerified ? (
-                        <Button 
-                          onClick={handleVerifyPayment} 
-                          disabled={isVerifying}
-                          className="w-full bg-blue-600 hover:bg-blue-700 h-12"
-                        >
-                          {isVerifying ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Vérification du transfert...</> : "Vérifier mon paiement"}
-                        </Button>
-                      ) : (
-                        <div className="flex items-center space-x-2 bg-green-100 text-green-800 p-4 rounded-xl border border-green-200 animate-in fade-in slide-in-from-bottom-2">
-                          <Checkbox id="paid" checked={hasPaid} disabled className="border-green-600 data-[state=checked]:bg-green-600" />
-                          <label htmlFor="paid" className="text-sm font-bold leading-none">
-                            Paiement de {totalPrice.toLocaleString()} FCFA reçu avec succès !
-                          </label>
-                        </div>
-                      )}
+                  </div>
+                )}
+
+                {paymentMethod === 'om' && (
+                  <div className="mt-8 p-6 bg-orange-50 rounded-2xl border border-orange-100 animate-in fade-in slide-in-from-top-2">
+                    <div className="text-center space-y-4">
+                      <h4 className="font-bold text-orange-900">Paiement Orange Money</h4>
+                      <p className="text-sm text-orange-700">
+                        Envoyez <strong>{totalPrice.toLocaleString()} FCFA</strong> au <strong>78 225 45 48</strong>.
+                      </p>
+                      <Button 
+                        onClick={handleVerifyPayment} 
+                        disabled={isVerifying}
+                        className="w-full bg-orange-600 hover:bg-orange-700"
+                      >
+                        {isVerifying ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Vérification...</> : "Vérifier mon transfert"}
+                      </Button>
                     </div>
                   </div>
                 )}
