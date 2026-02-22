@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Tracking from "./pages/Tracking";
 import LocalProducts from "./pages/LocalProducts";
+import ImportedProducts from "./pages/ImportedProducts";
 import Insights from "./pages/Insights";
 import Checkout from "./pages/Checkout";
 import WhatsAppButton from "./components/WhatsAppButton";
@@ -23,7 +24,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/tracking" element={<Tracking />} />
           <Route path="/local-products" element={<LocalProducts />} />
-          <Route path="/imported-products" element={<LocalProducts />} />
+          <Route path="/imported-products" element={<ImportedProducts />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="*" element={<NotFound />} />
