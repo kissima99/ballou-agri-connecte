@@ -27,7 +27,6 @@ const Checkout = () => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   
-  // Champs réels
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -36,17 +35,14 @@ const Checkout = () => {
   });
 
   const handleVerifyPayment = () => {
-    if (!hasPaid) {
-      showError("Veuillez d'abord effectuer le transfert, puis cocher la case.");
-      return;
-    }
     setIsVerifying(true);
     // Simulation d'une vérification réseau réelle
     setTimeout(() => {
       setIsVerifying(false);
       setIsVerified(true);
-      showSuccess("Paiement vérifié avec succès !");
-    }, 2500);
+      setHasPaid(true);
+      showSuccess("Paiement reçu ! Vous pouvez maintenant confirmer.");
+    }, 3000);
   };
 
   const handleOrder = (e: React.FormEvent) => {
@@ -55,12 +51,8 @@ const Checkout = () => {
       showError("Veuillez remplir toutes vos informations réelles.");
       return;
     }
-    if (!isVerified && paymentMethod !== 'cash') {
-      showError("Paiement non confirmé. Veuillez scanner et vérifier votre transfert.");
-      return;
-    }
     setIsOrdered(true);
-    showSuccess(`Commande confirmée ! Votre reçu PDF a été envoyé à ${formData.email}.`);
+    showSuccess(`Commande confirmée ! Reçu envoyé à ${formData.email}.`);
   };
 
   const waveNumber = "782254548";
@@ -77,7 +69,7 @@ const Checkout = () => {
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Commande Réussie !</h1>
             <p className="text-gray-600 mb-8">
-              Félicitations <strong>{formData.name}</strong>. Votre reçu PDF pour la somme de <strong>{totalPrice.toLocaleString()} FCFA</strong> a été envoyé à <strong>{formData.email}</strong>.
+              Félicitations <strong>{formData.name}</strong>. Votre reçu PDF pour <strong>{totalPrice.toLocaleString()} FCFA</strong> a été envoyé à <strong>{formData.email}</strong>.
             </p>
             <Button onClick={() => navigate('/')} className="bg-green-600 hover:bg-green-700 w-full">
               Retour à l'accueil
@@ -119,7 +111,7 @@ const Checkout = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Adresse Email (pour recevoir le reçu PDF)</Label>
+                  <Label htmlFor="email">Adresse Email (pour le reçu PDF)</Label>
                   <Input id="email" type="email" placeholder="votre@email.com" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                 </div>
                 <div className="space-y-2">
@@ -177,24 +169,20 @@ const Checkout = () => {
                     </div>
                     
                     <div className="space-y-4 border-t border-blue-200 pt-4">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="paid" checked={hasPaid} onCheckedChange={(checked) => setHasPaid(checked as boolean)} />
-                        <label htmlFor="paid" className="text-sm font-medium leading-none cursor-pointer">
-                          J'ai effectué le transfert de {totalPrice.toLocaleString()} FCFA
-                        </label>
-                      </div>
-                      
                       {!isVerified ? (
                         <Button 
                           onClick={handleVerifyPayment} 
-                          disabled={!hasPaid || isVerifying}
-                          className="w-full bg-blue-600 hover:bg-blue-700"
+                          disabled={isVerifying}
+                          className="w-full bg-blue-600 hover:bg-blue-700 h-12"
                         >
-                          {isVerifying ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Vérification...</> : "Vérifier mon paiement"}
+                          {isVerifying ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Vérification du transfert...</> : "Vérifier mon paiement"}
                         </Button>
                       ) : (
-                        <div className="bg-green-100 text-green-800 p-3 rounded-lg flex items-center justify-center font-bold border border-green-200">
-                          <CheckCircle2 className="mr-2 h-5 w-5" /> Paiement reçu et vérifié !
+                        <div className="flex items-center space-x-2 bg-green-100 text-green-800 p-4 rounded-xl border border-green-200 animate-in fade-in slide-in-from-bottom-2">
+                          <Checkbox id="paid" checked={hasPaid} disabled className="border-green-600 data-[state=checked]:bg-green-600" />
+                          <label htmlFor="paid" className="text-sm font-bold leading-none">
+                            Paiement de {totalPrice.toLocaleString()} FCFA reçu avec succès !
+                          </label>
                         </div>
                       )}
                     </div>
@@ -224,13 +212,18 @@ const Checkout = () => {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button 
-                  onClick={handleOrder} 
-                  disabled={(paymentMethod !== 'cash' && !isVerified) || !formData.email}
-                  className="w-full bg-orange-500 hover:bg-orange-600 text-white border-none h-14 text-lg font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Confirmer l'achat <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
+                {(isVerified || paymentMethod === 'cash') ? (
+                  <Button 
+                    onClick={handleOrder} 
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white border-none h-14 text-lg font-bold shadow-lg animate-in zoom-in"
+                  >
+                    Confirmer l'achat <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                ) : (
+                  <div className="w-full p-4 bg-white/10 rounded-xl text-center text-sm opacity-50 border border-white/20">
+                    En attente du paiement...
+                  </div>
+                )}
               </CardFooter>
             </Card>
           </div>

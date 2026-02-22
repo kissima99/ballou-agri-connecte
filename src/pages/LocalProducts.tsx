@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,13 +8,16 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home } from 'lucide-react';
+import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, Image as ImageIcon } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 
 const LocalProducts = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  
   const [products, setProducts] = useState([
     { id: 1, name: "Oignons Locaux", price: 800, unit: "kg", stock: 50, origin: "Ballou", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 2, name: "Piment Rouge/Vert", price: 1500, unit: "kg", stock: 20, origin: "Ballou", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80", quantity: 1 },
@@ -30,11 +33,25 @@ const LocalProducts = () => {
     ));
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, productId: number) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProducts(products.map(p => 
+          p.id === productId ? { ...p, image: reader.result as string } : p
+        ));
+        showSuccess("Image mise à jour !");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const addToCart = (product: any) => {
     const totalProductPrice = product.price * product.quantity;
     showSuccess(`${product.quantity} ${product.unit}(s) de ${product.name} sélectionné(s) !`);
     setTimeout(() => {
-      navigate('/checkout', { state: { price: totalProductPrice, name: `${product.quantity}x ${product.name}`, basePrice: product.price, qty: product.quantity } });
+      navigate('/checkout', { state: { price: totalProductPrice, name: `${product.quantity}x ${product.name}` } });
     }, 1000);
   };
 
@@ -54,7 +71,7 @@ const LocalProducts = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-green-900">Produits Locaux de Ballou</h1>
-              <p className="text-gray-600">Vente directe par kg ou par unité.</p>
+              <p className="text-gray-600">Gérez vos produits et changez les images manuellement.</p>
             </div>
           </div>
           <div className="flex items-center space-x-4 bg-white p-3 rounded-xl shadow-sm border border-green-100">
@@ -75,6 +92,14 @@ const LocalProducts = () => {
                 <div className="absolute top-2 left-2">
                   <Badge className="bg-white/90 text-green-800 backdrop-blur"><MapPin className="h-3 w-3 mr-1" /> {product.origin}</Badge>
                 </div>
+                {isEditMode && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-sm font-bold shadow-lg">
+                      <Upload className="w-4 h-4 mr-2" /> Changer l'image
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, product.id)} />
+                    </label>
+                  </div>
+                )}
               </div>
               <CardContent className="pt-4">
                 <h3 className="font-bold text-lg text-gray-900">{product.name}</h3>
