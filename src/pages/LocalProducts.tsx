@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -16,22 +16,29 @@ const LocalProducts = () => {
   const navigate = useNavigate();
   const [isEditMode, setIsEditMode] = useState(false);
   
-  const [products, setProducts] = useState([
-    { id: 1, name: "Riz de la vallée", price: 15000, unit: "sac 25kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 2, name: "Oignon Local", price: 800, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
+  const initialProducts = [
+    { id: 1, name: "Riz de la vallée", price: 17500, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 2, name: "Oignon Local", price: 12000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 3, name: "Maïs", price: 500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 4, name: "Piment rouge", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 5, name: "Piment vert", price: 1800, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 6, name: "Choux", price: 500, unit: "unité", origin: "Ballou", image: "https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 6, name: "Choux", price: 500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 7, name: "Aubergine africaine", price: 1200, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 8, name: "Gombo", price: 1000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1464454709131-ffd692591ee5?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 9, name: "Tomate", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 10, name: "Concombre", price: 400, unit: "unité", origin: "Ballou", image: "https://images.unsplash.com/photo-1449339854873-750e6df51301?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 11, name: "Salade", price: 300, unit: "unité", origin: "Ballou", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 12, name: "Patate douce", price: 600, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 13, name: "Sorgho", price: 700, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1623064037721-304163048228?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 14, name: "Citron", price: 100, unit: "unité", origin: "Ballou", image: "https://images.unsplash.com/photo-1585059895524-72359e06133a?auto=format&fit=crop&q=80", quantity: 1 },
-  ]);
+    { id: 10, name: "Concombre", price: 400, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1449339854873-750e6df51301?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 11, name: "Salade", price: 300, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 12, name: "Patate douce", price: 10000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 13, name: "Sorgho", price: 15000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1623064037721-304163048228?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 14, name: "Citron", price: 100, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1585059895524-72359e06133a?auto=format&fit=crop&q=80", quantity: 1 },
+  ];
+
+  const [products, setProducts] = useState(initialProducts);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('local_products');
+    if (saved) setProducts(JSON.parse(saved));
+  }, []);
 
   const updateQuantity = (id: number, delta: number) => {
     setProducts(products.map(p => 
@@ -44,9 +51,10 @@ const LocalProducts = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProducts(products.map(p => 
+        const newProducts = products.map(p => 
           p.id === productId ? { ...p, image: reader.result as string } : p
-        ));
+        );
+        setProducts(newProducts);
         showSuccess("Image mise à jour !");
       };
       reader.readAsDataURL(file);
@@ -54,13 +62,14 @@ const LocalProducts = () => {
   };
 
   const handleSave = () => {
+    localStorage.setItem('local_products', JSON.stringify(products));
     setIsEditMode(false);
-    showSuccess("Toutes les modifications ont été enregistrées avec succès !");
+    showSuccess("Modifications enregistrées !");
   };
 
   const addToCart = (product: any) => {
     const totalProductPrice = product.price * product.quantity;
-    showSuccess(`${product.quantity} ${product.unit}(s) de ${product.name} sélectionné(s) !`);
+    showSuccess(`${product.quantity} ${product.unit}(s) de ${product.name} prêt pour l'achat.`);
     setTimeout(() => {
       navigate('/checkout', { state: { price: totalProductPrice, name: `${product.quantity}x ${product.name}` } });
     }, 1000);
@@ -77,12 +86,12 @@ const LocalProducts = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-green-900">Produits Locaux</h1>
-              <p className="text-gray-600">Directement de Ballou.</p>
+              <p className="text-gray-600">Vente par Sac (Riz, Oignon, Sorgho, Patate) ou KG.</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {isEditMode && (
-              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md animate-in slide-in-from-right-2 h-9 px-3 text-sm">
+              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md h-9 px-3 text-sm">
                 <Save className="w-4 h-4 mr-2" /> Enregistrer
               </Button>
             )}
@@ -101,7 +110,9 @@ const LocalProducts = () => {
               <div className="relative h-36 overflow-hidden">
                 <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 <div className="absolute top-2 left-2">
-                  <Badge className="bg-white/90 text-green-800 backdrop-blur text-[10px] h-5 px-1.5"><MapPin className="h-2.5 w-2.5 mr-1" /> {product.origin}</Badge>
+                  <Badge className="bg-white/90 text-green-800 backdrop-blur text-[10px] h-5 px-1.5">
+                    <MapPin className="h-2.5 w-2.5 mr-1" /> {product.origin}
+                  </Badge>
                 </div>
                 {isEditMode && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

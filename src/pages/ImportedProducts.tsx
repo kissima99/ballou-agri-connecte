@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, Package, Utensils, Sparkles, Sprout, Minus, Plus, Home, Droplets, Beef, Apple, Edit3, Save, Upload } from 'lucide-react';
+import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Save, Upload } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -15,7 +15,7 @@ const ImportedProducts = () => {
   const navigate = useNavigate();
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const [categories, setCategories] = useState([
+  const initialCategories = [
     {
       id: "importes",
       name: "Importés",
@@ -37,6 +37,7 @@ const ImportedProducts = () => {
       name: "Frais",
       icon: <Apple className="w-3.5 h-3.5 mr-1.5" />,
       products: [
+        { id: 206, name: "Fraise", price: 4500, unit: "barquette", image: "https://images.unsplash.com/photo-1464960726344-4861873193ec?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 201, name: "Poulet frais", price: 3500, unit: "unité", image: "https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 202, name: "Poissons Séchée", price: 2500, unit: "kg", image: "https://images.unsplash.com/photo-1534604973900-c41ab4c5d010?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 203, name: "Fruit mixte", price: 4000, unit: "panier", image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&q=80", quantity: 1 },
@@ -57,7 +58,14 @@ const ImportedProducts = () => {
         { id: 306, name: "Semence pastéque", price: 4500, unit: "sachet", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&q=80", quantity: 1 },
       ]
     }
-  ]);
+  ];
+
+  const [categories, setCategories] = useState(initialCategories);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('imported_categories');
+    if (saved) setCategories(JSON.parse(saved));
+  }, []);
 
   const updateQuantity = (catId: string, prodId: number, delta: number) => {
     setCategories(categories.map(cat => {
@@ -76,7 +84,7 @@ const ImportedProducts = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setCategories(categories.map(cat => {
+        const newCats = categories.map(cat => {
           if (cat.id !== catId) return cat;
           return {
             ...cat,
@@ -84,7 +92,8 @@ const ImportedProducts = () => {
               p.id === productId ? { ...p, image: reader.result as string } : p
             )
           };
-        }));
+        });
+        setCategories(newCats);
         showSuccess("Image mise à jour !");
       };
       reader.readAsDataURL(file);
@@ -92,8 +101,9 @@ const ImportedProducts = () => {
   };
 
   const handleSave = () => {
+    localStorage.setItem('imported_categories', JSON.stringify(categories));
     setIsEditMode(false);
-    showSuccess("Catalogue mis à jour avec succès !");
+    showSuccess("Catalogue mis à jour !");
   };
 
   const addToCart = (product: any) => {
@@ -115,13 +125,13 @@ const ImportedProducts = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-blue-900">Dakar vers Ballou</h1>
-              <p className="text-gray-600">Produits importés & frais.</p>
+              <p className="text-gray-600">Produits importés, Frais (Fraise incluse) & Semences.</p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
             {isEditMode && (
-              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md animate-in slide-in-from-right-2 h-9 px-3 text-sm">
+              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md h-9 px-3 text-sm">
                 <Save className="w-4 h-4 mr-2" /> Enregistrer
               </Button>
             )}

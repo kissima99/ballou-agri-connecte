@@ -5,22 +5,21 @@ import Navbar from '@/components/Navbar';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Truck, MapPin, CheckCircle2, Clock } from 'lucide-react';
+import { Search, Truck, MapPin, CheckCircle2, Clock, CalendarDays } from 'lucide-react';
 
 const Tracking = () => {
   const [orderId, setOrderId] = useState("");
   const [trackingData, setTrackingData] = useState<any>(null);
 
   const handleSearch = () => {
-    // Simulation de données
     setTrackingData({
       id: orderId || "BAC-7892",
-      status: "En route",
+      status: "En transit (24h)",
       steps: [
-        { location: "Dakar - Entrepôt", status: "Expédié", time: "12 Mai, 08:30", completed: true },
-        { location: "Tambacounda", status: "En transit", time: "13 Mai, 14:20", completed: true },
-        { location: "Bakel", status: "Arrivé au centre", time: "14 Mai, 09:15", completed: false },
-        { location: "Ballou", status: "Livraison finale", time: "Prévu 15 Mai", completed: false },
+        { location: "Dakar - Entrepôt", status: "Expédié", time: "Départ Programmé", completed: true },
+        { location: "Tambacounda", status: "En transit", time: "En cours", completed: true },
+        { location: "Bakel", status: "Prochaine étape", time: "Attendu", completed: false },
+        { location: "Ballou", status: "Livraison finale", time: "Dans 24h max", completed: false },
       ]
     });
   };
@@ -28,15 +27,48 @@ const Tracking = () => {
   return (
     <div className="min-h-screen bg-stone-50">
       <Navbar />
-      <div className="container px-4 py-12 mx-auto max-w-3xl">
+      <div className="container px-4 py-12 mx-auto max-w-4xl">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Suivi de Livraison</h1>
-          <p className="text-gray-600">Entrez votre numéro de commande pour suivre votre colis de Dakar à Ballou.</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Suivi & Planning de Livraison</h1>
+          <p className="text-gray-600">Les colis sont livrés en 24h selon le planning ci-dessous.</p>
+        </div>
+
+        {/* Schedule Info */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+          <Card className="border-l-4 border-l-blue-600 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center text-blue-800">
+                <Truck className="mr-2 h-4 w-4" /> DAKAR vers BALLOU
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                <CalendarDays className="h-4 w-4 text-blue-500" />
+                Mardi - Jeudi - Samedi
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Réception : 24h après le départ.</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-green-600 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center text-green-800">
+                <Truck className="mr-2 h-4 w-4" /> BALLOU vers DAKAR
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                <CalendarDays className="h-4 w-4 text-green-500" />
+                Lundi - Jeudi
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Réception : 24h après le départ.</p>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="flex gap-2 mb-12">
           <Input 
-            placeholder="Ex: BAC-123456" 
+            placeholder="Ex: BAC-12345" 
             value={orderId}
             onChange={(e) => setOrderId(e.target.value)}
             className="bg-white border-green-200 focus-visible:ring-green-500"
@@ -47,7 +79,7 @@ const Tracking = () => {
         </div>
 
         {trackingData && (
-          <Card className="border-none shadow-lg overflow-hidden">
+          <Card className="border-none shadow-lg overflow-hidden animate-in fade-in slide-in-from-bottom-4">
             <CardHeader className="bg-green-600 text-white">
               <div className="flex justify-between items-center">
                 <CardTitle>Commande {trackingData.id}</CardTitle>
@@ -74,14 +106,6 @@ const Tracking = () => {
                     </div>
                   </div>
                 ))}
-              </div>
-              
-              <div className="mt-10 p-4 bg-blue-50 rounded-lg border border-blue-100 flex items-center">
-                <Truck className="h-10 w-10 text-blue-500 mr-4" />
-                <div>
-                  <p className="text-sm font-medium text-blue-900">Estimation de livraison</p>
-                  <p className="text-xs text-blue-700">Votre colis est actuellement entre Tambacounda et Bakel.</p>
-                </div>
               </div>
             </CardContent>
           </Card>

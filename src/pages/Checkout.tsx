@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle2, CreditCard, Banknote, ArrowRight, Mail, QrCode, Truck, Loader2, Home, ExternalLink } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
@@ -23,10 +22,10 @@ const Checkout = () => {
 
   const [paymentMethod, setPaymentMethod] = useState("wave");
   const [isOrdered, setIsOrdered] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderId, setOrderId] = useState("");
-  const [hasPaid, setHasPaid] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -42,23 +41,25 @@ const Checkout = () => {
     setTimeout(() => {
       setIsVerifying(false);
       setIsVerified(true);
-      setHasPaid(true);
       showSuccess("Paiement reçu ! Vous pouvez maintenant confirmer.");
     }, 3000);
   };
 
-  const handleOrder = (e: React.FormEvent) => {
+  const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.phone || !formData.email || !formData.address) {
       showError("Veuillez remplir toutes vos informations réelles.");
       return;
     }
 
-    // Génération d'un numéro de commande unique
+    setIsSubmitting(true);
+    
+    // Simulation d'envoi d'email via service tiers
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     const newOrderId = `BAC-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
     setOrderId(newOrderId);
 
-    // Sauvegarde dans l'historique (localStorage pour la démo)
     const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
     const newOrder = {
       id: newOrderId,
@@ -66,12 +67,14 @@ const Checkout = () => {
       product: productName,
       amount: totalPrice,
       status: "En attente",
-      customer: formData.name
+      customer: formData.name,
+      email: formData.email
     };
     localStorage.setItem('purchase_history', JSON.stringify([newOrder, ...history]));
 
+    setIsSubmitting(false);
     setIsOrdered(true);
-    showSuccess(`Commande ${newOrderId} confirmée ! Reçu envoyé à ${formData.email}.`);
+    showSuccess(`Commande confirmée ! Reçu envoyé à ${formData.email}.`);
   };
 
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(wavePaymentUrl)}`;
@@ -86,19 +89,13 @@ const Checkout = () => {
               <CheckCircle2 className="w-12 h-12 text-green-600" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Commande Réussie !</h1>
-            <p className="text-gray-600 mb-2">
-              Numéro de commande : <span className="font-bold text-green-700">{orderId}</span>
-            </p>
+            <p className="text-gray-600 mb-2">Numéro de commande : <span className="font-bold text-green-700">{orderId}</span></p>
             <p className="text-gray-600 mb-8">
-              Félicitations <strong>{formData.name}</strong>. Votre reçu PDF pour <strong>{totalPrice.toLocaleString()} FCFA</strong> a été envoyé à <strong>{formData.email}</strong>.
+              Un reçu PDF détaillé pour <strong>{totalPrice.toLocaleString()} FCFA</strong> a été envoyé à <strong>{formData.email}</strong>. Vérifiez vos spams si besoin.
             </p>
             <div className="flex flex-col gap-3">
-              <Button onClick={() => navigate('/tracking')} className="bg-blue-600 hover:bg-blue-700 w-full">
-                Suivre mon colis
-              </Button>
-              <Button onClick={() => navigate('/')} variant="outline" className="w-full">
-                Retour à l'accueil
-              </Button>
+              <Button onClick={() => navigate('/tracking')} className="bg-blue-600 hover:bg-blue-700 w-full">Suivre mon colis</Button>
+              <Button onClick={() => navigate('/')} variant="outline" className="w-full">Retour à l'accueil</Button>
             </div>
           </div>
         </div>
@@ -154,7 +151,7 @@ const Checkout = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <RadioGroup value={paymentMethod} onValueChange={(val) => { setPaymentMethod(val); setIsVerified(false); setHasPaid(false); }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <RadioGroup value={paymentMethod} onValueChange={(val) => { setPaymentMethod(val); setIsVerified(false); }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <RadioGroupItem value="wave" id="wave" className="peer sr-only" />
                     <Label htmlFor="wave" className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent cursor-pointer peer-data-[state=checked]:border-blue-500">
@@ -179,49 +176,19 @@ const Checkout = () => {
                 </RadioGroup>
 
                 {paymentMethod === 'wave' && (
-                  <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 animate-in fade-in slide-in-from-top-2">
-                    <div className="flex flex-col items-center text-center gap-6 mb-6">
-                      <h4 className="font-bold text-blue-900 flex items-center">
-                        <QrCode className="mr-2 h-5 w-5" /> Paiement sécurisé Wave
-                      </h4>
-                      <div className="bg-white p-4 rounded-2xl shadow-md border border-blue-200">
-                        <img src={qrCodeUrl} alt="QR Code de paiement" className="w-40 h-40" />
-                      </div>
-                      <div className="space-y-4 w-full">
-                        <p className="text-sm text-blue-700">
-                          Cliquez sur le bouton ci-dessous pour ouvrir l'application Wave et payer <strong>{totalPrice.toLocaleString()} FCFA</strong>.
-                        </p>
-                        <Button 
-                          asChild
-                          className="w-full bg-blue-600 hover:bg-blue-700 h-14 text-lg font-bold shadow-lg"
-                        >
-                          <a href={wavePaymentUrl} target="_blank" rel="noopener noreferrer" onClick={() => setIsVerified(true)}>
-                            Payer avec Wave <ExternalLink className="ml-2 h-5 w-5" />
-                          </a>
-                        </Button>
-                        <p className="text-[10px] text-blue-500 italic">
-                          Une fois le paiement effectué, revenez ici pour confirmer votre commande.
-                        </p>
-                      </div>
-                    </div>
+                  <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 text-center animate-in zoom-in-95">
+                    <QrCode className="mx-auto h-32 w-32 mb-4 text-blue-600" />
+                    <p className="text-sm text-blue-700 mb-4">Payez via Wave puis revenez ici.</p>
+                    <Button asChild className="bg-blue-600 w-full"><a href={wavePaymentUrl} target="_blank" rel="noopener noreferrer" onClick={() => setIsVerified(true)}>Ouvrir Wave <ExternalLink className="ml-2 h-4 w-4" /></a></Button>
                   </div>
                 )}
-
+                
                 {paymentMethod === 'om' && (
-                  <div className="mt-8 p-6 bg-orange-50 rounded-2xl border border-orange-100 animate-in fade-in slide-in-from-top-2">
-                    <div className="text-center space-y-4">
-                      <h4 className="font-bold text-orange-900">Paiement Orange Money</h4>
-                      <p className="text-sm text-orange-700">
-                        Envoyez <strong>{totalPrice.toLocaleString()} FCFA</strong> au <strong>78 225 45 48</strong>.
-                      </p>
-                      <Button 
-                        onClick={handleVerifyPayment} 
-                        disabled={isVerifying}
-                        className="w-full bg-orange-600 hover:bg-orange-700"
-                      >
-                        {isVerifying ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Vérification...</> : "Vérifier mon transfert"}
-                      </Button>
-                    </div>
+                  <div className="mt-8 p-6 bg-orange-50 rounded-2xl border border-orange-100 text-center">
+                    <p className="text-sm text-orange-700 mb-4">Envoyez <strong>{totalPrice.toLocaleString()} FCFA</strong> au <strong>78 225 45 48</strong>.</p>
+                    <Button onClick={handleVerifyPayment} disabled={isVerifying} className="bg-orange-600 w-full">
+                      {isVerifying ? <Loader2 className="animate-spin h-4 w-4" /> : "Vérifier mon transfert"}
+                    </Button>
                   </div>
                 )}
               </CardContent>
@@ -229,36 +196,20 @@ const Checkout = () => {
           </div>
 
           <div className="space-y-6">
-            <Card className="border-none shadow-lg bg-green-900 text-white sticky top-24">
-              <CardHeader>
-                <CardTitle>Résumé</CardTitle>
-              </CardHeader>
+            <Card className="border-none shadow-lg bg-green-900 text-white">
+              <CardHeader><CardTitle>Résumé</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between text-sm">
-                  <span className="opacity-70">{productName}</span>
-                  <span>{productPrice.toLocaleString()} FCFA</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="opacity-70 flex items-center"><Truck className="mr-1 h-3 w-3" /> Livraison</span>
-                  <span>{deliveryFee.toLocaleString()} FCFA</span>
-                </div>
-                <div className="border-t border-white/20 pt-4 flex justify-between font-bold text-2xl">
-                  <span>Total</span>
-                  <span className="text-orange-400">{totalPrice.toLocaleString()} FCFA</span>
-                </div>
+                <div className="flex justify-between text-sm"><span className="opacity-70">{productName}</span><span>{productPrice.toLocaleString()} FCFA</span></div>
+                <div className="flex justify-between text-sm"><span className="opacity-70">Livraison</span><span>{deliveryFee.toLocaleString()} FCFA</span></div>
+                <div className="border-t border-white/20 pt-4 flex justify-between font-bold text-2xl"><span>Total</span><span className="text-orange-400">{totalPrice.toLocaleString()} FCFA</span></div>
               </CardContent>
               <CardFooter>
                 {(isVerified || paymentMethod === 'cash') ? (
-                  <Button 
-                    onClick={handleOrder} 
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white border-none h-14 text-lg font-bold shadow-lg animate-in zoom-in"
-                  >
-                    Confirmer l'achat <ArrowRight className="ml-2 h-5 w-5" />
+                  <Button onClick={handleOrder} disabled={isSubmitting} className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold">
+                    {isSubmitting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Traitement...</> : "Confirmer l'achat"}
                   </Button>
                 ) : (
-                  <div className="w-full p-4 bg-white/10 rounded-xl text-center text-sm opacity-50 border border-white/20">
-                    En attente du paiement...
-                  </div>
+                  <div className="w-full p-4 bg-white/10 rounded-xl text-center text-xs opacity-60">En attente du paiement...</div>
                 )}
               </CardFooter>
             </Card>
