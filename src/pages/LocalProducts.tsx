@@ -11,8 +11,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ShoppingCart, AlertTriangle, MapPin, Edit3, Save } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
+import { useNavigate } from 'react-router-dom';
 
 const LocalProducts = () => {
+  const navigate = useNavigate();
   const [cartCount, setCartCount] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
   const [products, setProducts] = useState([
@@ -25,7 +27,11 @@ const LocalProducts = () => {
   const addToCart = (product: any) => {
     if (product.stock > 0) {
       setCartCount(prev => prev + 1);
-      showSuccess(`${product.name} ajouté au panier !`);
+      showSuccess(`${product.name} ajouté ! Redirection vers le paiement...`);
+      // Redirection automatique après 1.5 seconde pour laisser le temps de voir le toast
+      setTimeout(() => {
+        navigate('/checkout');
+      }, 1500);
     }
   };
 
@@ -112,7 +118,7 @@ const LocalProducts = () => {
                   ) : product.stock === 0 ? (
                     <><AlertTriangle className="mr-2 h-4 w-4" /> M'alerter</>
                   ) : (
-                    <><ShoppingCart className="mr-2 h-4 w-4" /> Ajouter</>
+                    <><ShoppingCart className="mr-2 h-4 w-4" /> Acheter maintenant</>
                   )}
                 </Button>
               </CardFooter>
