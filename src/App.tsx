@@ -10,6 +10,7 @@ import LocalProducts from "./pages/LocalProducts";
 import ImportedProducts from "./pages/ImportedProducts";
 import Insights from "./pages/Insights";
 import Checkout from "./pages/Checkout";
+import PurchaseHistory from "./pages/PurchaseHistory";
 import WhatsAppButton from "./components/WhatsAppButton";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/imported-products" element={<ImportedProducts />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/history" element={<PurchaseHistory />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <WhatsAppButton />

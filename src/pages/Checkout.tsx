@@ -23,6 +23,7 @@ const Checkout = () => {
 
   const [paymentMethod, setPaymentMethod] = useState("wave");
   const [isOrdered, setIsOrdered] = useState(false);
+  const [orderId, setOrderId] = useState("");
   const [hasPaid, setHasPaid] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -36,7 +37,6 @@ const Checkout = () => {
 
   const handleVerifyPayment = () => {
     setIsVerifying(true);
-    // Simulation d'une vérification réseau réelle
     setTimeout(() => {
       setIsVerifying(false);
       setIsVerified(true);
@@ -51,8 +51,25 @@ const Checkout = () => {
       showError("Veuillez remplir toutes vos informations réelles.");
       return;
     }
+
+    // Génération d'un numéro de commande unique
+    const newOrderId = `BAC-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+    setOrderId(newOrderId);
+
+    // Sauvegarde dans l'historique (localStorage pour la démo)
+    const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
+    const newOrder = {
+      id: newOrderId,
+      date: new Date().toLocaleDateString('fr-FR'),
+      product: productName,
+      amount: totalPrice,
+      status: "En attente",
+      customer: formData.name
+    };
+    localStorage.setItem('purchase_history', JSON.stringify([newOrder, ...history]));
+
     setIsOrdered(true);
-    showSuccess(`Commande confirmée ! Reçu envoyé à ${formData.email}.`);
+    showSuccess(`Commande ${newOrderId} confirmée ! Reçu envoyé à ${formData.email}.`);
   };
 
   const waveNumber = "782254548";
@@ -68,12 +85,20 @@ const Checkout = () => {
               <CheckCircle2 className="w-12 h-12 text-green-600" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Commande Réussie !</h1>
+            <p className="text-gray-600 mb-2">
+              Numéro de commande : <span className="font-bold text-green-700">{orderId}</span>
+            </p>
             <p className="text-gray-600 mb-8">
               Félicitations <strong>{formData.name}</strong>. Votre reçu PDF pour <strong>{totalPrice.toLocaleString()} FCFA</strong> a été envoyé à <strong>{formData.email}</strong>.
             </p>
-            <Button onClick={() => navigate('/')} className="bg-green-600 hover:bg-green-700 w-full">
-              Retour à l'accueil
-            </Button>
+            <div className="flex flex-col gap-3">
+              <Button onClick={() => navigate('/tracking')} className="bg-blue-600 hover:bg-blue-700 w-full">
+                Suivre mon colis
+              </Button>
+              <Button onClick={() => navigate('/')} variant="outline" className="w-full">
+                Retour à l'accueil
+              </Button>
+            </div>
           </div>
         </div>
       </div>

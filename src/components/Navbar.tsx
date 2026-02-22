@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Menu, 
@@ -10,7 +10,8 @@ import {
   Package, 
   ChevronDown,
   User,
-  BarChart3
+  BarChart3,
+  History
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
@@ -48,13 +49,19 @@ const Navbar = ({ cartCount = 0 }) => {
               <DropdownMenuItem asChild>
                 <Link to="/imported-products" className="flex items-center">
                   <Package className="mr-2 h-4 w-4 text-blue-600" />
-                  Produits Importés (Dakar)
+                  Produits Importés & Frais
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/tracking" className="flex items-center">
                   <Truck className="mr-2 h-4 w-4 text-orange-600" />
                   Tracking de Livraison
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/history" className="flex items-center">
+                  <History className="mr-2 h-4 w-4 text-purple-600" />
+                  Historique des Achats
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -66,9 +73,9 @@ const Navbar = ({ cartCount = 0 }) => {
         </div>
 
         <div className="flex items-center space-x-4">
-          <Link to="/login">
+          <Link to="/history">
             <Button variant="ghost" size="icon">
-              <User className="h-5 w-5 text-gray-600" />
+              <History className="h-5 w-5 text-gray-600" />
             </Button>
           </Link>
           

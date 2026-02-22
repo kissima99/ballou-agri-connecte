@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingCart, Package, Utensils, Sparkles, Sprout, Minus, Plus, Home } from 'lucide-react';
+import { ShoppingCart, Package, Utensils, Sparkles, Sprout, Minus, Plus, Home, Droplets, Beef, Apple } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -14,33 +14,31 @@ const ImportedProducts = () => {
 
   const [categories, setCategories] = useState([
     {
-      id: "alimentaire",
-      name: "Produits Alimentaires",
-      icon: <Utensils className="w-4 h-4 mr-2" />,
+      id: "importes",
+      name: "Produits Importés",
+      icon: <Package className="w-4 h-4 mr-2" />,
       products: [
         { id: 101, name: "Pomme de terre", price: 12000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 102, name: "Oignon Importé", price: 10000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 103, name: "Chips (Lot)", price: 5000, unit: "carton", image: "https://images.unsplash.com/photo-1566478431370-72257e39458a?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 103, name: "Bidon Huile 1L", price: 1500, unit: "unité", image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 104, name: "Huile de palme 1L", price: 1800, unit: "unité", image: "https://images.unsplash.com/photo-1620706122100-616af41e0b97?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 105, name: "Sceau de pâte d'arachide", price: 4500, unit: "unité", image: "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 106, name: "Sac de Sel", price: 3500, unit: "sac", image: "https://images.unsplash.com/photo-1518110168401-f74b77f5aa14?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 107, name: "Sac de Lait en poudre", price: 25000, unit: "sac", image: "https://images.unsplash.com/photo-1550583724-125581f77833?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 108, name: "Carton de lait liquide", price: 12000, unit: "carton", image: "https://images.unsplash.com/photo-1563636619-e9107da5a1bb?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 109, name: "Miel", price: 5000, unit: "litre", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&q=80", quantity: 1 },
       ]
     },
     {
       id: "frais",
       name: "Produits Frais",
-      icon: <Package className="w-4 h-4 mr-2" />,
+      icon: <Apple className="w-4 h-4 mr-2" />,
       products: [
-        { id: 201, name: "Poulet Frais", price: 3500, unit: "unité", image: "https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 202, name: "Poissons Séchés", price: 2500, unit: "kg", image: "https://images.unsplash.com/photo-1534604973900-c41ab4c5d010?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 203, name: "Crème Glacée", price: 4500, unit: "bac 1L", image: "https://images.unsplash.com/photo-1501443762994-82bd5dabb892?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 204, name: "Fruits Mixtes", price: 3000, unit: "panier", image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&q=80", quantity: 1 },
-      ]
-    },
-    {
-      id: "menager",
-      name: "Produits Ménagers",
-      icon: <Sparkles className="w-4 h-4 mr-2" />,
-      products: [
-        { id: 301, name: "Paquet Savon", price: 2500, unit: "lot de 10", image: "https://images.unsplash.com/photo-1600857062241-98e5dba7f214?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 302, name: "Savons Hygiène", price: 1200, unit: "unité", image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 201, name: "Poulet frais", price: 3500, unit: "unité", image: "https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 202, name: "Poissons Séchée", price: 2500, unit: "kg", image: "https://images.unsplash.com/photo-1534604973900-c41ab4c5d010?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 203, name: "Fruit mixte", price: 4000, unit: "panier", image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 204, name: "Citron", price: 1000, unit: "filet", image: "https://images.unsplash.com/photo-1585059895524-72359e06133a?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 205, name: "Feuille de menthe", price: 200, unit: "botte", image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&q=80", quantity: 1 },
       ]
     },
     {
@@ -48,11 +46,12 @@ const ImportedProducts = () => {
       name: "Semences",
       icon: <Sprout className="w-4 h-4 mr-2" />,
       products: [
-        { id: 401, name: "Semences Oignons", price: 5000, unit: "sachet", image: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 402, name: "Semences Gombo", price: 3000, unit: "sachet", image: "https://images.unsplash.com/photo-1592419044706-39796d40f98c?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 403, name: "Semences Piment", price: 3500, unit: "sachet", image: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 404, name: "Semences Aubergine", price: 4000, unit: "sachet", image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 405, name: "Semences Salade", price: 2500, unit: "sachet", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 301, name: "Semence Oignon", price: 5000, unit: "sachet", image: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 302, name: "Semence Salade", price: 2500, unit: "sachet", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 303, name: "Semence Choux", price: 3000, unit: "sachet", image: "https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 304, name: "Semence Gombo", price: 3500, unit: "sachet", image: "https://images.unsplash.com/photo-1592419044706-39796d40f98c?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 305, name: "Semence Carrotte", price: 4000, unit: "sachet", image: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 306, name: "Semence pastéque", price: 4500, unit: "sachet", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&q=80", quantity: 1 },
       ]
     }
   ]);
@@ -86,13 +85,13 @@ const ImportedProducts = () => {
             <Link to="/"><Home className="h-4 w-4 text-blue-700" /></Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-blue-900">Produits Importés de Dakar</h1>
+            <h1 className="text-3xl font-bold text-blue-900">Produits Importés & Frais</h1>
             <p className="text-gray-600">Commandez vos besoins à Dakar et recevez-les à Ballou.</p>
           </div>
         </div>
 
-        <Tabs defaultValue="alimentaire" className="w-full">
-          <TabsList className="grid grid-cols-2 lg:grid-cols-4 mb-8 h-auto p-1 bg-blue-50">
+        <Tabs defaultValue="importes" className="w-full">
+          <TabsList className="grid grid-cols-3 mb-8 h-auto p-1 bg-blue-50">
             {categories.map(cat => (
               <TabsTrigger key={cat.id} value={cat.id} className="py-3 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
                 {cat.icon} {cat.name}
