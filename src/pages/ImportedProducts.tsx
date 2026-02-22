@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShoppingCart, Package, Utensils, Sparkles, Sprout } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
@@ -12,7 +11,6 @@ import { useNavigate } from 'react-router-dom';
 
 const ImportedProducts = () => {
   const navigate = useNavigate();
-  const [cartCount, setCartCount] = useState(0);
 
   const categories = [
     {
@@ -60,14 +58,15 @@ const ImportedProducts = () => {
   ];
 
   const addToCart = (product: any) => {
-    setCartCount(prev => prev + 1);
-    showSuccess(`${product.name} ajouté ! Redirection vers le paiement...`);
-    setTimeout(() => navigate('/checkout'), 1500);
+    showSuccess(`${product.name} sélectionné !`);
+    setTimeout(() => {
+      navigate('/checkout', { state: { price: product.price, name: product.name } });
+    }, 1000);
   };
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <Navbar cartCount={cartCount} />
+      <Navbar />
       <div className="container px-4 py-12 mx-auto">
         <div className="mb-10">
           <h1 className="text-3xl font-bold text-blue-900">Produits Importés de Dakar</h1>

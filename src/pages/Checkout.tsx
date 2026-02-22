@@ -1,18 +1,26 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { CheckCircle2, CreditCard, Wallet, Banknote, ArrowRight, Mail } from 'lucide-react';
+import { CheckCircle2, CreditCard, Wallet, Banknote, ArrowRight, Mail, QrCode, Truck } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Récupération du prix du produit (par défaut 0 si accès direct)
+  const productPrice = location.state?.price || 0;
+  const productName = location.state?.name || "Produit";
+  const deliveryFee = 2000;
+  const totalPrice = productPrice + deliveryFee;
+
   const [paymentMethod, setPaymentMethod] = useState("wave");
   const [isOrdered, setIsOrdered] = useState(false);
   const [email, setEmail] = useState("");
@@ -22,6 +30,10 @@ const Checkout = () => {
     setIsOrdered(true);
     showSuccess("Commande confirmée ! Votre reçu a été envoyé par mail.");
   };
+
+  // URL du QR Code (Utilisation d'une API publique pour générer le QR lié au numéro)
+  const waveNumber = "782254548";
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=tel:${waveNumber}`;
 
   if (isOrdered) {
     return (
@@ -34,12 +46,12 @@ const Checkout = () => {
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Merci pour votre commande !</h1>
             <p className="text-gray-600 mb-8">
-              Votre commande est en cours de traitement. Un reçu PDF a été envoyé à <strong>{email}</strong>.
+              Votre commande de <strong>{totalPrice.toLocaleString()} FCFA</strong> est en cours de traitement.
             </p>
             <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-8 text-left">
               <p className="text-sm font-bold text-blue-900 mb-2">Prochaine étape :</p>
               <p className="text-sm text-blue-800">
-                Si vous avez choisi Wave ou Orange Money, assurez-vous d'avoir effectué le transfert au <strong>78 225 45 48</strong>.
+                Si vous n'avez pas encore scanné le QR Code, effectuez le transfert au <strong>{waveNumber}</strong>.
               </p>
             </div>
             <Button onClick={() => navigate('/')} className="bg-green-600 hover:bg-green-700 w-full">
@@ -54,7 +66,7 @@ const Checkout = () => {
   return (
     <div className="min-h-screen bg-stone-50">
       <Navbar />
-      <div className="container px-4 py-12 mx-auto max-w-4xl">
+      <div className="container px-4 py-12 mx-auto max-w-5xl">
         <h1 className="text-3xl font-bold text-green-900 mb-8">Finaliser mon achat</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -88,7 +100,7 @@ const Checkout = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Adresse à Ballou</Label>
+                  <Label htmlFor="address">Adresse exacte à Ballou</Label>
                   <Input id="address" placeholder="Quartier, Maison..." required />
                 </div>
               </CardContent>
@@ -136,40 +148,64 @@ const Checkout = () => {
                   </div>
                 </RadioGroup>
 
-                <div className="mt-6 p-4 bg-stone-100 rounded-xl border border-stone-200">
-                  <p className="text-sm text-gray-700">
-                    {paymentMethod === 'cash' 
-                      ? "Le paiement se fera à la livraison en espèces." 
-                      : `Veuillez effectuer le transfert au numéro suivant : `}
-                    {paymentMethod !== 'cash' && <strong className="text-green-700">78 225 45 48</strong>}
-                  </p>
-                </div>
+                {paymentMethod === 'wave' && (
+                  <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 flex flex-col md:flex-row items-center gap-6">
+                    <div className="bg-white p-3 rounded-xl shadow-sm">
+                      <img src={qrCodeUrl} alt="QR Code Wave" className="w-32 h-32" />
+                    </div>
+                    <div className="text-center md:text-left">
+                      <h4 className="font-bold text-blue-900 flex items-center justify-center md:justify-start">
+                        <QrCode className="mr-2 h-5 w-5" /> Scannez pour payer
+                      </h4>
+                      <p className="text-sm text-blue-700 mt-1">
+                        Ouvrez votre application Wave, scannez ce code et envoyez <strong>{totalPrice.toLocaleString()} FCFA</strong>.
+                      </p>
+                      <p className="text-xs font-bold text-blue-800 mt-2">Numéro: {waveNumber}</p>
+                    </div>
+                  </div>
+                )}
+
+                {paymentMethod === 'om' && (
+                  <div className="mt-6 p-4 bg-orange-50 rounded-xl border border-orange-100">
+                    <p className="text-sm text-orange-900">
+                      Veuillez effectuer le transfert Orange Money au <strong className="text-lg">{waveNumber}</strong>.
+                    </p>
+                  </div>
+                )}
+
+                {paymentMethod === 'cash' && (
+                  <div className="mt-6 p-4 bg-green-50 rounded-xl border border-green-100">
+                    <p className="text-sm text-green-900">
+                      Le paiement de <strong>{totalPrice.toLocaleString()} FCFA</strong> se fera à la livraison en espèces.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
 
           <div className="space-y-6">
-            <Card className="border-none shadow-lg bg-green-900 text-white">
+            <Card className="border-none shadow-lg bg-green-900 text-white sticky top-24">
               <CardHeader>
-                <CardTitle>Résumé du panier</CardTitle>
+                <CardTitle>Résumé de la commande</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between text-sm opacity-80">
-                  <span>Sous-total</span>
-                  <span>15,000 FCFA</span>
+                <div className="flex justify-between text-sm">
+                  <span className="opacity-70">{productName}</span>
+                  <span>{productPrice.toLocaleString()} FCFA</span>
                 </div>
-                <div className="flex justify-between text-sm opacity-80">
-                  <span>Livraison</span>
-                  <span>2,000 FCFA</span>
+                <div className="flex justify-between text-sm">
+                  <span className="opacity-70 flex items-center"><Truck className="mr-1 h-3 w-3" /> Livraison (Dakar-Ballou)</span>
+                  <span>{deliveryFee.toLocaleString()} FCFA</span>
                 </div>
-                <div className="border-t border-white/20 pt-4 flex justify-between font-bold text-xl">
+                <div className="border-t border-white/20 pt-4 flex justify-between font-bold text-2xl">
                   <span>Total</span>
-                  <span>17,000 FCFA</span>
+                  <span className="text-orange-400">{totalPrice.toLocaleString()} FCFA</span>
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={handleOrder} className="w-full bg-orange-500 hover:bg-orange-600 text-white border-none h-12 text-lg font-bold">
-                  Confirmer l'achat <ArrowRight className="ml-2 h-5 w-5" />
+                <Button onClick={handleOrder} className="w-full bg-orange-500 hover:bg-orange-600 text-white border-none h-14 text-lg font-bold shadow-lg">
+                  Confirmer et Payer <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </CardFooter>
             </Card>

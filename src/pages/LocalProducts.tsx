@@ -9,13 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, AlertTriangle, MapPin, Edit3, Save } from 'lucide-react';
+import { ShoppingCart, MapPin, Edit3, Save } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 
 const LocalProducts = () => {
   const navigate = useNavigate();
-  const [cartCount, setCartCount] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
   const [products, setProducts] = useState([
     { id: 1, name: "Oignons Locaux", price: 800, unit: "kg", stock: 50, origin: "Ballou", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80" },
@@ -27,11 +26,10 @@ const LocalProducts = () => {
   ]);
 
   const addToCart = (product: any) => {
-    if (product.stock > 0) {
-      setCartCount(prev => prev + 1);
-      showSuccess(`${product.name} ajouté ! Redirection vers le paiement...`);
-      setTimeout(() => navigate('/checkout'), 1500);
-    }
+    showSuccess(`${product.name} sélectionné !`);
+    setTimeout(() => {
+      navigate('/checkout', { state: { price: product.price, name: product.name } });
+    }, 1000);
   };
 
   const handlePriceChange = (id: number, newPrice: string) => {
@@ -41,14 +39,13 @@ const LocalProducts = () => {
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <Navbar cartCount={cartCount} />
+      <Navbar />
       <div className="container px-4 py-12 mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-green-900">Produits Locaux de Ballou</h1>
             <p className="text-gray-600">Vente directe par kg ou par unité.</p>
           </div>
-          
           <div className="flex items-center space-x-4 bg-white p-3 rounded-xl shadow-sm border border-green-100">
             <div className="flex items-center space-x-2">
               <Switch id="edit-mode" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500" />
