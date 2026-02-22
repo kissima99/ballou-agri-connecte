@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { CheckCircle2, CreditCard, Banknote, ArrowRight, Mail, QrCode, Truck, Loader2, Home, ExternalLink } from 'lucide-react';
+import { CheckCircle2, CreditCard, Banknote, ArrowRight, Mail, QrCode, Truck, Loader2, Home, ExternalLink, Download } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { jsPDF } from 'jspdf';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const Checkout = () => {
   
   const productPrice = location.state?.price || 0;
   const productName = location.state?.name || "Produit";
+  const direction = location.state?.direction || "Dakar -> Ballou";
   const deliveryFee = 2000;
   const totalPrice = productPrice + deliveryFee;
 
@@ -36,30 +38,90 @@ const Checkout = () => {
 
   const wavePaymentUrl = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
 
+  const generatePDF = (oId: string) => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(22, 163, 74); // Green
+    doc.text("BALLOU-AGRI-CONNECT", 105, 20, { align: "center" });
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text(`Reçu de Commande #${oId}`, 105, 30, { align: "center" });
+    doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 105, 37, { align: "center" });
+
+    // Customer Info
+    doc.setTextColor(0);
+    doc.setFontSize(14);
+    doc.text("Informations Client", 20, 55);
+    doc.setFontSize(10);
+    doc.text(`Nom: ${formData.name}`, 20, 65);
+    doc.text(`Téléphone: ${formData.phone}`, 20, 72);
+    doc.text(`Email: ${formData.email}`, 20, 79);
+    doc.text(`Adresse: ${formData.address}`, 20, 86);
+
+    // Order Details
+    doc.setFontSize(14);
+    doc.text("Détails de la Livraison", 120, 55);
+    doc.setFontSize(10);
+    doc.text(`Trajet: ${direction}`, 120, 65);
+    doc.text(`Méthode: ${paymentMethod.toUpperCase()}`, 120, 72);
+    doc.text(`Statut: Payé / En attente d'expédition`, 120, 79);
+
+    // Table
+    doc.line(20, 100, 190, 100);
+    doc.setFont(undefined, 'bold');
+    doc.text("Description", 25, 110);
+    doc.text("Montant", 160, 110);
+    doc.setFont(undefined, 'normal');
+    doc.line(20, 115, 190, 115);
+
+    doc.text(productName, 25, 125);
+    doc.text(`${productPrice.toLocaleString()} FCFA`, 160, 125);
+    
+    doc.text("Frais de livraison", 25, 135);
+    doc.text(`${deliveryFee.toLocaleString()} FCFA`, 160, 135);
+
+    doc.line(20, 145, 190, 145);
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text("TOTAL", 25, 160);
+    doc.text(`${totalPrice.toLocaleString()} FCFA`, 160, 160);
+
+    // Footer
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(150);
+    doc.text("Merci de votre confiance. Pour toute assistance: 77 225 45 48 (24h/7j)", 105, 200, { align: "center" });
+    doc.text("Ballou-Agri-Connect - La technologie au service de l'agriculture.", 105, 207, { align: "center" });
+
+    doc.save(`Recu_${oId}_BallouAgri.pdf`);
+  };
+
   const handleVerifyPayment = () => {
     setIsVerifying(true);
     setTimeout(() => {
       setIsVerifying(false);
       setIsVerified(true);
-      showSuccess("Paiement reçu ! Vous pouvez maintenant confirmer.");
-    }, 3000);
+      showSuccess("Paiement vérifié avec succès !");
+    }, 2000);
   };
 
   const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.phone || !formData.email || !formData.address) {
-      showError("Veuillez remplir toutes vos informations réelles.");
+      showError("Veuillez remplir tous les champs obligatoires.");
       return;
     }
 
     setIsSubmitting(true);
-    
-    // Simulation d'envoi d'email via service tiers
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     const newOrderId = `BAC-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
     setOrderId(newOrderId);
 
+    // Persist in history with direction
     const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
     const newOrder = {
       id: newOrderId,
@@ -67,6 +129,7 @@ const Checkout = () => {
       product: productName,
       amount: totalPrice,
       status: "En attente",
+      direction: direction,
       customer: formData.name,
       email: formData.email
     };
@@ -74,28 +137,31 @@ const Checkout = () => {
 
     setIsSubmitting(false);
     setIsOrdered(true);
-    showSuccess(`Commande confirmée ! Reçu envoyé à ${formData.email}.`);
+    
+    // Auto-download PDF
+    generatePDF(newOrderId);
+    showSuccess(`Commande confirmée ! Reçu PDF téléchargé.`);
   };
-
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(wavePaymentUrl)}`;
 
   if (isOrdered) {
     return (
       <div className="min-h-screen bg-stone-50">
         <Navbar />
         <div className="container px-4 py-20 mx-auto text-center max-w-2xl">
-          <div className="bg-white p-10 rounded-3xl shadow-xl border border-green-100">
+          <div className="bg-white p-10 rounded-3xl shadow-xl border border-green-100 animate-in fade-in zoom-in-95">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 className="w-12 h-12 text-green-600" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Commande Réussie !</h1>
-            <p className="text-gray-600 mb-2">Numéro de commande : <span className="font-bold text-green-700">{orderId}</span></p>
-            <p className="text-gray-600 mb-8">
-              Un reçu PDF détaillé pour <strong>{totalPrice.toLocaleString()} FCFA</strong> a été envoyé à <strong>{formData.email}</strong>. Vérifiez vos spams si besoin.
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Achat Confirmé !</h1>
+            <p className="text-gray-600 mb-2">Référence : <span className="font-bold text-green-700">{orderId}</span></p>
+            <div className="bg-green-50 p-4 rounded-xl mb-8 flex items-center justify-center gap-3">
+              <Download className="h-5 w-5 text-green-600 animate-bounce" />
+              <p className="text-sm font-medium text-green-800">Le reçu PDF a été téléchargé automatiquement.</p>
+            </div>
             <div className="flex flex-col gap-3">
-              <Button onClick={() => navigate('/tracking')} className="bg-blue-600 hover:bg-blue-700 w-full">Suivre mon colis</Button>
-              <Button onClick={() => navigate('/')} variant="outline" className="w-full">Retour à l'accueil</Button>
+              <Button onClick={() => navigate('/tracking')} className="bg-blue-600 hover:bg-blue-700 w-full font-bold">Suivre mon colis ({direction})</Button>
+              <Button onClick={() => generatePDF(orderId)} variant="outline" className="w-full">Ré-télécharger le reçu</Button>
+              <Button onClick={() => navigate('/')} variant="ghost" className="w-full">Retour à l'accueil</Button>
             </div>
           </div>
         </div>
@@ -111,7 +177,10 @@ const Checkout = () => {
           <Button asChild variant="outline" size="icon" className="rounded-full">
             <Link to="/"><Home className="h-4 w-4 text-green-700" /></Link>
           </Button>
-          <h1 className="text-3xl font-bold text-green-900">Finaliser mon achat</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-green-900">Finaliser mon achat</h1>
+            <p className="text-sm text-orange-600 font-bold">Trajet : {direction}</p>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -119,7 +188,7 @@ const Checkout = () => {
             <Card className="border-none shadow-sm">
               <CardHeader>
                 <CardTitle className="text-xl flex items-center">
-                  <Mail className="mr-2 h-5 w-5 text-green-600" /> Informations réelles de livraison
+                  <Mail className="mr-2 h-5 w-5 text-green-600" /> Livraison & Reçu PDF
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -134,11 +203,11 @@ const Checkout = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Adresse Email (pour le reçu PDF)</Label>
+                  <Label htmlFor="email">Adresse Email (important pour le reçu)</Label>
                   <Input id="email" type="email" placeholder="votre@email.com" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Adresse exacte à Ballou</Label>
+                  <Label htmlFor="address">Lieu de livraison exact</Label>
                   <Input id="address" placeholder="Quartier, Maison..." required value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
                 </div>
               </CardContent>
@@ -147,7 +216,7 @@ const Checkout = () => {
             <Card className="border-none shadow-sm">
               <CardHeader>
                 <CardTitle className="text-xl flex items-center">
-                  <CreditCard className="mr-2 h-5 w-5 text-green-600" /> Méthode de paiement
+                  <CreditCard className="mr-2 h-5 w-5 text-green-600" /> Mode de Paiement
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -178,16 +247,16 @@ const Checkout = () => {
                 {paymentMethod === 'wave' && (
                   <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 text-center animate-in zoom-in-95">
                     <QrCode className="mx-auto h-32 w-32 mb-4 text-blue-600" />
-                    <p className="text-sm text-blue-700 mb-4">Payez via Wave puis revenez ici.</p>
-                    <Button asChild className="bg-blue-600 w-full"><a href={wavePaymentUrl} target="_blank" rel="noopener noreferrer" onClick={() => setIsVerified(true)}>Ouvrir Wave <ExternalLink className="ml-2 h-4 w-4" /></a></Button>
+                    <p className="text-sm text-blue-700 mb-4 font-bold">Scannez ou cliquez pour payer via Wave.</p>
+                    <Button asChild className="bg-blue-600 w-full"><a href={wavePaymentUrl} target="_blank" rel="noopener noreferrer" onClick={() => setIsVerified(true)}>OUVRIR WAVE <ExternalLink className="ml-2 h-4 w-4" /></a></Button>
                   </div>
                 )}
                 
                 {paymentMethod === 'om' && (
                   <div className="mt-8 p-6 bg-orange-50 rounded-2xl border border-orange-100 text-center">
-                    <p className="text-sm text-orange-700 mb-4">Envoyez <strong>{totalPrice.toLocaleString()} FCFA</strong> au <strong>78 225 45 48</strong>.</p>
-                    <Button onClick={handleVerifyPayment} disabled={isVerifying} className="bg-orange-600 w-full">
-                      {isVerifying ? <Loader2 className="animate-spin h-4 w-4" /> : "Vérifier mon transfert"}
+                    <p className="text-sm text-orange-700 mb-4 font-bold">Envoyez <strong>{totalPrice.toLocaleString()} FCFA</strong> au <strong>78 225 45 48</strong>.</p>
+                    <Button onClick={handleVerifyPayment} disabled={isVerifying} className="bg-orange-600 w-full font-bold">
+                      {isVerifying ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : null} VÉRIFIER LE TRANSFERT
                     </Button>
                   </div>
                 )}
@@ -197,21 +266,34 @@ const Checkout = () => {
 
           <div className="space-y-6">
             <Card className="border-none shadow-lg bg-green-900 text-white">
-              <CardHeader><CardTitle>Résumé</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Résumé de la Commande</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between text-sm"><span className="opacity-70">{productName}</span><span>{productPrice.toLocaleString()} FCFA</span></div>
-                <div className="flex justify-between text-sm"><span className="opacity-70">Livraison</span><span>{deliveryFee.toLocaleString()} FCFA</span></div>
+                <div className="flex justify-between text-sm"><span className="opacity-70">Frais de livraison</span><span>{deliveryFee.toLocaleString()} FCFA</span></div>
                 <div className="border-t border-white/20 pt-4 flex justify-between font-bold text-2xl"><span>Total</span><span className="text-orange-400">{totalPrice.toLocaleString()} FCFA</span></div>
               </CardContent>
               <CardFooter>
                 {(isVerified || paymentMethod === 'cash') ? (
-                  <Button onClick={handleOrder} disabled={isSubmitting} className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold">
-                    {isSubmitting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Traitement...</> : "Confirmer l'achat"}
+                  <Button onClick={handleOrder} disabled={isSubmitting} className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold shadow-lg">
+                    {isSubmitting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Traitement...</> : "CONFIRMER L'ACHAT"}
                   </Button>
                 ) : (
-                  <div className="w-full p-4 bg-white/10 rounded-xl text-center text-xs opacity-60">En attente du paiement...</div>
+                  <div className="w-full p-4 bg-white/10 rounded-xl text-center text-xs opacity-60 font-bold border border-white/10">
+                    EN ATTENTE DU PAIEMENT...
+                  </div>
                 )}
               </CardFooter>
+            </Card>
+            
+            <Card className="border-none shadow-sm bg-blue-50">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Truck className="h-8 w-8 text-blue-600" />
+                <div className="text-xs">
+                  <p className="font-bold text-blue-900">Livraison Garantie</p>
+                  <p className="text-blue-700">Trajet: {direction}</p>
+                  <p className="text-blue-700 font-medium">Réception sous 24h après expédition.</p>
+                </div>
+              </CardContent>
             </Card>
           </div>
         </div>

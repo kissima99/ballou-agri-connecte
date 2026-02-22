@@ -5,7 +5,6 @@ import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload } from 'lucide-react';
@@ -55,7 +54,7 @@ const LocalProducts = () => {
           p.id === productId ? { ...p, image: reader.result as string } : p
         );
         setProducts(newProducts);
-        showSuccess("Image mise à jour !");
+        showSuccess("Nouvelle image chargée !");
       };
       reader.readAsDataURL(file);
     }
@@ -64,15 +63,18 @@ const LocalProducts = () => {
   const handleSave = () => {
     localStorage.setItem('local_products', JSON.stringify(products));
     setIsEditMode(false);
-    showSuccess("Modifications enregistrées !");
+    showSuccess("Modifications du catalogue local enregistrées !");
   };
 
   const addToCart = (product: any) => {
     const totalProductPrice = product.price * product.quantity;
-    showSuccess(`${product.quantity} ${product.unit}(s) de ${product.name} prêt pour l'achat.`);
-    setTimeout(() => {
-      navigate('/checkout', { state: { price: totalProductPrice, name: `${product.quantity}x ${product.name}` } });
-    }, 1000);
+    navigate('/checkout', { 
+      state: { 
+        price: totalProductPrice, 
+        name: `${product.quantity}x ${product.name}`,
+        direction: 'Ballou -> Dakar' 
+      } 
+    });
   };
 
   return (
@@ -86,19 +88,19 @@ const LocalProducts = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-green-900">Produits Locaux</h1>
-              <p className="text-gray-600">Vente par Sac (Riz, Oignon, Sorgho, Patate) ou KG.</p>
+              <p className="text-gray-600">Expédition de Ballou vers Dakar.</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {isEditMode && (
-              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md h-9 px-3 text-sm">
-                <Save className="w-4 h-4 mr-2" /> Enregistrer
+              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md h-9 px-4 text-sm font-bold animate-in fade-in zoom-in-95">
+                <Save className="w-4 h-4 mr-2" /> ENREGISTRER MODIFICATIONS
               </Button>
             )}
             <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-green-100">
               <Switch id="edit-mode" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500 scale-90" />
               <Label htmlFor="edit-mode" className="text-xs font-medium flex items-center cursor-pointer">
-                <Edit3 className="w-3.5 h-3.5 mr-1 text-orange-600" /> Éditer
+                <Edit3 className="w-3.5 h-3.5 mr-1 text-orange-600" /> Mode Édition
               </Label>
             </div>
           </div>
@@ -142,7 +144,7 @@ const LocalProducts = () => {
                 </div>
               </CardContent>
               <CardFooter className="pb-3 pt-0 px-4">
-                <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 h-8 text-xs" onClick={() => addToCart(product)}>
+                <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 h-8 text-xs font-bold" onClick={() => addToCart(product)}>
                   <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> Acheter
                 </Button>
               </CardFooter>

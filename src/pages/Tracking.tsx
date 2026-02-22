@@ -1,26 +1,49 @@
+Ballou ou Ballou->Dakar)">
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Truck, MapPin, CheckCircle2, Clock, CalendarDays } from 'lucide-react';
+import { Search, Truck, MapPin, CheckCircle2, Clock, CalendarDays, ArrowRightLeft } from 'lucide-react';
+import { showError } from '@/utils/toast';
 
 const Tracking = () => {
   const [orderId, setOrderId] = useState("");
   const [trackingData, setTrackingData] = useState<any>(null);
 
   const handleSearch = () => {
+    const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
+    const order = history.find((o: any) => o.id === orderId);
+
+    if (orderId && !order) {
+      showError("Commande introuvable. Vérifiez votre numéro.");
+      return;
+    }
+
+    const direction = order?.direction || "Dakar -> Ballou";
+    
+    // Steps based on direction
+    const steps = direction === "Dakar -> Ballou" 
+      ? [
+          { location: "Dakar - Entrepôt", status: "Colis Réceptionné", time: "Départ Programmé", completed: true },
+          { location: "Tambacounda", status: "En Transit", time: "En cours", completed: true },
+          { location: "Bakel", status: "Vérification Poste", time: "Bientôt", completed: false },
+          { location: "Ballou", status: "Livraison Finale", time: "Arrivée sous 24h", completed: false },
+        ]
+      : [
+          { location: "Ballou - Poste Locale", status: "Colis Réceptionné", time: "Expédié", completed: true },
+          { location: "Bakel", status: "Transit Régional", time: "Passage en cours", completed: true },
+          { location: "Tambacounda", status: "Transit National", time: "Bientôt", completed: false },
+          { location: "Dakar - Hub Central", status: "Livraison Finale", time: "Arrivée sous 24h", completed: false },
+        ];
+
     setTrackingData({
-      id: orderId || "BAC-7892",
-      status: "En transit (24h)",
-      steps: [
-        { location: "Dakar - Entrepôt", status: "Expédié", time: "Départ Programmé", completed: true },
-        { location: "Tambacounda", status: "En transit", time: "En cours", completed: true },
-        { location: "Bakel", status: "Prochaine étape", time: "Attendu", completed: false },
-        { location: "Ballou", status: "Livraison finale", time: "Dans 24h max", completed: false },
-      ]
+      id: orderId || "BAC-DEMO",
+      status: "En transit (Traitement 24h)",
+      direction: direction,
+      steps: steps
     });
   };
 
@@ -29,80 +52,85 @@ const Tracking = () => {
       <Navbar />
       <div className="container px-4 py-12 mx-auto max-w-4xl">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Suivi & Planning de Livraison</h1>
-          <p className="text-gray-600">Les colis sont livrés en 24h selon le planning ci-dessous.</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Suivi de votre Colis</h1>
+          <p className="text-gray-600">Entrez votre numéro de commande BAC-XXXXX pour voir l'état réel.</p>
         </div>
 
         {/* Schedule Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-          <Card className="border-l-4 border-l-blue-600 shadow-sm">
+          <Card className="border-l-4 border-l-blue-600 shadow-sm bg-white">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center text-blue-800">
+              <CardTitle className="text-sm flex items-center text-blue-800 uppercase tracking-wider font-bold">
                 <Truck className="mr-2 h-4 w-4" /> DAKAR vers BALLOU
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
+              <div className="flex items-center gap-2 text-sm font-bold text-gray-800">
                 <CalendarDays className="h-4 w-4 text-blue-500" />
                 Mardi - Jeudi - Samedi
               </div>
-              <p className="text-xs text-gray-500 mt-1">Réception : 24h après le départ.</p>
+              <p className="text-[11px] text-gray-500 mt-1 uppercase">Réception garantie sous 24h après expédition.</p>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-green-600 shadow-sm">
+          <Card className="border-l-4 border-l-green-600 shadow-sm bg-white">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center text-green-800">
+              <CardTitle className="text-sm flex items-center text-green-800 uppercase tracking-wider font-bold">
                 <Truck className="mr-2 h-4 w-4" /> BALLOU vers DAKAR
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
+              <div className="flex items-center gap-2 text-sm font-bold text-gray-800">
                 <CalendarDays className="h-4 w-4 text-green-500" />
                 Lundi - Jeudi
               </div>
-              <p className="text-xs text-gray-500 mt-1">Réception : 24h après le départ.</p>
+              <p className="text-[11px] text-gray-500 mt-1 uppercase">Réception garantie sous 24h après expédition.</p>
             </CardContent>
           </Card>
         </div>
 
         <div className="flex gap-2 mb-12">
           <Input 
-            placeholder="Ex: BAC-12345" 
+            placeholder="Ex: BAC-7F92A" 
             value={orderId}
-            onChange={(e) => setOrderId(e.target.value)}
-            className="bg-white border-green-200 focus-visible:ring-green-500"
+            onChange={(e) => setOrderId(e.target.value.toUpperCase())}
+            className="bg-white border-green-200 focus-visible:ring-green-500 h-12 font-bold"
           />
-          <Button onClick={handleSearch} className="bg-green-600 hover:bg-green-700">
-            <Search className="mr-2 h-4 w-4" /> Suivre
+          <Button onClick={handleSearch} className="bg-green-600 hover:bg-green-700 h-12 px-8 font-bold shadow-lg">
+            <Search className="mr-2 h-5 w-5" /> RECHERCHER
           </Button>
         </div>
 
         {trackingData && (
-          <Card className="border-none shadow-lg overflow-hidden animate-in fade-in slide-in-from-bottom-4">
-            <CardHeader className="bg-green-600 text-white">
+          <Card className="border-none shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-500">
+            <CardHeader className="bg-green-700 text-white py-6">
               <div className="flex justify-between items-center">
-                <CardTitle>Commande {trackingData.id}</CardTitle>
-                <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
+                <div>
+                  <CardTitle className="text-xl">Commande {trackingData.id}</CardTitle>
+                  <div className="flex items-center mt-1 text-green-100 text-sm font-medium">
+                    <ArrowRightLeft className="mr-2 h-4 w-4" /> {trackingData.direction}
+                  </div>
+                </div>
+                <span className="bg-white/20 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border border-white/30 backdrop-blur-sm">
                   {trackingData.status}
                 </span>
               </div>
             </CardHeader>
-            <CardContent className="pt-8">
-              <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-green-500 before:via-green-200 before:to-transparent">
+            <CardContent className="pt-10 pb-10 bg-white">
+              <div className="relative space-y-12 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-1 before:bg-green-50">
                 {trackingData.steps.map((step: any, index: number) => (
-                  <div key={index} className="relative flex items-start ml-10">
-                    <div className={`absolute -left-10 mt-1.5 h-5 w-5 rounded-full border-4 border-white shadow ${step.completed ? 'bg-green-500' : 'bg-gray-300'}`}>
-                      {step.completed && <CheckCircle2 className="absolute -top-1 -left-1 h-5 w-5 text-green-500 bg-white rounded-full" />}
+                  <div key={index} className="relative flex items-start ml-10 group">
+                    <div className={`absolute -left-10 mt-1.5 h-6 w-6 rounded-full border-4 border-white shadow-md transition-all duration-300 ${step.completed ? 'bg-green-600 scale-110' : 'bg-gray-200'}`}>
+                      {step.completed && <CheckCircle2 className="absolute -top-1 -left-1 h-6 w-6 text-green-600 bg-white rounded-full shadow-inner" />}
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 bg-stone-50 p-4 rounded-xl border border-stone-100 group-hover:border-green-200 transition-colors">
                       <div className="flex justify-between items-center mb-1">
-                        <h4 className={`font-bold ${step.completed ? 'text-gray-900' : 'text-gray-400'}`}>{step.location}</h4>
-                        <span className="text-xs text-gray-500 flex items-center">
-                          <Clock className="mr-1 h-3 w-3" /> {step.time}
+                        <h4 className={`font-bold text-base ${step.completed ? 'text-gray-900' : 'text-gray-400'}`}>{step.location}</h4>
+                        <span className="text-[10px] font-bold text-gray-400 bg-white px-2 py-1 rounded-full border border-gray-100 uppercase">
+                          <Clock className="mr-1 h-3 w-3 inline" /> {step.time}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600">{step.status}</p>
+                      <p className={`text-sm ${step.completed ? 'text-green-700 font-medium' : 'text-gray-400'}`}>{step.status}</p>
                     </div>
                   </div>
                 ))}

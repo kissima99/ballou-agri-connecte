@@ -1,3 +1,4 @@
+Ballou'">
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -103,15 +104,18 @@ const ImportedProducts = () => {
   const handleSave = () => {
     localStorage.setItem('imported_categories', JSON.stringify(categories));
     setIsEditMode(false);
-    showSuccess("Catalogue mis à jour !");
+    showSuccess("Catalogue importé enregistré !");
   };
 
   const addToCart = (product: any) => {
     const totalProductPrice = product.price * product.quantity;
-    showSuccess(`${product.quantity} ${product.unit}(s) de ${product.name} sélectionné(s) !`);
-    setTimeout(() => {
-      navigate('/checkout', { state: { price: totalProductPrice, name: `${product.quantity}x ${product.name}` } });
-    }, 1000);
+    navigate('/checkout', { 
+      state: { 
+        price: totalProductPrice, 
+        name: `${product.quantity}x ${product.name}`,
+        direction: 'Dakar -> Ballou'
+      } 
+    });
   };
 
   return (
@@ -125,20 +129,20 @@ const ImportedProducts = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-blue-900">Dakar vers Ballou</h1>
-              <p className="text-gray-600">Produits importés, Frais (Fraise incluse) & Semences.</p>
+              <p className="text-gray-600">Expédition de Dakar vers Ballou.</p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
             {isEditMode && (
-              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md h-9 px-3 text-sm">
-                <Save className="w-4 h-4 mr-2" /> Enregistrer
+              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md h-9 px-4 text-sm font-bold animate-in fade-in zoom-in-95">
+                <Save className="w-4 h-4 mr-2" /> ENREGISTRER MODIFICATIONS
               </Button>
             )}
             <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-blue-100">
               <Switch id="edit-mode-imported" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500 scale-90" />
               <Label htmlFor="edit-mode-imported" className="text-xs font-medium flex items-center cursor-pointer">
-                <Edit3 className="w-3.5 h-3.5 mr-1 text-orange-600" /> Éditer
+                <Edit3 className="w-3.5 h-3.5 mr-1 text-orange-600" /> Mode Édition
               </Label>
             </div>
           </div>
@@ -188,7 +192,7 @@ const ImportedProducts = () => {
                       </div>
                     </CardContent>
                     <CardFooter className="pb-3 pt-0 px-4">
-                      <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 h-8 text-xs" onClick={() => addToCart(product)}>
+                      <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 h-8 text-xs font-bold" onClick={() => addToCart(product)}>
                         <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> Acheter
                       </Button>
                     </CardFooter>
