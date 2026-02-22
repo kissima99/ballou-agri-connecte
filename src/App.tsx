@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import Tracking from "./pages/Tracking";
 import LocalProducts from "./pages/LocalProducts";
 import Insights from "./pages/Insights";
+import WhatsAppButton from "./components/WhatsAppButton";
 
 const queryClient = new QueryClient();
 
@@ -21,10 +22,11 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/tracking" element={<Tracking />} />
           <Route path="/local-products" element={<LocalProducts />} />
-          <Route path="/imported-products" element={<LocalProducts />} /> {/* Réutilisé pour l'exemple */}
+          <Route path="/imported-products" element={<LocalProducts />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <WhatsAppButton />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
