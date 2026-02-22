@@ -76,62 +76,63 @@ const LocalProducts = () => {
               <Link to="/"><Home className="h-4 w-4 text-green-700" /></Link>
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-green-900">Produits Locaux de Ballou</h1>
-              <p className="text-gray-600">Directement du champ à votre table.</p>
+              <h1 className="text-3xl font-bold text-green-900">Produits Locaux</h1>
+              <p className="text-gray-600">Directement de Ballou.</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {isEditMode && (
-              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md animate-in slide-in-from-right-2">
+              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md animate-in slide-in-from-right-2 h-9 px-3 text-sm">
                 <Save className="w-4 h-4 mr-2" /> Enregistrer
               </Button>
             )}
-            <div className="flex items-center space-x-4 bg-white p-3 rounded-xl shadow-sm border border-green-100">
-              <div className="flex items-center space-x-2">
-                <Switch id="edit-mode" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500" />
-                <Label htmlFor="edit-mode" className="text-sm font-medium flex items-center cursor-pointer">
-                  <Edit3 className="w-4 h-4 mr-1 text-orange-600" /> Mode Édition
-                </Label>
-              </div>
+            <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-green-100">
+              <Switch id="edit-mode" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500 scale-90" />
+              <Label htmlFor="edit-mode" className="text-xs font-medium flex items-center cursor-pointer">
+                <Edit3 className="w-3.5 h-3.5 mr-1 text-orange-600" /> Éditer
+              </Label>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map((product) => (
             <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all group bg-white">
-              <div className="relative h-48 overflow-hidden">
+              <div className="relative h-36 overflow-hidden">
                 <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 <div className="absolute top-2 left-2">
-                  <Badge className="bg-white/90 text-green-800 backdrop-blur"><MapPin className="h-3 w-3 mr-1" /> {product.origin}</Badge>
+                  <Badge className="bg-white/90 text-green-800 backdrop-blur text-[10px] h-5 px-1.5"><MapPin className="h-2.5 w-2.5 mr-1" /> {product.origin}</Badge>
                 </div>
                 {isEditMode && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-sm font-bold shadow-lg">
-                      <Upload className="w-4 h-4 mr-2" /> Changer l'image
+                    <label className="cursor-pointer bg-white text-gray-900 px-3 py-1.5 rounded-full flex items-center text-xs font-bold shadow-lg">
+                      <Upload className="w-3.5 h-3.5 mr-1.5" /> Changer
                       <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, product.id)} />
                     </label>
                   </div>
                 )}
               </div>
-              <CardContent className="pt-4">
-                <h3 className="font-bold text-lg text-gray-900">{product.name}</h3>
-                <div className="mt-2 flex items-center justify-between">
-                  <p className="text-2xl font-bold text-green-700">{product.price.toLocaleString()} FCFA <span className="text-sm font-normal text-gray-500">/ {product.unit}</span></p>
-                  <div className="flex items-center gap-2 bg-stone-100 rounded-lg p-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md" onClick={() => updateQuantity(product.id, -1)}>
-                      <Minus className="h-3 w-3" />
+              <CardContent className="pt-3 pb-2 px-4">
+                <h3 className="font-bold text-sm text-gray-900 truncate">{product.name}</h3>
+                <div className="mt-1 flex items-center justify-between">
+                  <div>
+                    <p className="text-lg font-bold text-green-700 leading-none">{product.price.toLocaleString()} FCFA</p>
+                    <p className="text-[10px] text-gray-500 mt-1">/ {product.unit}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-stone-100 rounded-lg p-0.5">
+                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md" onClick={() => updateQuantity(product.id, -1)}>
+                      <Minus className="h-2.5 w-2.5" />
                     </Button>
-                    <span className="font-bold text-sm min-w-[20px] text-center">{product.quantity}</span>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md" onClick={() => updateQuantity(product.id, 1)}>
-                      <Plus className="h-3 w-3" />
+                    <span className="font-bold text-xs min-w-[15px] text-center">{product.quantity}</span>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md" onClick={() => updateQuantity(product.id, 1)}>
+                      <Plus className="h-2.5 w-2.5" />
                     </Button>
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="pb-4">
-                <Button className="w-full bg-green-600 hover:bg-green-700" onClick={() => addToCart(product)}>
-                  <ShoppingCart className="mr-2 h-4 w-4" /> Acheter ({(product.price * product.quantity).toLocaleString()} FCFA)
+              <CardFooter className="pb-3 pt-0 px-4">
+                <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 h-8 text-xs" onClick={() => addToCart(product)}>
+                  <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> Acheter
                 </Button>
               </CardFooter>
             </Card>

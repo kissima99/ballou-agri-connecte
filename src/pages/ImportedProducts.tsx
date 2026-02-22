@@ -18,8 +18,8 @@ const ImportedProducts = () => {
   const [categories, setCategories] = useState([
     {
       id: "importes",
-      name: "Produits Importés",
-      icon: <Package className="w-4 h-4 mr-2" />,
+      name: "Importés",
+      icon: <Package className="w-3.5 h-3.5 mr-1.5" />,
       products: [
         { id: 101, name: "Pomme de terre", price: 12000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 102, name: "Oignon Importé", price: 10000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
@@ -34,8 +34,8 @@ const ImportedProducts = () => {
     },
     {
       id: "frais",
-      name: "Produits Frais",
-      icon: <Apple className="w-4 h-4 mr-2" />,
+      name: "Frais",
+      icon: <Apple className="w-3.5 h-3.5 mr-1.5" />,
       products: [
         { id: 201, name: "Poulet frais", price: 3500, unit: "unité", image: "https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 202, name: "Poissons Séchée", price: 2500, unit: "kg", image: "https://images.unsplash.com/photo-1534604973900-c41ab4c5d010?auto=format&fit=crop&q=80", quantity: 1 },
@@ -47,7 +47,7 @@ const ImportedProducts = () => {
     {
       id: "semences",
       name: "Semences",
-      icon: <Sprout className="w-4 h-4 mr-2" />,
+      icon: <Sprout className="w-3.5 h-3.5 mr-1.5" />,
       products: [
         { id: 301, name: "Semence Oignon", price: 5000, unit: "sachet", image: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 302, name: "Semence Salade", price: 2500, unit: "sachet", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80", quantity: 1 },
@@ -114,32 +114,30 @@ const ImportedProducts = () => {
               <Link to="/"><Home className="h-4 w-4 text-blue-700" /></Link>
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-blue-900">Produits Importés & Frais</h1>
-              <p className="text-gray-600">Commandez vos besoins à Dakar et recevez-les à Ballou.</p>
+              <h1 className="text-3xl font-bold text-blue-900">Dakar vers Ballou</h1>
+              <p className="text-gray-600">Produits importés & frais.</p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
             {isEditMode && (
-              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md animate-in slide-in-from-right-2">
+              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md animate-in slide-in-from-right-2 h-9 px-3 text-sm">
                 <Save className="w-4 h-4 mr-2" /> Enregistrer
               </Button>
             )}
-            <div className="flex items-center space-x-4 bg-white p-3 rounded-xl shadow-sm border border-blue-100">
-              <div className="flex items-center space-x-2">
-                <Switch id="edit-mode-imported" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500" />
-                <Label htmlFor="edit-mode-imported" className="text-sm font-medium flex items-center cursor-pointer">
-                  <Edit3 className="w-4 h-4 mr-1 text-orange-600" /> Mode Édition
-                </Label>
-              </div>
+            <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-blue-100">
+              <Switch id="edit-mode-imported" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500 scale-90" />
+              <Label htmlFor="edit-mode-imported" className="text-xs font-medium flex items-center cursor-pointer">
+                <Edit3 className="w-3.5 h-3.5 mr-1 text-orange-600" /> Éditer
+              </Label>
             </div>
           </div>
         </div>
 
         <Tabs defaultValue="importes" className="w-full">
-          <TabsList className="grid grid-cols-3 mb-8 h-auto p-1 bg-blue-50">
+          <TabsList className="grid grid-cols-3 mb-6 h-auto p-1 bg-blue-50">
             {categories.map(cat => (
-              <TabsTrigger key={cat.id} value={cat.id} className="py-3 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+              <TabsTrigger key={cat.id} value={cat.id} className="py-2 text-xs data-[state=active]:bg-blue-600 data-[state=active]:text-white">
                 {cat.icon} {cat.name}
               </TabsTrigger>
             ))}
@@ -147,41 +145,41 @@ const ImportedProducts = () => {
 
           {categories.map(cat => (
             <TabsContent key={cat.id} value={cat.id}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {cat.products.map(product => (
                   <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all bg-white group">
-                    <div className="relative h-40 overflow-hidden">
+                    <div className="relative h-32 overflow-hidden">
                       <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       {isEditMode && (
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-sm font-bold shadow-lg">
-                            <Upload className="w-4 h-4 mr-2" /> Changer
+                          <label className="cursor-pointer bg-white text-gray-900 px-3 py-1.5 rounded-full flex items-center text-xs font-bold shadow-lg">
+                            <Upload className="w-3.5 h-3.5 mr-1.5" /> Changer
                             <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, cat.id, product.id)} />
                           </label>
                         </div>
                       )}
                     </div>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">{product.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-2xl font-bold text-blue-700">{product.price.toLocaleString()} FCFA</p>
-                        <div className="flex items-center gap-2 bg-blue-50 rounded-lg p-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md" onClick={() => updateQuantity(cat.id, product.id, -1)}>
-                            <Minus className="h-3 w-3" />
+                    <CardContent className="pt-3 pb-2 px-4">
+                      <h3 className="font-bold text-sm text-gray-900 truncate">{product.name}</h3>
+                      <div className="mt-1 flex items-center justify-between">
+                        <div>
+                          <p className="text-lg font-bold text-blue-700 leading-none">{product.price.toLocaleString()} FCFA</p>
+                          <p className="text-[10px] text-gray-500 mt-1 truncate max-w-[80px]">{product.unit}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-blue-50 rounded-lg p-0.5">
+                          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md" onClick={() => updateQuantity(cat.id, product.id, -1)}>
+                            <Minus className="h-2.5 w-2.5" />
                           </Button>
-                          <span className="font-bold text-sm min-w-[20px] text-center">{product.quantity}</span>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md" onClick={() => updateQuantity(cat.id, product.id, 1)}>
-                            <Plus className="h-3 w-3" />
+                          <span className="font-bold text-xs min-w-[15px] text-center">{product.quantity}</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md" onClick={() => updateQuantity(cat.id, product.id, 1)}>
+                            <Plus className="h-2.5 w-2.5" />
                           </Button>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-500">Unité: {product.unit}</p>
                     </CardContent>
-                    <CardFooter>
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => addToCart(product)}>
-                        <ShoppingCart className="mr-2 h-4 w-4" /> Acheter ({(product.price * product.quantity).toLocaleString()} FCFA)
+                    <CardFooter className="pb-3 pt-0 px-4">
+                      <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 h-8 text-xs" onClick={() => addToCart(product)}>
+                        <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> Acheter
                       </Button>
                     </CardFooter>
                   </Card>
