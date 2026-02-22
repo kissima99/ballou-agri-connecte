@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload } from 'lucide-react';
+import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, CheckCircle2 } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -53,6 +53,11 @@ const LocalProducts = () => {
     }
   };
 
+  const handleSave = () => {
+    setIsEditMode(false);
+    showSuccess("Toutes les modifications ont été enregistrées avec succès !");
+  };
+
   const addToCart = (product: any) => {
     const totalProductPrice = product.price * product.quantity;
     showSuccess(`${product.quantity} ${product.unit}(s) de ${product.name} sélectionné(s) !`);
@@ -75,12 +80,19 @@ const LocalProducts = () => {
               <p className="text-gray-600">Directement du champ à votre table.</p>
             </div>
           </div>
-          <div className="flex items-center space-x-4 bg-white p-3 rounded-xl shadow-sm border border-green-100">
-            <div className="flex items-center space-x-2">
-              <Switch id="edit-mode" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500" />
-              <Label htmlFor="edit-mode" className="text-sm font-medium flex items-center cursor-pointer">
-                <Edit3 className="w-4 h-4 mr-1 text-orange-600" /> Mode Édition
-              </Label>
+          <div className="flex items-center gap-3">
+            {isEditMode && (
+              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md animate-in slide-in-from-right-2">
+                <Save className="w-4 h-4 mr-2" /> Enregistrer
+              </Button>
+            )}
+            <div className="flex items-center space-x-4 bg-white p-3 rounded-xl shadow-sm border border-green-100">
+              <div className="flex items-center space-x-2">
+                <Switch id="edit-mode" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500" />
+                <Label htmlFor="edit-mode" className="text-sm font-medium flex items-center cursor-pointer">
+                  <Edit3 className="w-4 h-4 mr-1 text-orange-600" /> Mode Édition
+                </Label>
+              </div>
             </div>
           </div>
         </div>

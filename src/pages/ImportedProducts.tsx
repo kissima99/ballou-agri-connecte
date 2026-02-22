@@ -5,12 +5,15 @@ import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingCart, Package, Utensils, Sparkles, Sprout, Minus, Plus, Home, Droplets, Beef, Apple } from 'lucide-react';
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { ShoppingCart, Package, Utensils, Sparkles, Sprout, Minus, Plus, Home, Droplets, Beef, Apple, Edit3, Save, Upload } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 
 const ImportedProducts = () => {
   const navigate = useNavigate();
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [categories, setCategories] = useState([
     {
@@ -68,6 +71,31 @@ const ImportedProducts = () => {
     }));
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, catId: string, productId: number) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCategories(categories.map(cat => {
+          if (cat.id !== catId) return cat;
+          return {
+            ...cat,
+            products: cat.products.map(p => 
+              p.id === productId ? { ...p, image: reader.result as string } : p
+            )
+          };
+        }));
+        showSuccess("Image mise à jour !");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = () => {
+    setIsEditMode(false);
+    showSuccess("Catalogue mis à jour avec succès !");
+  };
+
   const addToCart = (product: any) => {
     const totalProductPrice = product.price * product.quantity;
     showSuccess(`${product.quantity} ${product.unit}(s) de ${product.name} sélectionné(s) !`);
@@ -80,13 +108,31 @@ const ImportedProducts = () => {
     <div className="min-h-screen bg-stone-50">
       <Navbar />
       <div className="container px-4 py-12 mx-auto">
-        <div className="flex items-center gap-4 mb-10">
-          <Button asChild variant="outline" size="icon" className="rounded-full border-blue-200">
-            <Link to="/"><Home className="h-4 w-4 text-blue-700" /></Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-blue-900">Produits Importés & Frais</h1>
-            <p className="text-gray-600">Commandez vos besoins à Dakar et recevez-les à Ballou.</p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
+          <div className="flex items-center gap-4">
+            <Button asChild variant="outline" size="icon" className="rounded-full border-blue-200">
+              <Link to="/"><Home className="h-4 w-4 text-blue-700" /></Link>
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-blue-900">Produits Importés & Frais</h1>
+              <p className="text-gray-600">Commandez vos besoins à Dakar et recevez-les à Ballou.</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {isEditMode && (
+              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md animate-in slide-in-from-right-2">
+                <Save className="w-4 h-4 mr-2" /> Enregistrer
+              </Button>
+            )}
+            <div className="flex items-center space-x-4 bg-white p-3 rounded-xl shadow-sm border border-blue-100">
+              <div className="flex items-center space-x-2">
+                <Switch id="edit-mode-imported" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500" />
+                <Label htmlFor="edit-mode-imported" className="text-sm font-medium flex items-center cursor-pointer">
+                  <Edit3 className="w-4 h-4 mr-1 text-orange-600" /> Mode Édition
+                </Label>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -103,9 +149,17 @@ const ImportedProducts = () => {
             <TabsContent key={cat.id} value={cat.id}>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {cat.products.map(product => (
-                  <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all bg-white">
-                    <div className="h-40 overflow-hidden">
-                      <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                  <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all bg-white group">
+                    <div className="relative h-40 overflow-hidden">
+                      <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      {isEditMode && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-sm font-bold shadow-lg">
+                            <Upload className="w-4 h-4 mr-2" /> Changer
+                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, cat.id, product.id)} />
+                          </label>
+                        </div>
+                      )}
                     </div>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">{product.name}</CardTitle>
