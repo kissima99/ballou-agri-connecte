@@ -8,26 +8,33 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, MapPin, Edit3, Save } from 'lucide-react';
+import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const LocalProducts = () => {
   const navigate = useNavigate();
   const [isEditMode, setIsEditMode] = useState(false);
   const [products, setProducts] = useState([
-    { id: 1, name: "Oignons Locaux", price: 800, unit: "kg", stock: 50, origin: "Ballou", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80" },
-    { id: 2, name: "Piment Rouge/Vert", price: 1500, unit: "kg", stock: 20, origin: "Ballou", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80" },
-    { id: 3, name: "Canne Verte", price: 500, unit: "unité", stock: 100, origin: "Ballou", image: "https://images.unsplash.com/photo-1595435742656-5272d0b3fa82?auto=format&fit=crop&q=80" },
-    { id: 4, name: "Salade Fraîche", price: 300, unit: "unité", stock: 40, origin: "Ballou", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80" },
-    { id: 5, name: "Patate Douce", price: 600, unit: "kg", stock: 80, origin: "Ballou", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80" },
-    { id: 6, name: "Gombo", price: 1000, unit: "kg", stock: 15, origin: "Ballou", image: "https://images.unsplash.com/photo-1464454709131-ffd692591ee5?auto=format&fit=crop&q=80" },
+    { id: 1, name: "Oignons Locaux", price: 800, unit: "kg", stock: 50, origin: "Ballou", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 2, name: "Piment Rouge/Vert", price: 1500, unit: "kg", stock: 20, origin: "Ballou", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 3, name: "Canne Verte", price: 500, unit: "unité", stock: 100, origin: "Ballou", image: "https://images.unsplash.com/photo-1595435742656-5272d0b3fa82?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 4, name: "Salade Fraîche", price: 300, unit: "unité", stock: 40, origin: "Ballou", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 5, name: "Patate Douce", price: 600, unit: "kg", stock: 80, origin: "Ballou", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 6, name: "Gombo", price: 1000, unit: "kg", stock: 15, origin: "Ballou", image: "https://images.unsplash.com/photo-1464454709131-ffd692591ee5?auto=format&fit=crop&q=80", quantity: 1 },
   ]);
 
+  const updateQuantity = (id: number, delta: number) => {
+    setProducts(products.map(p => 
+      p.id === id ? { ...p, quantity: Math.max(1, p.quantity + delta) } : p
+    ));
+  };
+
   const addToCart = (product: any) => {
-    showSuccess(`${product.name} sélectionné !`);
+    const totalProductPrice = product.price * product.quantity;
+    showSuccess(`${product.quantity} ${product.unit}(s) de ${product.name} sélectionné(s) !`);
     setTimeout(() => {
-      navigate('/checkout', { state: { price: product.price, name: product.name } });
+      navigate('/checkout', { state: { price: totalProductPrice, name: `${product.quantity}x ${product.name}`, basePrice: product.price, qty: product.quantity } });
     }, 1000);
   };
 
@@ -41,9 +48,14 @@ const LocalProducts = () => {
       <Navbar />
       <div className="container px-4 py-12 mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-green-900">Produits Locaux de Ballou</h1>
-            <p className="text-gray-600">Vente directe par kg ou par unité.</p>
+          <div className="flex items-center gap-4">
+            <Button asChild variant="outline" size="icon" className="rounded-full border-green-200">
+              <Link to="/"><Home className="h-4 w-4 text-green-700" /></Link>
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-green-900">Produits Locaux de Ballou</h1>
+              <p className="text-gray-600">Vente directe par kg ou par unité.</p>
+            </div>
           </div>
           <div className="flex items-center space-x-4 bg-white p-3 rounded-xl shadow-sm border border-green-100">
             <div className="flex items-center space-x-2">
@@ -72,12 +84,23 @@ const LocalProducts = () => {
                     <Input type="number" value={product.price} onChange={(e) => handlePriceChange(product.id, e.target.value)} className="border-orange-200 h-9" />
                   </div>
                 ) : (
-                  <p className="text-2xl font-bold text-green-700 mt-2">{product.price.toLocaleString()} FCFA <span className="text-sm font-normal text-gray-500">/ {product.unit}</span></p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <p className="text-2xl font-bold text-green-700">{product.price.toLocaleString()} FCFA <span className="text-sm font-normal text-gray-500">/ {product.unit}</span></p>
+                    <div className="flex items-center gap-2 bg-stone-100 rounded-lg p-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md" onClick={() => updateQuantity(product.id, -1)}>
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="font-bold text-sm min-w-[20px] text-center">{product.quantity}</span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md" onClick={() => updateQuantity(product.id, 1)}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </CardContent>
               <CardFooter className="pb-4">
                 <Button className={`w-full ${isEditMode ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'}`} onClick={() => isEditMode ? setIsEditMode(false) : addToCart(product)}>
-                  {isEditMode ? <><Save className="mr-2 h-4 w-4" /> Enregistrer</> : <><ShoppingCart className="mr-2 h-4 w-4" /> Acheter</>}
+                  {isEditMode ? <><Save className="mr-2 h-4 w-4" /> Enregistrer</> : <><ShoppingCart className="mr-2 h-4 w-4" /> Acheter ({(product.price * product.quantity).toLocaleString()} FCFA)</>}
                 </Button>
               </CardFooter>
             </Card>
