@@ -58,7 +58,7 @@ const Index = () => {
               <div className="rounded-full bg-blue-100 w-12 h-12 flex items-center justify-center mb-4">
                 <ShoppingBag className="text-blue-600 h-6 w-6" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Import Dakar-Ballou</h3>
+              <h3 className="text-xl font-semibold mb-2">Produits importé de Dakar vers Ballou</h3>
               <p className="text-gray-600 mb-4">Commandez n'importe quel produit à Dakar et faites-vous livrer directement à Ballou.</p>
               <Link to="/imported-products" className="text-blue-600 font-medium flex items-center hover:underline">
                 Commander <ArrowRight className="ml-1 h-4 w-4" />
