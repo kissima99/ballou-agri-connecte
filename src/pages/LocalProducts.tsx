@@ -50,11 +50,14 @@ const LocalProducts = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
+        const base64Image = reader.result as string;
         const newProducts = products.map(p => 
-          p.id === productId ? { ...p, image: reader.result as string } : p
+          p.id === productId ? { ...p, image: base64Image } : p
         );
         setProducts(newProducts);
-        showSuccess("Nouvelle image chargée !");
+        // Sauvegarde automatique immédiate
+        localStorage.setItem('local_products', JSON.stringify(newProducts));
+        showSuccess("Image enregistrée automatiquement !");
       };
       reader.readAsDataURL(file);
     }
@@ -94,7 +97,7 @@ const LocalProducts = () => {
           <div className="flex items-center gap-3">
             {isEditMode && (
               <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md h-9 px-4 text-sm font-bold animate-in fade-in zoom-in-95">
-                <Save className="w-4 h-4 mr-2" /> ENREGISTRER MODIFICATIONS
+                <Save className="w-4 h-4 mr-2" /> ENREGISTRER PRIX
               </Button>
             )}
             <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-green-100">
