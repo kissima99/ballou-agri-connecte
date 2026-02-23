@@ -8,25 +8,38 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, PlusCircle } from 'lucide-react';
+import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, PlusCircle, Scale } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
+
+interface LocalProduct {
+  id: number;
+  name: string;
+  price: number;
+  unit: string;
+  origin: string;
+  image: string;
+  quantity: number;
+  isKg?: boolean;
+  basePriceSac?: number;
+  pricePerKg?: number;
+}
 
 const LocalProducts = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const [isEditMode, setIsEditMode] = useState(false);
   
-  const initialProducts = [
-    { id: 1, name: "Riz de la vallée", price: 17500, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80", quantity: 1 },
+  const initialProducts: LocalProduct[] = [
+    { id: 1, name: "Riz de la vallée", price: 17500, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 17500, pricePerKg: 400 },
     { id: 2, name: "Oignon Local", price: 12000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 3, name: "Maïs", price: 500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 4, name: "Piment rouge", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 5, name: "Piment vert", price: 1800, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 16, name: "Poivron vert", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1563565312-8335ff593d93?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 17, name: "Poivron Rouge", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1589483232748-515c025575bc?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 18, name: "Sucre Local", price: 25000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 18, name: "Sucre Local", price: 25000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 25000, pricePerKg: 600 },
     { id: 6, name: "Choux", price: 500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 7, name: "Aubergine africaine", price: 1200, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 8, name: "Gombo", price: 1000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1464454709131-ffd692591ee5?auto=format&fit=crop&q=80", quantity: 1 },
@@ -39,21 +52,34 @@ const LocalProducts = () => {
     { id: 15, name: "Arachide", price: 8000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&q=80", quantity: 1 },
   ];
 
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState<LocalProduct[]>(initialProducts);
 
   useEffect(() => {
     const saved = localStorage.getItem('local_products');
     if (saved) {
       const savedProducts = JSON.parse(saved);
-      // Fusionner pour s'assurer que les nouveaux produits apparaissent
-      const merged = [...initialProducts];
-      savedProducts.forEach((sp: any) => {
-        const index = merged.findIndex(p => p.id === sp.id);
-        if (index !== -1) merged[index] = sp;
+      const merged = initialProducts.map(p => {
+        const savedP = savedProducts.find((sp: any) => sp.id === p.id);
+        return savedP ? { ...p, ...savedP } : p;
       });
       setProducts(merged);
     }
   }, []);
+
+  const toggleKg = (id: number) => {
+    setProducts(products.map(p => {
+      if (p.id === id) {
+        const newIsKg = !p.isKg;
+        return {
+          ...p,
+          isKg: newIsKg,
+          unit: newIsKg ? "kg" : "sac",
+          price: newIsKg ? (p.pricePerKg || 500) : (p.basePriceSac || 17500)
+        };
+      }
+      return p;
+    }));
+  };
 
   const updateQuantity = (id: number, delta: number) => {
     setProducts(products.map(p => 
@@ -91,9 +117,9 @@ const LocalProducts = () => {
     showSuccess("Catalogue local mis à jour !");
   };
 
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: LocalProduct) => {
     addToCart({
-      id: `local-${product.id}`,
+      id: `local-${product.id}-${product.unit}`,
       name: product.name,
       price: product.price,
       quantity: product.quantity,
@@ -101,10 +127,10 @@ const LocalProducts = () => {
       direction: 'Ballou -> Dakar',
       unit: product.unit
     });
-    showSuccess(`${product.name} ajouté au panier !`);
+    showSuccess(`${product.name} (${product.unit}) ajouté au panier !`);
   };
 
-  const handleBuyNow = (product: any) => {
+  const handleBuyNow = (product: LocalProduct) => {
     handleAddToCart(product);
     navigate('/cart');
   };
@@ -143,10 +169,20 @@ const LocalProducts = () => {
             <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all group bg-white">
               <div className="relative h-36 overflow-hidden">
                 <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute top-2 left-2">
+                <div className="absolute top-2 left-2 flex flex-col gap-1">
                   <Badge className="bg-white/90 text-green-800 backdrop-blur text-[10px] h-5 px-1.5">
                     <MapPin className="h-2.5 w-2.5 mr-1" /> {product.origin}
                   </Badge>
+                  {(product.id === 1 || product.id === 18) && (
+                    <Button 
+                      size="sm" 
+                      variant="secondary" 
+                      className={`h-5 px-1.5 text-[9px] font-bold shadow-sm ${product.isKg ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white/90 text-orange-700 hover:bg-white'}`}
+                      onClick={() => toggleKg(product.id)}
+                    >
+                      <Scale className="h-2.5 w-2.5 mr-1" /> {product.isKg ? 'MODE SAC' : 'MODE KG'}
+                    </Button>
+                  )}
                 </div>
                 {isEditMode && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

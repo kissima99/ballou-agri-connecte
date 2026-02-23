@@ -8,10 +8,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Save, Upload, PlusCircle } from 'lucide-react';
+import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Save, Upload, PlusCircle, Scale } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
+
+interface ImportedProduct {
+  id: number;
+  name: string;
+  price: number;
+  unit: string;
+  image: string;
+  quantity: number;
+  isKg?: boolean;
+  basePriceSac?: number;
+  pricePerKg?: number;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  products: ImportedProduct[];
+}
 
 const ImportedProducts = () => {
   const navigate = useNavigate();
@@ -24,7 +42,7 @@ const ImportedProducts = () => {
     semences: <Sprout className="w-3.5 h-3.5 mr-1.5" />
   };
 
-  const initialCategories = [
+  const initialCategories: Category[] = [
     {
       id: "importes",
       name: "Importés",
@@ -32,14 +50,18 @@ const ImportedProducts = () => {
         { id: 101, name: "Pomme de terre", price: 12000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 102, name: "Oignon Importé", price: 10000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 110, name: "Oeufs", price: 25000, unit: "carton", image: "https://images.unsplash.com/photo-1506976785307-8732e854ad03?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 111, name: "Sucre importé", price: 28000, unit: "sac", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 111, name: "Sucre importé", price: 28000, unit: "sac", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 28000, pricePerKg: 700 },
+        { id: 114, name: "Chocolat Nutella", price: 3500, unit: "unité", image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 115, name: "Mayonnaise", price: 2500, unit: "unité", image: "https://images.unsplash.com/photo-1585325701166-381996df2961?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 116, name: "Sac de savon Madar", price: 15000, unit: "sac", image: "https://images.unsplash.com/photo-1600857062241-98e5dba7f214?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 117, name: "Sac de savon Sabar", price: 14500, unit: "sac", image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 112, name: "Chips barbecue", price: 1000, unit: "unité", image: "https://images.unsplash.com/photo-1566478431373-7821e93ee6b2?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 113, name: "Chips boite", price: 1500, unit: "unité", image: "https://images.unsplash.com/photo-1613919113166-ca5978963843?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 103, name: "Bidon Huile 1L", price: 1500, unit: "unité", image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 104, name: "Huile de palme 1L", price: 1800, unit: "unité", image: "https://images.unsplash.com/photo-1620706122100-616af41e0b97?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 105, name: "Sceau de pâte d'arachide", price: 4500, unit: "unité", image: "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 106, name: "Sac de Sel", price: 3500, unit: "sac", image: "https://images.unsplash.com/photo-1518110168401-f74b77f5aa14?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 107, name: "Sac de Lait en poudre", price: 25000, unit: "sac", image: "https://images.unsplash.com/photo-1550583724-125581f77833?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 107, name: "Sac de Lait en poudre", price: 25000, unit: "sac", image: "https://images.unsplash.com/photo-1550583724-125581f77833?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 25000, pricePerKg: 1200 },
         { id: 108, name: "Carton de lait liquide", price: 12000, unit: "carton", image: "https://images.unsplash.com/photo-1563636619-e9107da5a1bb?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 109, name: "Miel", price: 5000, unit: "litre", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&q=80", quantity: 1 },
       ]
@@ -48,6 +70,8 @@ const ImportedProducts = () => {
       id: "frais",
       name: "Frais",
       products: [
+        { id: 207, name: "Saucissons poulet", price: 2500, unit: "unité", image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 208, name: "Saucissons viande", price: 2800, unit: "unité", image: "https://images.unsplash.com/photo-1532636875304-0c89119d9b4d?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 206, name: "Fraise", price: 4500, unit: "barquette", image: "https://images.unsplash.com/photo-1464960726344-4861873193ec?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 201, name: "Poulet frais", price: 3500, unit: "unité", image: "https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 202, name: "Poissons Séchée", price: 2500, unit: "kg", image: "https://images.unsplash.com/photo-1534604973900-c41ab4c5d010?auto=format&fit=crop&q=80", quantity: 1 },
@@ -70,22 +94,19 @@ const ImportedProducts = () => {
     }
   ];
 
-  const [categories, setCategories] = useState(initialCategories);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
 
   useEffect(() => {
     const saved = localStorage.getItem('imported_categories');
     if (saved) {
       try {
         const savedCats = JSON.parse(saved);
-        // Fusionner pour s'assurer que les nouveaux produits apparaissent
         const merged = initialCategories.map(cat => {
           const savedCat = savedCats.find((sc: any) => sc.id === cat.id);
           if (!savedCat) return cat;
-          
-          const mergedProducts = [...cat.products];
-          savedCat.products.forEach((sp: any) => {
-            const index = mergedProducts.findIndex(p => p.id === sp.id);
-            if (index !== -1) mergedProducts[index] = sp;
+          const mergedProducts = cat.products.map(p => {
+            const savedP = savedCat.products.find((sp: any) => sp.id === p.id);
+            return savedP ? { ...p, ...savedP } : p;
           });
           return { ...cat, products: mergedProducts };
         });
@@ -95,6 +116,27 @@ const ImportedProducts = () => {
       }
     }
   }, []);
+
+  const toggleKg = (catId: string, prodId: number) => {
+    setCategories(prev => prev.map(cat => {
+      if (cat.id !== catId) return cat;
+      return {
+        ...cat,
+        products: cat.products.map(p => {
+          if (p.id === prodId) {
+            const newIsKg = !p.isKg;
+            return {
+              ...p,
+              isKg: newIsKg,
+              unit: newIsKg ? "kg" : "sac",
+              price: newIsKg ? (p.pricePerKg || 1000) : (p.basePriceSac || 25000)
+            };
+          }
+          return p;
+        })
+      };
+    }));
+  };
 
   const handleSave = () => {
     try {
@@ -154,9 +196,9 @@ const ImportedProducts = () => {
     }
   };
 
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: ImportedProduct) => {
     addToCart({
-      id: `imported-${product.id}`,
+      id: `imported-${product.id}-${product.unit}`,
       name: product.name,
       price: product.price,
       quantity: product.quantity,
@@ -164,10 +206,10 @@ const ImportedProducts = () => {
       direction: 'Dakar -> Ballou',
       unit: product.unit
     });
-    showSuccess(`${product.name} ajouté au panier !`);
+    showSuccess(`${product.name} (${product.unit}) ajouté au panier !`);
   };
 
-  const handleBuyNow = (product: any) => {
+  const handleBuyNow = (product: ImportedProduct) => {
     handleAddToCart(product);
     navigate('/cart');
   };
@@ -231,6 +273,18 @@ const ImportedProducts = () => {
                   <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-xl transition-all bg-white group rounded-2xl">
                     <div className="relative h-40 overflow-hidden">
                       <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      <div className="absolute top-2 left-2 flex flex-col gap-1">
+                        {(product.id === 111 || product.id === 107) && (
+                          <Button 
+                            size="sm" 
+                            variant="secondary" 
+                            className={`h-6 px-2 text-[10px] font-black shadow-lg ${product.isKg ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white/90 text-orange-700 hover:bg-white'}`}
+                            onClick={() => toggleKg(cat.id, product.id)}
+                          >
+                            <Scale className="h-3 w-3 mr-1.5" /> {product.isKg ? 'MODE SAC' : 'MODE KG'}
+                          </Button>
+                        )}
+                      </div>
                       {isEditMode && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
                           <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl transform hover:scale-105 active:scale-95 transition-all">
