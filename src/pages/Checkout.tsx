@@ -16,6 +16,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
+  // Correction des sommes : s'assurer que productPrice est le sous-total
   const productPrice = location.state?.price || 0;
   const productName = location.state?.name || "Produit";
   const direction = location.state?.direction || "Dakar -> Ballou";
@@ -43,33 +44,34 @@ const Checkout = () => {
     
     // Header
     doc.setFontSize(22);
-    doc.setTextColor(22, 163, 74); // Green
+    doc.setTextColor(22, 163, 74); // Vert
     doc.text("BALLOU-AGRI-CONNECT", 105, 20, { align: "center" });
     
     doc.setFontSize(12);
     doc.setTextColor(100);
-    doc.text(`Reçu de Commande #${oId}`, 105, 30, { align: "center" });
+    doc.text(`Recu de Commande #${oId}`, 105, 30, { align: "center" });
     doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 105, 37, { align: "center" });
 
-    // Customer Info
+    // Client Info
     doc.setTextColor(0);
     doc.setFontSize(14);
     doc.text("Informations Client", 20, 55);
     doc.setFontSize(10);
     doc.text(`Nom: ${formData.name}`, 20, 65);
-    doc.text(`Téléphone: ${formData.phone}`, 20, 72);
+    doc.text(`Telephone: ${formData.phone}`, 20, 72);
     doc.text(`Email: ${formData.email}`, 20, 79);
     doc.text(`Adresse: ${formData.address}`, 20, 86);
 
-    // Order Details
+    // Livraison Info
     doc.setFontSize(14);
-    doc.text("Détails de la Livraison", 120, 55);
+    doc.text("Details de la Livraison", 120, 55);
     doc.setFontSize(10);
     doc.text(`Trajet: ${direction}`, 120, 65);
-    doc.text(`Méthode: ${paymentMethod.toUpperCase()}`, 120, 72);
-    doc.text(`Statut: Payé / En attente d'expédition`, 120, 79);
+    doc.text(`Methode: ${paymentMethod.toUpperCase()}`, 120, 72);
+    doc.text(`Statut: Paye`, 120, 79);
 
     // Table
+    doc.setDrawColor(200);
     doc.line(20, 100, 190, 100);
     doc.setFont(undefined, 'bold');
     doc.text("Description", 25, 110);
@@ -77,6 +79,7 @@ const Checkout = () => {
     doc.setFont(undefined, 'normal');
     doc.line(20, 115, 190, 115);
 
+    // Lignes de calcul
     doc.text(productName, 25, 125);
     doc.text(`${productPrice.toLocaleString()} FCFA`, 160, 125);
     
@@ -84,16 +87,19 @@ const Checkout = () => {
     doc.text(`${deliveryFee.toLocaleString()} FCFA`, 160, 135);
 
     doc.line(20, 145, 190, 145);
+    
+    // Total final
     doc.setFontSize(16);
     doc.setFont(undefined, 'bold');
-    doc.text("TOTAL", 25, 160);
+    doc.setTextColor(22, 163, 74);
+    doc.text("TOTAL GENERAL", 25, 160);
     doc.text(`${totalPrice.toLocaleString()} FCFA`, 160, 160);
 
     // Footer
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(150);
-    doc.text("Merci de votre confiance. Pour toute assistance: 77 225 45 48 (24h/7j)", 105, 200, { align: "center" });
+    doc.text("Merci de votre confiance. Support: 77 225 45 48 (24h/24 7j/7)", 105, 200, { align: "center" });
     doc.text("Ballou-Agri-Connect - La technologie au service de l'agriculture.", 105, 207, { align: "center" });
 
     doc.save(`Recu_${oId}_BallouAgri.pdf`);
@@ -121,14 +127,14 @@ const Checkout = () => {
     const newOrderId = `BAC-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
     setOrderId(newOrderId);
 
-    // Persist in history with direction
+    // Sauvegarde historique
     const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
     const newOrder = {
       id: newOrderId,
       date: new Date().toLocaleDateString('fr-FR'),
       product: productName,
       amount: totalPrice,
-      status: "En attente",
+      status: "Payé",
       direction: direction,
       customer: formData.name,
       email: formData.email
@@ -138,9 +144,9 @@ const Checkout = () => {
     setIsSubmitting(false);
     setIsOrdered(true);
     
-    // Auto-download PDF
+    // Téléchargement automatique
     generatePDF(newOrderId);
-    showSuccess(`Commande confirmée ! Reçu PDF téléchargé.`);
+    showSuccess(`Commande confirmée ! Reçu généré.`);
   };
 
   if (isOrdered) {
@@ -159,7 +165,7 @@ const Checkout = () => {
               <p className="text-sm font-medium text-green-800">Le reçu PDF a été téléchargé automatiquement.</p>
             </div>
             <div className="flex flex-col gap-3">
-              <Button onClick={() => navigate('/tracking')} className="bg-blue-600 hover:bg-blue-700 w-full font-bold">Suivre mon colis ({direction})</Button>
+              <Button onClick={() => navigate('/tracking')} className="bg-blue-600 hover:bg-blue-700 w-full font-bold">Suivre mon colis</Button>
               <Button onClick={() => generatePDF(orderId)} variant="outline" className="w-full">Ré-télécharger le reçu</Button>
               <Button onClick={() => navigate('/')} variant="ghost" className="w-full">Retour à l'accueil</Button>
             </div>
@@ -178,8 +184,8 @@ const Checkout = () => {
             <Link to="/"><Home className="h-4 w-4 text-green-700" /></Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-green-900">Finaliser mon achat</h1>
-            <p className="text-sm text-orange-600 font-bold">Trajet : {direction}</p>
+            <h1 className="text-3xl font-bold text-green-900">Finaliser l'achat</h1>
+            <p className="text-sm text-orange-600 font-bold">Direction : {direction}</p>
           </div>
         </div>
         
@@ -188,7 +194,7 @@ const Checkout = () => {
             <Card className="border-none shadow-sm">
               <CardHeader>
                 <CardTitle className="text-xl flex items-center">
-                  <Mail className="mr-2 h-5 w-5 text-green-600" /> Livraison & Reçu PDF
+                  <Mail className="mr-2 h-5 w-5 text-green-600" /> Informations Livraison
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -203,7 +209,7 @@ const Checkout = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Adresse Email (important pour le reçu)</Label>
+                  <Label htmlFor="email">Adresse Email</Label>
                   <Input id="email" type="email" placeholder="votre@email.com" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
                 </div>
                 <div className="space-y-2">
@@ -216,7 +222,7 @@ const Checkout = () => {
             <Card className="border-none shadow-sm">
               <CardHeader>
                 <CardTitle className="text-xl flex items-center">
-                  <CreditCard className="mr-2 h-5 w-5 text-green-600" /> Mode de Paiement
+                  <CreditCard className="mr-2 h-5 w-5 text-green-600" /> Paiement Sécurisé
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -247,16 +253,15 @@ const Checkout = () => {
                 {paymentMethod === 'wave' && (
                   <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 text-center animate-in zoom-in-95">
                     <QrCode className="mx-auto h-32 w-32 mb-4 text-blue-600" />
-                    <p className="text-sm text-blue-700 mb-4 font-bold">Scannez ou cliquez pour payer via Wave.</p>
-                    <Button asChild className="bg-blue-600 w-full"><a href={wavePaymentUrl} target="_blank" rel="noopener noreferrer" onClick={() => setIsVerified(true)}>OUVRIR WAVE <ExternalLink className="ml-2 h-4 w-4" /></a></Button>
+                    <Button asChild className="bg-blue-600 w-full font-bold"><a href={wavePaymentUrl} target="_blank" rel="noopener noreferrer" onClick={() => setIsVerified(true)}>OUVRIR WAVE</a></Button>
                   </div>
                 )}
                 
                 {paymentMethod === 'om' && (
                   <div className="mt-8 p-6 bg-orange-50 rounded-2xl border border-orange-100 text-center">
-                    <p className="text-sm text-orange-700 mb-4 font-bold">Envoyez <strong>{totalPrice.toLocaleString()} FCFA</strong> au <strong>78 225 45 48</strong>.</p>
+                    <p className="text-sm text-orange-700 mb-4 font-bold">Transfert vers <strong>78 225 45 48</strong>.</p>
                     <Button onClick={handleVerifyPayment} disabled={isVerifying} className="bg-orange-600 w-full font-bold">
-                      {isVerifying ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : null} VÉRIFIER LE TRANSFERT
+                      {isVerifying ? <Loader2 className="animate-spin h-4 w-4" /> : "VÉRIFIER LE PAIEMENT"}
                     </Button>
                   </div>
                 )}
@@ -266,34 +271,23 @@ const Checkout = () => {
 
           <div className="space-y-6">
             <Card className="border-none shadow-lg bg-green-900 text-white">
-              <CardHeader><CardTitle>Résumé de la Commande</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Résumé du Paiement</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between text-sm"><span className="opacity-70">{productName}</span><span>{productPrice.toLocaleString()} FCFA</span></div>
+                <div className="flex justify-between text-sm"><span className="opacity-70">Sous-total</span><span>{productPrice.toLocaleString()} FCFA</span></div>
                 <div className="flex justify-between text-sm"><span className="opacity-70">Frais de livraison</span><span>{deliveryFee.toLocaleString()} FCFA</span></div>
-                <div className="border-t border-white/20 pt-4 flex justify-between font-bold text-2xl"><span>Total</span><span className="text-orange-400">{totalPrice.toLocaleString()} FCFA</span></div>
+                <div className="border-t border-white/20 pt-4 flex justify-between font-bold text-2xl"><span>TOTAL</span><span className="text-orange-400">{totalPrice.toLocaleString()} FCFA</span></div>
               </CardContent>
               <CardFooter>
                 {(isVerified || paymentMethod === 'cash') ? (
-                  <Button onClick={handleOrder} disabled={isSubmitting} className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold shadow-lg">
-                    {isSubmitting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Traitement...</> : "CONFIRMER L'ACHAT"}
+                  <Button onClick={handleOrder} disabled={isSubmitting} className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold">
+                    {isSubmitting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> ...</> : "CONFIRMER L'ACHAT"}
                   </Button>
                 ) : (
-                  <div className="w-full p-4 bg-white/10 rounded-xl text-center text-xs opacity-60 font-bold border border-white/10">
-                    EN ATTENTE DU PAIEMENT...
+                  <div className="w-full p-4 bg-white/10 rounded-xl text-center text-xs opacity-60 font-bold">
+                    PAIEMENT REQUIS
                   </div>
                 )}
               </CardFooter>
-            </Card>
-            
-            <Card className="border-none shadow-sm bg-blue-50">
-              <CardContent className="p-4 flex items-center gap-3">
-                <Truck className="h-8 w-8 text-blue-600" />
-                <div className="text-xs">
-                  <p className="font-bold text-blue-900">Livraison Garantie</p>
-                  <p className="text-blue-700">Trajet: {direction}</p>
-                  <p className="text-blue-700 font-medium">Réception sous 24h après expédition.</p>
-                </div>
-              </CardContent>
             </Card>
           </div>
         </div>

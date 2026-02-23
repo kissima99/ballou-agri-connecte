@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Save, Upload } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
@@ -79,6 +80,19 @@ const ImportedProducts = () => {
     }));
   };
 
+  const updatePrice = (catId: string, prodId: number, newPrice: string) => {
+    const price = parseInt(newPrice) || 0;
+    setCategories(categories.map(cat => {
+      if (cat.id !== catId) return cat;
+      return {
+        ...cat,
+        products: cat.products.map(p => 
+          p.id === prodId ? { ...p, price: price } : p
+        )
+      };
+    }));
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, catId: string, productId: number) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -100,7 +114,8 @@ const ImportedProducts = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = (e: React.MouseEvent) => {
+    e.preventDefault();
     localStorage.setItem('imported_categories', JSON.stringify(categories));
     setIsEditMode(false);
     showSuccess("Catalogue importé enregistré !");
@@ -134,7 +149,7 @@ const ImportedProducts = () => {
           
           <div className="flex items-center gap-3">
             {isEditMode && (
-              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md h-9 px-4 text-sm font-bold animate-in fade-in zoom-in-95">
+              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-lg h-10 px-6 text-sm font-bold animate-in fade-in zoom-in-95 z-10">
                 <Save className="w-4 h-4 mr-2" /> ENREGISTRER MODIFICATIONS
               </Button>
             )}
@@ -176,7 +191,19 @@ const ImportedProducts = () => {
                       <h3 className="font-bold text-sm text-gray-900 truncate">{product.name}</h3>
                       <div className="mt-1 flex items-center justify-between">
                         <div>
-                          <p className="text-lg font-bold text-blue-700 leading-none">{product.price.toLocaleString()} FCFA</p>
+                          {isEditMode ? (
+                            <div className="flex items-center gap-1">
+                              <Input 
+                                type="number" 
+                                value={product.price} 
+                                onChange={(e) => updatePrice(cat.id, product.id, e.target.value)}
+                                className="h-7 w-20 text-xs font-bold px-1"
+                              />
+                              <span className="text-[10px] font-bold">FCFA</span>
+                            </div>
+                          ) : (
+                            <p className="text-lg font-bold text-blue-700 leading-none">{product.price.toLocaleString()} FCFA</p>
+                          )}
                           <p className="text-[10px] text-gray-500 mt-1 truncate max-w-[80px]">{product.unit}</p>
                         </div>
                         <div className="flex items-center gap-1.5 bg-blue-50 rounded-lg p-0.5">
