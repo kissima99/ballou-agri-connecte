@@ -69,7 +69,7 @@ const ImportedProducts = () => {
   }, []);
 
   const updateQuantity = (catId: string, prodId: number, delta: number) => {
-    setCategories(categories.map(cat => {
+    setCategories(prev => prev.map(cat => {
       if (cat.id !== catId) return cat;
       return {
         ...cat,
@@ -82,7 +82,7 @@ const ImportedProducts = () => {
 
   const updatePrice = (catId: string, prodId: number, newPrice: string) => {
     const price = parseInt(newPrice) || 0;
-    setCategories(categories.map(cat => {
+    setCategories(prev => prev.map(cat => {
       if (cat.id !== catId) return cat;
       return {
         ...cat,
@@ -109,7 +109,6 @@ const ImportedProducts = () => {
           };
         });
         setCategories(newCats);
-        // Sauvegarde automatique immédiate
         localStorage.setItem('imported_categories', JSON.stringify(newCats));
         showSuccess("Image enregistrée automatiquement !");
       };
@@ -117,10 +116,10 @@ const ImportedProducts = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSaveAll = () => {
     localStorage.setItem('imported_categories', JSON.stringify(categories));
     setIsEditMode(false);
-    showSuccess("Catalogue importé enregistré !");
+    showSuccess("Toutes les modifications ont été sauvegardées !");
   };
 
   const addToCart = (product: any) => {
@@ -151,11 +150,14 @@ const ImportedProducts = () => {
           
           <div className="flex items-center gap-3">
             {isEditMode && (
-              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-lg h-10 px-6 text-sm font-bold animate-in fade-in zoom-in-95 z-10">
-                <Save className="w-4 h-4 mr-2" /> ENREGISTRER PRIX
+              <Button 
+                onClick={handleSaveAll} 
+                className="bg-orange-500 hover:bg-orange-600 text-white shadow-xl h-10 px-6 text-sm font-bold animate-in fade-in zoom-in-95 relative z-20 cursor-pointer"
+              >
+                <Save className="w-4 h-4 mr-2" /> ENREGISTRER LES MODIFICATIONS
               </Button>
             )}
-            <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-blue-100">
+            <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-blue-100 relative z-10">
               <Switch id="edit-mode-imported" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500 scale-90" />
               <Label htmlFor="edit-mode-imported" className="text-xs font-medium flex items-center cursor-pointer">
                 <Edit3 className="w-3.5 h-3.5 mr-1 text-orange-600" /> Mode Édition
@@ -199,7 +201,7 @@ const ImportedProducts = () => {
                                 type="number" 
                                 value={product.price} 
                                 onChange={(e) => updatePrice(cat.id, product.id, e.target.value)}
-                                className="h-7 w-20 text-xs font-bold px-1"
+                                className="h-7 w-20 text-xs font-bold px-1 border-orange-200 focus:border-orange-500"
                               />
                               <span className="text-[10px] font-bold">FCFA</span>
                             </div>
