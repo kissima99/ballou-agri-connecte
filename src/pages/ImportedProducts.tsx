@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Upload } from 'lucide-react';
+import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Save, Upload } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -68,12 +68,14 @@ const ImportedProducts = () => {
     if (saved) setCategories(JSON.parse(saved));
   }, []);
 
-  const saveToLocalStorage = (newCategories: any[]) => {
-    localStorage.setItem('imported_categories', JSON.stringify(newCategories));
+  const handleSave = () => {
+    localStorage.setItem('imported_categories', JSON.stringify(categories));
+    showSuccess("Catalogue mis à jour avec succès !");
+    setIsEditMode(false);
   };
 
   const updateQuantity = (catId: string, prodId: number, delta: number) => {
-    const newCategories = categories.map(cat => {
+    setCategories(prev => prev.map(cat => {
       if (cat.id !== catId) return cat;
       return {
         ...cat,
@@ -81,14 +83,12 @@ const ImportedProducts = () => {
           p.id === prodId ? { ...p, quantity: Math.max(1, p.quantity + delta) } : p
         )
       };
-    });
-    setCategories(newCategories);
-    saveToLocalStorage(newCategories);
+    }));
   };
 
   const updatePrice = (catId: string, prodId: number, newPrice: string) => {
     const price = parseInt(newPrice) || 0;
-    const newCategories = categories.map(cat => {
+    setCategories(prev => prev.map(cat => {
       if (cat.id !== catId) return cat;
       return {
         ...cat,
@@ -96,9 +96,7 @@ const ImportedProducts = () => {
           p.id === prodId ? { ...p, price: price } : p
         )
       };
-    });
-    setCategories(newCategories);
-    saveToLocalStorage(newCategories);
+    }));
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, catId: string, productId: number) => {
@@ -107,7 +105,7 @@ const ImportedProducts = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64Image = reader.result as string;
-        const newCategories = categories.map(cat => {
+        const newCats = categories.map(cat => {
           if (cat.id !== catId) return cat;
           return {
             ...cat,
@@ -116,8 +114,8 @@ const ImportedProducts = () => {
             )
           };
         });
-        setCategories(newCategories);
-        saveToLocalStorage(newCategories);
+        setCategories(newCats);
+        localStorage.setItem('imported_categories', JSON.stringify(newCats));
         showSuccess("Image enregistrée automatiquement !");
       };
       reader.readAsDataURL(file);
@@ -151,7 +149,15 @@ const ImportedProducts = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-blue-100 relative z-10">
+            {isEditMode && (
+              <Button 
+                onClick={handleSave} 
+                className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg h-10 px-6 text-sm font-bold animate-in fade-in zoom-in-95"
+              >
+                <Save className="w-4 h-4 mr-2" /> SAUVEGARDER
+              </Button>
+            )}
+            <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-blue-100">
               <Switch id="edit-mode-imported" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500 scale-90" />
               <Label htmlFor="edit-mode-imported" className="text-xs font-medium flex items-center cursor-pointer">
                 <Edit3 className="w-3.5 h-3.5 mr-1 text-orange-600" /> Mode Édition
