@@ -31,6 +31,10 @@ const ImportedProducts = () => {
       products: [
         { id: 101, name: "Pomme de terre", price: 12000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 102, name: "Oignon Importé", price: 10000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 110, name: "Oeufs", price: 25000, unit: "carton", image: "https://images.unsplash.com/photo-1506976785307-8732e854ad03?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 111, name: "Sucre importé", price: 28000, unit: "sac", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 112, name: "Chips barbecue", price: 1000, unit: "unité", image: "https://images.unsplash.com/photo-1566478431373-7821e93ee6b2?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 113, name: "Chips boite", price: 1500, unit: "unité", image: "https://images.unsplash.com/photo-1613919113166-ca5978963843?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 103, name: "Bidon Huile 1L", price: 1500, unit: "unité", image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 104, name: "Huile de palme 1L", price: 1800, unit: "unité", image: "https://images.unsplash.com/photo-1620706122100-616af41e0b97?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 105, name: "Sceau de pâte d'arachide", price: 4500, unit: "unité", image: "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&q=80", quantity: 1 },
@@ -72,7 +76,20 @@ const ImportedProducts = () => {
     const saved = localStorage.getItem('imported_categories');
     if (saved) {
       try {
-        setCategories(JSON.parse(saved));
+        const savedCats = JSON.parse(saved);
+        // Fusionner pour s'assurer que les nouveaux produits apparaissent
+        const merged = initialCategories.map(cat => {
+          const savedCat = savedCats.find((sc: any) => sc.id === cat.id);
+          if (!savedCat) return cat;
+          
+          const mergedProducts = [...cat.products];
+          savedCat.products.forEach((sp: any) => {
+            const index = mergedProducts.findIndex(p => p.id === sp.id);
+            if (index !== -1) mergedProducts[index] = sp;
+          });
+          return { ...cat, products: mergedProducts };
+        });
+        setCategories(merged);
       } catch (e) {
         console.error("Erreur lecture localStorage", e);
       }
