@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Save, Upload } from 'lucide-react';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 
 const ImportedProducts = () => {
@@ -74,10 +74,18 @@ const ImportedProducts = () => {
     }
   }, []);
 
-  const handleSave = () => {
-    localStorage.setItem('imported_categories', JSON.stringify(categories));
-    showSuccess("Catalogue mis à jour avec succès !");
-    setIsEditMode(false);
+  const handleSave = (e: React.MouseEvent) => {
+    // Empêcher tout comportement par défaut
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      localStorage.setItem('imported_categories', JSON.stringify(categories));
+      showSuccess("Catalogue mis à jour avec succès !");
+      setIsEditMode(false);
+    } catch (err) {
+      showError("Erreur lors de l'enregistrement.");
+    }
   };
 
   const updateQuantity = (catId: string, prodId: number, delta: number) => {
@@ -121,7 +129,6 @@ const ImportedProducts = () => {
           };
         });
         setCategories(newCats);
-        // Sauvegarde automatique pour les images
         localStorage.setItem('imported_categories', JSON.stringify(newCats));
         showSuccess("Image enregistrée !");
       };
@@ -155,83 +162,108 @@ const ImportedProducts = () => {
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4 z-50">
             {isEditMode && (
               <Button 
                 type="button"
                 onClick={handleSave} 
-                className="bg-orange-600 hover:bg-orange-700 text-white shadow-xl h-10 px-6 text-sm font-bold transition-all hover:scale-105 active:scale-95 animate-in fade-in zoom-in-95 z-30"
+                className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black transition-all transform active:scale-90 animate-in fade-in zoom-in-90 cursor-pointer border-2 border-white"
               >
-                <Save className="w-4 h-4 mr-2" /> SAUVEGARDER
+                <Save className="w-5 h-5 mr-2" /> SAUVEGARDER LES PRIX
               </Button>
             )}
-            <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-blue-100 z-20">
-              <Switch id="edit-mode-imported" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500 scale-90" />
-              <Label htmlFor="edit-mode-imported" className="text-xs font-medium flex items-center cursor-pointer">
-                <Edit3 className="w-3.5 h-3.5 mr-1 text-orange-600" /> Mode Édition
+            <div className="flex items-center space-x-3 bg-white p-2.5 px-4 rounded-xl shadow-md border border-blue-200">
+              <Switch 
+                id="edit-mode-imported" 
+                checked={isEditMode} 
+                onCheckedChange={setIsEditMode} 
+                className="data-[state=checked]:bg-orange-500" 
+              />
+              <Label htmlFor="edit-mode-imported" className="text-sm font-bold flex items-center cursor-pointer select-none">
+                <Edit3 className="w-4 h-4 mr-2 text-orange-600" /> Mode Édition
               </Label>
             </div>
           </div>
         </div>
 
         <Tabs defaultValue="importes" className="w-full">
-          <TabsList className="grid grid-cols-3 mb-6 h-auto p-1 bg-blue-50">
+          <TabsList className="grid grid-cols-3 mb-8 h-auto p-1.5 bg-blue-100/50 rounded-2xl">
             {categories.map(cat => (
-              <TabsTrigger key={cat.id} value={cat.id} className="py-2 text-xs data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+              <TabsTrigger 
+                key={cat.id} 
+                value={cat.id} 
+                className="py-3 text-sm font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-xl transition-all"
+              >
                 {cat.icon} {cat.name}
               </TabsTrigger>
             ))}
           </TabsList>
 
           {categories.map(cat => (
-            <TabsContent key={cat.id} value={cat.id}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <TabsContent key={cat.id} value={cat.id} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {cat.products.map(product => (
-                  <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all bg-white group">
-                    <div className="relative h-32 overflow-hidden">
-                      <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-xl transition-all bg-white group rounded-2xl">
+                    <div className="relative h-40 overflow-hidden">
+                      <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       {isEditMode && (
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <label className="cursor-pointer bg-white text-gray-900 px-3 py-1.5 rounded-full flex items-center text-xs font-bold shadow-lg">
-                            <Upload className="w-3.5 h-3.5 mr-1.5" /> Changer
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
+                          <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl transform hover:scale-105 active:scale-95 transition-all">
+                            <Upload className="w-4 h-4 mr-2" /> CHANGER L'IMAGE
                             <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, cat.id, product.id)} />
                           </label>
                         </div>
                       )}
                     </div>
-                    <CardContent className="pt-3 pb-2 px-4">
-                      <h3 className="font-bold text-sm text-gray-900 truncate">{product.name}</h3>
-                      <div className="mt-1 flex items-center justify-between">
-                        <div>
+                    <CardContent className="pt-4 pb-3 px-5">
+                      <h3 className="font-bold text-base text-gray-900 truncate mb-1">{product.name}</h3>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1">
                           {isEditMode ? (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5 bg-orange-50 p-1 rounded-lg border border-orange-100">
                               <Input 
                                 type="number" 
                                 value={product.price} 
                                 onChange={(e) => updatePrice(cat.id, product.id, e.target.value)}
-                                className="h-7 w-20 text-xs font-bold px-1 border-orange-200 focus:border-orange-500"
+                                className="h-8 w-full text-sm font-black px-2 border-none bg-transparent focus-visible:ring-0"
                               />
-                              <span className="text-[10px] font-bold">FCFA</span>
+                              <span className="text-[10px] font-black text-orange-700 pr-1">FCFA</span>
                             </div>
                           ) : (
-                            <p className="text-lg font-bold text-blue-700 leading-none">{product.price.toLocaleString()} FCFA</p>
+                            <div>
+                              <p className="text-xl font-black text-blue-700 leading-none">{product.price.toLocaleString()} FCFA</p>
+                            </div>
                           )}
-                          <p className="text-[10px] text-gray-500 mt-1 truncate max-w-[80px]">{product.unit}</p>
+                          <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{product.unit}</p>
                         </div>
-                        <div className="flex items-center gap-1.5 bg-blue-50 rounded-lg p-0.5">
-                          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md" onClick={() => updateQuantity(cat.id, product.id, -1)}>
-                            <Minus className="h-2.5 w-2.5" />
+                        <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" 
+                            onClick={() => updateQuantity(cat.id, product.id, -1)}
+                          >
+                            <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="font-bold text-xs min-w-[15px] text-center">{product.quantity}</span>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md" onClick={() => updateQuantity(cat.id, product.id, 1)}>
-                            <Plus className="h-2.5 w-2.5" />
+                          <span className="font-black text-sm min-w-[20px] text-center">{product.quantity}</span>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" 
+                            onClick={() => updateQuantity(cat.id, product.id, 1)}
+                          >
+                            <Plus className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
                     </CardContent>
-                    <CardFooter className="pb-3 pt-0 px-4">
-                      <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 h-8 text-xs font-bold" onClick={() => addToCart(product)}>
-                        <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> Acheter
+                    <CardFooter className="pb-4 pt-0 px-5">
+                      <Button 
+                        size="lg" 
+                        className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-sm font-black shadow-md transition-all hover:shadow-lg active:scale-95" 
+                        onClick={() => addToCart(product)}
+                      >
+                        <ShoppingCart className="mr-2 h-4 w-4" /> ACHETER MAINTENANT
                       </Button>
                     </CardFooter>
                   </Card>
