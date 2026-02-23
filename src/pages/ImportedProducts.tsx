@@ -16,11 +16,17 @@ const ImportedProducts = () => {
   const navigate = useNavigate();
   const [isEditMode, setIsEditMode] = useState(false);
 
+  // Mapping des icônes pour éviter les erreurs de sérialisation JSON
+  const categoryIcons: Record<string, React.ReactNode> = {
+    importes: <Package className="w-3.5 h-3.5 mr-1.5" />,
+    frais: <Apple className="w-3.5 h-3.5 mr-1.5" />,
+    semences: <Sprout className="w-3.5 h-3.5 mr-1.5" />
+  };
+
   const initialCategories = [
     {
       id: "importes",
       name: "Importés",
-      icon: <Package className="w-3.5 h-3.5 mr-1.5" />,
       products: [
         { id: 101, name: "Pomme de terre", price: 12000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 102, name: "Oignon Importé", price: 10000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
@@ -36,7 +42,6 @@ const ImportedProducts = () => {
     {
       id: "frais",
       name: "Frais",
-      icon: <Apple className="w-3.5 h-3.5 mr-1.5" />,
       products: [
         { id: 206, name: "Fraise", price: 4500, unit: "barquette", image: "https://images.unsplash.com/photo-1464960726344-4861873193ec?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 201, name: "Poulet frais", price: 3500, unit: "unité", image: "https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&q=80", quantity: 1 },
@@ -49,7 +54,6 @@ const ImportedProducts = () => {
     {
       id: "semences",
       name: "Semences",
-      icon: <Sprout className="w-3.5 h-3.5 mr-1.5" />,
       products: [
         { id: 301, name: "Semence Oignon", price: 5000, unit: "sachet", image: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 302, name: "Semence Salade", price: 2500, unit: "sachet", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80", quantity: 1 },
@@ -74,11 +78,7 @@ const ImportedProducts = () => {
     }
   }, []);
 
-  const handleSave = (e: React.MouseEvent) => {
-    // Empêcher tout comportement par défaut
-    e.preventDefault();
-    e.stopPropagation();
-    
+  const handleSave = () => {
     try {
       localStorage.setItem('imported_categories', JSON.stringify(categories));
       showSuccess("Catalogue mis à jour avec succès !");
@@ -194,7 +194,7 @@ const ImportedProducts = () => {
                 value={cat.id} 
                 className="py-3 text-sm font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-xl transition-all"
               >
-                {cat.icon} {cat.name}
+                {categoryIcons[cat.id]} {cat.name}
               </TabsTrigger>
             ))}
           </TabsList>
