@@ -13,6 +13,7 @@ import Insights from "./pages/Insights";
 import Checkout from "./pages/Checkout";
 import Cart from "./pages/Cart";
 import PurchaseHistory from "./pages/PurchaseHistory";
+import AdminDashboard from "./pages/AdminDashboard";
 import WhatsAppButton from "./components/WhatsAppButton";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/history" element={<PurchaseHistory />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <WhatsAppButton />

@@ -5,7 +5,19 @@ import Navbar from '@/components/Navbar';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Leaf, Truck, ShoppingBag, ArrowRight, ShieldCheck, PhoneCall, HeartHandshake, Clock } from 'lucide-react';
+import { 
+  Leaf, 
+  Truck, 
+  ShoppingBag, 
+  ArrowRight, 
+  ShieldCheck, 
+  PhoneCall, 
+  HeartHandshake, 
+  Clock,
+  Star,
+  CheckCircle2,
+  Users
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
@@ -14,111 +26,159 @@ const Index = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative py-24 overflow-hidden bg-green-900 text-white">
-        <div className="absolute inset-0 opacity-20">
+      <section className="relative py-24 md:py-32 overflow-hidden bg-green-900 text-white">
+        <div className="absolute inset-0 opacity-30">
           <img 
             src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80" 
-            alt="Agriculture" 
+            alt="Agriculture Ballou" 
             className="w-full h-full object-cover"
           />
         </div>
         <div className="container relative px-4 mx-auto text-center">
-          <Badge className="bg-orange-500 text-white mb-6 px-4 py-1 text-sm font-bold border-none shadow-lg">Plateforme n°1 à Ballou</Badge>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight">Connecter Ballou au Monde</h1>
-          <p className="text-xl mb-10 text-green-100 max-w-2xl mx-auto leading-relaxed">
-            Écoulez vos produits locaux vers Dakar ou commandez vos besoins essentiels en toute sécurité avec un suivi en temps réel.
+          <div className="inline-flex items-center gap-2 bg-orange-500/20 backdrop-blur-md border border-orange-500/30 text-orange-400 mb-8 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
+            <Star className="h-3 w-3 fill-orange-400" /> Plateforme n°1 à Ballou
+          </div>
+          <h1 className="text-5xl md:text-8xl font-black mb-8 tracking-tighter leading-[0.9]">
+            BALLOU <span className="text-orange-500">CONNECT</span>
+          </h1>
+          <p className="text-xl md:text-2xl mb-12 text-green-100 max-w-3xl mx-auto leading-relaxed font-medium">
+            L'excellence agricole de Ballou livrée à Dakar, et vos besoins essentiels de la capitale livrés chez vous en 24h.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button asChild size="lg" className="bg-orange-500 hover:bg-orange-600 text-white border-none h-14 px-8 text-lg font-bold shadow-xl transition-all hover:scale-105">
+          <div className="flex flex-wrap justify-center gap-6">
+            <Button asChild size="lg" className="bg-orange-500 hover:bg-orange-600 text-white border-none h-16 px-10 text-xl font-black shadow-2xl transition-all hover:scale-105 rounded-2xl">
               <Link to="/local-products">Vendre mes produits</Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="bg-white/10 backdrop-blur text-white border-white/20 hover:bg-white/20 h-14 px-8 text-lg font-bold transition-all hover:scale-105">
-              <Link to="/imported-products">Commander de Dakar</Link>
+            <Button asChild size="lg" variant="outline" className="bg-white/10 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 h-16 px-10 text-xl font-black transition-all hover:scale-105 rounded-2xl">
+              <Link to="/imported-products">Acheter de Dakar</Link>
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Support Banner */}
-      <div className="bg-orange-500 text-white py-4">
-        <div className="container px-4 mx-auto flex flex-col md:flex-row items-center justify-center gap-4 md:gap-12">
-          <div className="flex items-center gap-3">
-            <PhoneCall className="h-6 w-6 animate-pulse" />
-            <span className="font-bold text-lg">Support 24/7 : 77 225 45 48</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Clock className="h-6 w-6" />
-            <span className="font-medium">Assistance garantie jour et nuit</span>
-          </div>
+      {/* Trust Banner */}
+      <div className="bg-white border-b py-8">
+        <div className="container px-4 mx-auto flex flex-wrap justify-center md:justify-between items-center gap-8 opacity-60 grayscale hover:grayscale-0 transition-all">
+          <div className="flex items-center gap-2 font-black text-xl text-gray-400 italic">BALLOU AGRI</div>
+          <div className="flex items-center gap-2 font-black text-xl text-gray-400 italic">DAKAR EXPRESS</div>
+          <div className="flex items-center gap-2 font-black text-xl text-gray-400 italic">VALLEE DU FLEUVE</div>
+          <div className="flex items-center gap-2 font-black text-xl text-gray-400 italic">SENEGAL CONNECT</div>
         </div>
       </div>
 
       {/* Main Features */}
-      <section className="py-20 container px-4 mx-auto">
+      <section className="py-24 container px-4 mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6">Un écosystème complet</h2>
+          <p className="text-gray-500 text-lg font-medium">Nous simplifions les échanges commerciaux entre la région de Tambacounda et la capitale.</p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card className="border-none shadow-sm bg-white hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 group">
-            <CardContent className="pt-8 pb-8 px-8">
-              <div className="rounded-2xl bg-green-100 w-16 h-16 flex items-center justify-center mb-6 group-hover:bg-green-600 group-hover:text-white transition-colors duration-300">
-                <Leaf className="h-8 w-8 text-green-600 group-hover:text-white" />
+          <Card className="border-none shadow-sm bg-white hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 group rounded-[2.5rem] overflow-hidden">
+            <CardContent className="pt-12 pb-12 px-10">
+              <div className="rounded-3xl bg-green-100 w-20 h-20 flex items-center justify-center mb-8 group-hover:bg-green-600 group-hover:text-white transition-all duration-500 rotate-3 group-hover:rotate-0">
+                <Leaf className="h-10 w-10 text-green-600 group-hover:text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 text-gray-900">Produits de Ballou</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Soutenez les agriculteurs locaux. Riz, Oignon, Sorgho et Patate douce livrés vers Dakar.</p>
-              <Button asChild variant="ghost" className="p-0 h-auto font-bold text-green-600 hover:text-green-700 hover:bg-transparent">
-                <Link to="/local-products">Vendre ou Acheter <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <h3 className="text-3xl font-black mb-4 text-gray-900">Produits de Ballou</h3>
+              <p className="text-gray-500 mb-8 leading-relaxed font-medium">Riz de la vallée, Oignons, Sorgho et Patate douce. Le meilleur de notre terre expédié vers Dakar.</p>
+              <Button asChild variant="ghost" className="p-0 h-auto font-black text-green-600 hover:text-green-700 hover:bg-transparent text-lg">
+                <Link to="/local-products" className="flex items-center">Voir le catalogue <ArrowRight className="ml-2 h-5 w-5" /></Link>
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-sm bg-white hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 group border-t-4 border-t-blue-500">
-            <CardContent className="pt-8 pb-8 px-8">
-              <div className="rounded-2xl bg-blue-100 w-16 h-16 flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
-                <ShoppingBag className="h-8 w-8 text-blue-600 group-hover:text-white" />
+          <Card className="border-none shadow-sm bg-white hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 group rounded-[2.5rem] overflow-hidden border-t-8 border-t-blue-500">
+            <CardContent className="pt-12 pb-12 px-10">
+              <div className="rounded-3xl bg-blue-100 w-20 h-20 flex items-center justify-center mb-8 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500 -rotate-3 group-hover:rotate-0">
+                <ShoppingBag className="h-10 w-10 text-blue-600 group-hover:text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 text-gray-900">Besoins de Dakar</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Pomme de terre, huile, lait, semences et fraises fraîches livrés directement à Ballou.</p>
-              <Button asChild variant="ghost" className="p-0 h-auto font-bold text-blue-600 hover:text-blue-700 hover:bg-transparent">
-                <Link to="/imported-products">Commander <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <h3 className="text-3xl font-black mb-4 text-gray-900">Besoins de Dakar</h3>
+              <p className="text-gray-500 mb-8 leading-relaxed font-medium">Pomme de terre, huile, lait, semences et produits frais. Tout ce dont vous avez besoin, livré à Ballou.</p>
+              <Button asChild variant="ghost" className="p-0 h-auto font-black text-blue-600 hover:text-blue-700 hover:bg-transparent text-lg">
+                <Link to="/imported-products" className="flex items-center">Commander <ArrowRight className="ml-2 h-5 w-5" /></Link>
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-sm bg-white hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 group border-t-4 border-t-orange-500">
-            <CardContent className="pt-8 pb-8 px-8">
-              <div className="rounded-2xl bg-orange-100 w-16 h-16 flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:text-white transition-colors duration-300">
-                <Truck className="h-8 w-8 text-orange-600 group-hover:text-white" />
+          <Card className="border-none shadow-sm bg-white hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 group rounded-[2.5rem] overflow-hidden border-t-8 border-t-orange-500">
+            <CardContent className="pt-12 pb-12 px-10">
+              <div className="rounded-3xl bg-orange-100 w-20 h-20 flex items-center justify-center mb-8 group-hover:bg-orange-600 group-hover:text-white transition-all duration-500 rotate-6 group-hover:rotate-0">
+                <Truck className="h-10 w-10 text-orange-600 group-hover:text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 text-gray-900">Suivi 24h Garanti</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Suivez votre colis de Dakar à Ballou (Mar/Jeu/Sam) ou de Ballou à Dakar (Lun/Jeu).</p>
-              <Button asChild variant="ghost" className="p-0 h-auto font-bold text-orange-600 hover:text-orange-700 hover:bg-transparent">
-                <Link to="/tracking">Suivre mon colis <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <h3 className="text-3xl font-black mb-4 text-gray-900">Suivi 24h Réel</h3>
+              <p className="text-gray-500 mb-8 leading-relaxed font-medium">Suivez votre colis en temps réel. Départs réguliers : Mar/Jeu/Sam vers Ballou, Lun/Jeu vers Dakar.</p>
+              <Button asChild variant="ghost" className="p-0 h-auto font-black text-orange-600 hover:text-orange-700 hover:bg-transparent text-lg">
+                <Link to="/tracking" className="flex items-center">Suivre mon colis <ArrowRight className="ml-2 h-5 w-5" /></Link>
               </Button>
             </CardContent>
           </Card>
         </div>
       </section>
 
-      {/* Support Section */}
-      <section className="py-20 bg-stone-100 border-y">
+      {/* Support Section with Image */}
+      <section className="py-24 bg-stone-100 border-y">
         <div className="container px-4 mx-auto">
-          <div className="max-w-4xl mx-auto bg-white rounded-3xl p-8 md:p-12 shadow-2xl flex flex-col md:flex-row items-center gap-10">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 text-orange-600 mb-4 font-bold uppercase tracking-wider text-sm">
-                <HeartHandshake className="h-5 w-5" /> Service Support 24/7
+          <div className="max-w-6xl mx-auto bg-white rounded-[3rem] overflow-hidden shadow-2xl flex flex-col lg:flex-row items-stretch">
+            <div className="lg:w-1/2 relative min-h-[400px]">
+              <img 
+                src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&q=80" 
+                alt="Service Client Ballou Connect" 
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
+              <div className="absolute bottom-8 left-8 bg-white/90 backdrop-blur p-4 rounded-2xl shadow-xl flex items-center gap-4">
+                <div className="bg-green-500 h-3 w-3 rounded-full animate-pulse" />
+                <span className="text-sm font-black text-gray-900 uppercase tracking-widest">Support en ligne</span>
               </div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6 leading-tight">Besoin d'aide pour votre commande ?</h2>
-              <p className="text-gray-600 text-lg mb-8">Notre équipe est disponible à tout moment pour répondre à vos questions sur les livraisons, les paiements ou les produits.</p>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4 text-2xl font-bold text-green-700">
-                  <div className="bg-green-100 p-3 rounded-2xl"><PhoneCall className="h-8 w-8" /></div>
-                  Appelez le : 77 225 45 48
+            </div>
+            <div className="lg:w-1/2 p-12 md:p-20 flex flex-col justify-center">
+              <div className="flex items-center gap-3 text-orange-600 mb-6 font-black uppercase tracking-widest text-sm">
+                <HeartHandshake className="h-6 w-6" /> Service Client 24/7
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-8 leading-[1.1]">Besoin d'aide pour votre commande ?</h2>
+              <p className="text-gray-500 text-xl mb-10 font-medium leading-relaxed">Notre équipe locale est disponible à tout moment pour répondre à vos questions sur les livraisons, les paiements ou les produits.</p>
+              
+              <div className="flex flex-col sm:flex-row gap-6">
+                <div className="flex items-center gap-4 bg-stone-50 p-6 rounded-[2rem] border border-stone-100 flex-1">
+                  <div className="bg-green-100 p-4 rounded-2xl text-green-600"><PhoneCall className="h-8 w-8" /></div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Appelez-nous</p>
+                    <p className="text-2xl font-black text-gray-900">77 225 45 48</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 bg-stone-50 p-6 rounded-[2rem] border border-stone-100 flex-1">
+                  <div className="bg-orange-100 p-4 rounded-2xl text-orange-600"><Clock className="h-8 w-8" /></div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Réponse sous</p>
+                    <p className="text-2xl font-black text-gray-900">{'<'} 5 min</p>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="w-full md:w-1/3 bg-stone-50 p-6 rounded-2xl border-2 border-dashed border-stone-200 text-center">
-              <p className="text-sm font-bold text-gray-400 mb-4 uppercase">Temps de réponse</p>
-              <div className="text-5xl font-black text-orange-500 mb-2">{'<'} 5 min</div>
-              <p className="text-xs text-gray-500 font-medium">Réponse instantanée par appel ou WhatsApp</p>
-            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Badges */}
+      <section className="py-20 container px-4 mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="flex flex-col items-center text-center">
+            <ShieldCheck className="h-12 w-12 text-green-600 mb-4" />
+            <h4 className="font-black text-gray-900 mb-2">Paiement Sécurisé</h4>
+            <p className="text-sm text-gray-500 font-medium">Wave & Orange Money</p>
+          </div>
+          <div className="flex flex-col items-center text-center">
+            <Truck className="h-12 w-12 text-blue-600 mb-4" />
+            <h4 className="font-black text-gray-900 mb-2">Livraison 24h</h4>
+            <p className="text-sm text-gray-500 font-medium">Dakar ↔ Ballou</p>
+          </div>
+          <div className="flex flex-col items-center text-center">
+            <CheckCircle2 className="h-12 w-12 text-orange-600 mb-4" />
+            <h4 className="font-black text-gray-900 mb-2">Qualité Garantie</h4>
+            <p className="text-sm text-gray-500 font-medium">Produits frais & locaux</p>
+          </div>
+          <div className="flex flex-col items-center text-center">
+            <Users className="h-12 w-12 text-purple-600 mb-4" />
+            <h4 className="font-black text-gray-900 mb-2">Support Local</h4>
+            <p className="text-sm text-gray-500 font-medium">Équipe basée à Ballou</p>
           </div>
         </div>
       </section>
