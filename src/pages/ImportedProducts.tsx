@@ -8,15 +8,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Save, Upload } from 'lucide-react';
+import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Save, Upload, PlusCircle } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
+import { useCart } from '@/context/CartContext';
 
 const ImportedProducts = () => {
   const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Mapping des icônes pour éviter les erreurs de sérialisation JSON
   const categoryIcons: Record<string, React.ReactNode> = {
     importes: <Package className="w-3.5 h-3.5 mr-1.5" />,
     frais: <Apple className="w-3.5 h-3.5 mr-1.5" />,
@@ -81,7 +82,7 @@ const ImportedProducts = () => {
   const handleSave = () => {
     try {
       localStorage.setItem('imported_categories', JSON.stringify(categories));
-      showSuccess("Catalogue mis à jour avec succès !");
+      showSuccess("Catalogue mis à jour !");
       setIsEditMode(false);
     } catch (err) {
       showError("Erreur lors de l'enregistrement.");
@@ -136,15 +137,22 @@ const ImportedProducts = () => {
     }
   };
 
-  const addToCart = (product: any) => {
-    const totalProductPrice = product.price * product.quantity;
-    navigate('/checkout', { 
-      state: { 
-        price: totalProductPrice, 
-        name: `${product.quantity}x ${product.name}`,
-        direction: 'Dakar -> Ballou'
-      } 
+  const handleAddToCart = (product: any) => {
+    addToCart({
+      id: `imported-${product.id}`,
+      name: product.name,
+      price: product.price,
+      quantity: product.quantity,
+      image: product.image,
+      direction: 'Dakar -> Ballou',
+      unit: product.unit
     });
+    showSuccess(`${product.name} ajouté au panier !`);
+  };
+
+  const handleBuyNow = (product: any) => {
+    handleAddToCart(product);
+    navigate('/cart');
   };
 
   return (
@@ -158,7 +166,7 @@ const ImportedProducts = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-blue-900">Dakar vers Ballou</h1>
-              <p className="text-gray-600">Expédition de Dakar vers Ballou.</p>
+              <p className="text-gray-600">Direction : <span className="font-bold text-orange-600">Dakar vers Ballou</span></p>
             </div>
           </div>
           
@@ -167,7 +175,7 @@ const ImportedProducts = () => {
               <Button 
                 type="button"
                 onClick={handleSave} 
-                className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black transition-all transform active:scale-90 animate-in fade-in zoom-in-90 cursor-pointer border-2 border-white"
+                className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black"
               >
                 <Save className="w-5 h-5 mr-2" /> SAUVEGARDER LES PRIX
               </Button>
@@ -257,11 +265,19 @@ const ImportedProducts = () => {
                         </div>
                       </div>
                     </CardContent>
-                    <CardFooter className="pb-4 pt-0 px-5">
+                    <CardFooter className="pb-4 pt-0 px-5 flex flex-col gap-2">
                       <Button 
                         size="lg" 
-                        className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-sm font-black shadow-md transition-all hover:shadow-lg active:scale-95" 
-                        onClick={() => addToCart(product)}
+                        variant="outline"
+                        className="w-full border-blue-600 text-blue-700 hover:bg-blue-50 h-10 text-[10px] font-black shadow-sm" 
+                        onClick={() => handleAddToCart(product)}
+                      >
+                        <PlusCircle className="mr-2 h-4 w-4" /> AJOUTER AU PANIER
+                      </Button>
+                      <Button 
+                        size="lg" 
+                        className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-[10px] font-black shadow-md" 
+                        onClick={() => handleBuyNow(product)}
                       >
                         <ShoppingCart className="mr-2 h-4 w-4" /> ACHETER MAINTENANT
                       </Button>

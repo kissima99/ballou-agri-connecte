@@ -21,8 +21,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { useCart } from '@/context/CartContext';
 
-const Navbar = ({ cartCount = 0 }) => {
+const Navbar = () => {
+  const { totalItems } = useCart();
+
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="container flex h-16 items-center justify-between px-4">
@@ -80,14 +83,16 @@ const Navbar = ({ cartCount = 0 }) => {
           </Link>
           
           <div className="relative">
-            <Button variant="outline" size="icon" className="rounded-full border-green-200 bg-green-50 hover:bg-green-100">
-              <ShoppingCart className="h-5 w-5 text-green-700" />
-              {cartCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center rounded-full bg-orange-500 p-0 text-[10px]">
-                  {cartCount}
-                </Badge>
-              )}
-            </Button>
+            <Link to="/cart">
+              <Button variant="outline" size="icon" className="rounded-full border-green-200 bg-green-50 hover:bg-green-100">
+                <ShoppingCart className="h-5 w-5 text-green-700" />
+                {totalItems > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center rounded-full bg-orange-500 p-0 text-[10px] text-white">
+                    {totalItems}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

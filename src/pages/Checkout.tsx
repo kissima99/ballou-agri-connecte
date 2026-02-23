@@ -1,27 +1,24 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { CheckCircle2, CreditCard, Banknote, ArrowRight, Mail, QrCode, Truck, Loader2, Home, ExternalLink, Download } from 'lucide-react';
+import { CheckCircle2, CreditCard, Banknote, ArrowRight, Mail, QrCode, Truck, Loader2, Home, Download } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
+import { useCart } from '@/context/CartContext';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { cart, totalPrice, clearCart } = useCart();
   
-  // Correction des sommes : s'assurer que productPrice est le sous-total
-  const productPrice = location.state?.price || 0;
-  const productName = location.state?.name || "Produit";
-  const direction = location.state?.direction || "Dakar -> Ballou";
   const deliveryFee = 2000;
-  const totalPrice = productPrice + deliveryFee;
+  const finalTotal = totalPrice + deliveryFee;
 
   const [paymentMethod, setPaymentMethod] = useState("wave");
   const [isOrdered, setIsOrdered] = useState(false);
@@ -42,9 +39,8 @@ const Checkout = () => {
   const generatePDF = (oId: string) => {
     const doc = new jsPDF();
     
-    // Header
     doc.setFontSize(22);
-    doc.setTextColor(22, 163, 74); // Vert
+    doc.setTextColor(22, 163, 74);
     doc.text("BALLOU-AGRI-CONNECT", 105, 20, { align: "center" });
     
     doc.setFontSize(12);
@@ -52,7 +48,6 @@ const Checkout = () => {
     doc.text(`Recu de Commande #${oId}`, 105, 30, { align: "center" });
     doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 105, 37, { align: "center" });
 
-    // Client Info
     doc.setTextColor(0);
     doc.setFontSize(14);
     doc.text("Informations Client", 20, 55);
@@ -62,45 +57,28 @@ const Checkout = () => {
     doc.text(`Email: ${formData.email}`, 20, 79);
     doc.text(`Adresse: ${formData.address}`, 20, 86);
 
-    // Livraison Info
     doc.setFontSize(14);
-    doc.text("Details de la Livraison", 120, 55);
+    doc.text("Details de la Commande", 20, 105);
     doc.setFontSize(10);
-    doc.text(`Trajet: ${direction}`, 120, 65);
-    doc.text(`Methode: ${paymentMethod.toUpperCase()}`, 120, 72);
-    doc.text(`Statut: Paye`, 120, 79);
-
-    // Table
-    doc.setDrawColor(200);
-    doc.line(20, 100, 190, 100);
-    doc.setFont(undefined, 'bold');
-    doc.text("Description", 25, 110);
-    doc.text("Montant", 160, 110);
-    doc.setFont(undefined, 'normal');
-    doc.line(20, 115, 190, 115);
-
-    // Lignes de calcul
-    doc.text(productName, 25, 125);
-    doc.text(`${productPrice.toLocaleString()} FCFA`, 160, 125);
     
-    doc.text("Frais de livraison", 25, 135);
-    doc.text(`${deliveryFee.toLocaleString()} FCFA`, 160, 135);
+    let y = 115;
+    cart.forEach((item) => {
+      doc.text(`${item.quantity}x ${item.name} (${item.direction})`, 20, y);
+      doc.text(`${(item.price * item.quantity).toLocaleString()} FCFA`, 160, y);
+      y += 10;
+    });
 
-    doc.line(20, 145, 190, 145);
+    doc.line(20, y, 190, y);
+    y += 10;
+    doc.text("Frais de livraison", 20, y);
+    doc.text(`${deliveryFee.toLocaleString()} FCFA`, 160, y);
     
-    // Total final
+    y += 15;
     doc.setFontSize(16);
     doc.setFont(undefined, 'bold');
     doc.setTextColor(22, 163, 74);
-    doc.text("TOTAL GENERAL", 25, 160);
-    doc.text(`${totalPrice.toLocaleString()} FCFA`, 160, 160);
-
-    // Footer
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
-    doc.setTextColor(150);
-    doc.text("Merci de votre confiance. Support: 77 225 45 48 (24h/24 7j/7)", 105, 200, { align: "center" });
-    doc.text("Ballou-Agri-Connect - La technologie au service de l'agriculture.", 105, 207, { align: "center" });
+    doc.text("TOTAL GENERAL", 20, y);
+    doc.text(`${finalTotal.toLocaleString()} FCFA`, 160, y);
 
     doc.save(`Recu_${oId}_BallouAgri.pdf`);
   };
@@ -110,14 +88,14 @@ const Checkout = () => {
     setTimeout(() => {
       setIsVerifying(false);
       setIsVerified(true);
-      showSuccess("Paiement vérifié avec succès !");
+      showSuccess("Paiement vérifié !");
     }, 2000);
   };
 
   const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.phone || !formData.email || !formData.address) {
-      showError("Veuillez remplir tous les champs obligatoires.");
+      showError("Veuillez remplir tous les champs.");
       return;
     }
 
@@ -127,15 +105,13 @@ const Checkout = () => {
     const newOrderId = `BAC-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
     setOrderId(newOrderId);
 
-    // Sauvegarde historique
     const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
     const newOrder = {
       id: newOrderId,
       date: new Date().toLocaleDateString('fr-FR'),
-      product: productName,
-      amount: totalPrice,
+      product: cart.map(i => `${i.quantity}x ${i.name}`).join(', '),
+      amount: finalTotal,
       status: "Payé",
-      direction: direction,
       customer: formData.name,
       email: formData.email
     };
@@ -143,10 +119,9 @@ const Checkout = () => {
 
     setIsSubmitting(false);
     setIsOrdered(true);
-    
-    // Téléchargement automatique
     generatePDF(newOrderId);
-    showSuccess(`Commande confirmée ! Reçu généré.`);
+    clearCart();
+    showSuccess(`Commande confirmée !`);
   };
 
   if (isOrdered) {
@@ -154,19 +129,18 @@ const Checkout = () => {
       <div className="min-h-screen bg-stone-50">
         <Navbar />
         <div className="container px-4 py-20 mx-auto text-center max-w-2xl">
-          <div className="bg-white p-10 rounded-3xl shadow-xl border border-green-100 animate-in fade-in zoom-in-95">
+          <div className="bg-white p-10 rounded-3xl shadow-xl border border-green-100">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 className="w-12 h-12 text-green-600" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Achat Confirmé !</h1>
             <p className="text-gray-600 mb-2">Référence : <span className="font-bold text-green-700">{orderId}</span></p>
             <div className="bg-green-50 p-4 rounded-xl mb-8 flex items-center justify-center gap-3">
-              <Download className="h-5 w-5 text-green-600 animate-bounce" />
-              <p className="text-sm font-medium text-green-800">Le reçu PDF a été téléchargé automatiquement.</p>
+              <Download className="h-5 w-5 text-green-600" />
+              <p className="text-sm font-medium text-green-800">Le reçu PDF a été téléchargé.</p>
             </div>
             <div className="flex flex-col gap-3">
               <Button onClick={() => navigate('/tracking')} className="bg-blue-600 hover:bg-blue-700 w-full font-bold">Suivre mon colis</Button>
-              <Button onClick={() => generatePDF(orderId)} variant="outline" className="w-full">Ré-télécharger le reçu</Button>
               <Button onClick={() => navigate('/')} variant="ghost" className="w-full">Retour à l'accueil</Button>
             </div>
           </div>
@@ -181,12 +155,9 @@ const Checkout = () => {
       <div className="container px-4 py-12 mx-auto max-w-5xl">
         <div className="flex items-center gap-4 mb-8">
           <Button asChild variant="outline" size="icon" className="rounded-full">
-            <Link to="/"><Home className="h-4 w-4 text-green-700" /></Link>
+            <Link to="/cart"><ArrowRight className="h-4 w-4 rotate-180 text-green-700" /></Link>
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-green-900">Finaliser l'achat</h1>
-            <p className="text-sm text-orange-600 font-bold">Direction : {direction}</p>
-          </div>
+          <h1 className="text-3xl font-bold text-green-900">Finaliser l'achat</h1>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -251,7 +222,7 @@ const Checkout = () => {
                 </RadioGroup>
 
                 {paymentMethod === 'wave' && (
-                  <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 text-center animate-in zoom-in-95">
+                  <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 text-center">
                     <QrCode className="mx-auto h-32 w-32 mb-4 text-blue-600" />
                     <Button asChild className="bg-blue-600 w-full font-bold"><a href={wavePaymentUrl} target="_blank" rel="noopener noreferrer" onClick={() => setIsVerified(true)}>OUVRIR WAVE</a></Button>
                   </div>
@@ -273,14 +244,22 @@ const Checkout = () => {
             <Card className="border-none shadow-lg bg-green-900 text-white">
               <CardHeader><CardTitle>Résumé du Paiement</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between text-sm"><span className="opacity-70">Sous-total</span><span>{productPrice.toLocaleString()} FCFA</span></div>
+                <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
+                  {cart.map(item => (
+                    <div key={item.id} className="flex justify-between text-xs">
+                      <span className="opacity-70">{item.quantity}x {item.name}</span>
+                      <span>{(item.price * item.quantity).toLocaleString()} FCFA</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-white/20 pt-4 flex justify-between text-sm"><span className="opacity-70">Sous-total</span><span>{totalPrice.toLocaleString()} FCFA</span></div>
                 <div className="flex justify-between text-sm"><span className="opacity-70">Frais de livraison</span><span>{deliveryFee.toLocaleString()} FCFA</span></div>
-                <div className="border-t border-white/20 pt-4 flex justify-between font-bold text-2xl"><span>TOTAL</span><span className="text-orange-400">{totalPrice.toLocaleString()} FCFA</span></div>
+                <div className="border-t border-white/20 pt-4 flex justify-between font-bold text-2xl"><span>TOTAL</span><span className="text-orange-400">{finalTotal.toLocaleString()} FCFA</span></div>
               </CardContent>
               <CardFooter>
                 {(isVerified || paymentMethod === 'cash') ? (
                   <Button onClick={handleOrder} disabled={isSubmitting} className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold">
-                    {isSubmitting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> ...</> : "CONFIRMER L'ACHAT"}
+                    {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "CONFIRMER L'ACHAT"}
                   </Button>
                 ) : (
                   <div className="w-full p-4 bg-white/10 rounded-xl text-center text-xs opacity-60 font-bold">

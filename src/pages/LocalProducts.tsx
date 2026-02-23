@@ -8,12 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload } from 'lucide-react';
+import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, PlusCircle } from 'lucide-react';
 import { showSuccess } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
+import { useCart } from '@/context/CartContext';
 
 const LocalProducts = () => {
   const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [isEditMode, setIsEditMode] = useState(false);
   
   const initialProducts = [
@@ -64,9 +66,8 @@ const LocalProducts = () => {
           p.id === productId ? { ...p, image: base64Image } : p
         );
         setProducts(newProducts);
-        // Sauvegarde automatique immédiate
         localStorage.setItem('local_products', JSON.stringify(newProducts));
-        showSuccess("Image enregistrée automatiquement !");
+        showSuccess("Image enregistrée !");
       };
       reader.readAsDataURL(file);
     }
@@ -75,18 +76,25 @@ const LocalProducts = () => {
   const handleSave = () => {
     localStorage.setItem('local_products', JSON.stringify(products));
     setIsEditMode(false);
-    showSuccess("Modifications du catalogue local enregistrées !");
+    showSuccess("Catalogue local mis à jour !");
   };
 
-  const addToCart = (product: any) => {
-    const totalProductPrice = product.price * product.quantity;
-    navigate('/checkout', { 
-      state: { 
-        price: totalProductPrice, 
-        name: `${product.quantity}x ${product.name}`,
-        direction: 'Ballou -> Dakar' 
-      } 
+  const handleAddToCart = (product: any) => {
+    addToCart({
+      id: `local-${product.id}`,
+      name: product.name,
+      price: product.price,
+      quantity: product.quantity,
+      image: product.image,
+      direction: 'Ballou -> Dakar',
+      unit: product.unit
     });
+    showSuccess(`${product.name} ajouté au panier !`);
+  };
+
+  const handleBuyNow = (product: any) => {
+    handleAddToCart(product);
+    navigate('/cart');
   };
 
   return (
@@ -100,12 +108,12 @@ const LocalProducts = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-green-900">Produits Locaux</h1>
-              <p className="text-gray-600">Expédition de Ballou vers Dakar.</p>
+              <p className="text-gray-600">Direction : <span className="font-bold text-orange-600">Ballou vers Dakar</span></p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {isEditMode && (
-              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md h-9 px-4 text-sm font-bold animate-in fade-in zoom-in-95">
+              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md h-9 px-4 text-sm font-bold">
                 <Save className="w-4 h-4 mr-2" /> ENREGISTRER PRIX
               </Button>
             )}
@@ -167,9 +175,12 @@ const LocalProducts = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="pb-3 pt-0 px-4">
-                <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 h-8 text-xs font-bold" onClick={() => addToCart(product)}>
-                  <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> Acheter
+              <CardFooter className="pb-3 pt-0 px-4 flex flex-col gap-2">
+                <Button size="sm" variant="outline" className="w-full border-green-600 text-green-700 hover:bg-green-50 h-8 text-[10px] font-bold" onClick={() => handleAddToCart(product)}>
+                  <PlusCircle className="mr-1.5 h-3.5 w-3.5" /> AJOUTER AU PANIER
+                </Button>
+                <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 h-8 text-[10px] font-bold" onClick={() => handleBuyNow(product)}>
+                  <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> ACHETER
                 </Button>
               </CardFooter>
             </Card>
