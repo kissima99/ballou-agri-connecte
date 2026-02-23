@@ -65,7 +65,13 @@ const ImportedProducts = () => {
 
   useEffect(() => {
     const saved = localStorage.getItem('imported_categories');
-    if (saved) setCategories(JSON.parse(saved));
+    if (saved) {
+      try {
+        setCategories(JSON.parse(saved));
+      } catch (e) {
+        console.error("Erreur lecture localStorage", e);
+      }
+    }
   }, []);
 
   const handleSave = () => {
@@ -115,8 +121,9 @@ const ImportedProducts = () => {
           };
         });
         setCategories(newCats);
+        // Sauvegarde automatique pour les images
         localStorage.setItem('imported_categories', JSON.stringify(newCats));
-        showSuccess("Image enregistrée automatiquement !");
+        showSuccess("Image enregistrée !");
       };
       reader.readAsDataURL(file);
     }
@@ -151,13 +158,14 @@ const ImportedProducts = () => {
           <div className="flex items-center gap-3">
             {isEditMode && (
               <Button 
+                type="button"
                 onClick={handleSave} 
-                className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg h-10 px-6 text-sm font-bold animate-in fade-in zoom-in-95"
+                className="bg-orange-600 hover:bg-orange-700 text-white shadow-xl h-10 px-6 text-sm font-bold transition-all hover:scale-105 active:scale-95 animate-in fade-in zoom-in-95 z-30"
               >
                 <Save className="w-4 h-4 mr-2" /> SAUVEGARDER
               </Button>
             )}
-            <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-blue-100">
+            <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-blue-100 z-20">
               <Switch id="edit-mode-imported" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500 scale-90" />
               <Label htmlFor="edit-mode-imported" className="text-xs font-medium flex items-center cursor-pointer">
                 <Edit3 className="w-3.5 h-3.5 mr-1 text-orange-600" /> Mode Édition
