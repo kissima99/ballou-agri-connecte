@@ -20,30 +20,34 @@ import {
   X
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [newOrdersCount, setNewOrdersCount] = useState(0);
 
-  const loadOrders = () => {
-    const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
-    setOrders(history);
-    
-    // Compter les nouvelles commandes (isNew: true)
-    const newCount = history.filter((o: any) => o.isNew).length;
-    setNewOrdersCount(newCount);
-  };
-
   useEffect(() => {
+    const isAdmin = localStorage.getItem('is_super_admin') === 'true';
+    if (!isAdmin) {
+      showError("Accès réservé au Super Admin.");
+      navigate('/');
+      return;
+    }
+
+    const loadOrders = () => {
+      const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
+      setOrders(history);
+      const newCount = history.filter((o: any) => o.isNew).length;
+      setNewOrdersCount(newCount);
+    };
+
     loadOrders();
-    
-    // Écouter les changements de localStorage pour les nouvelles commandes
-    const handleStorageChange = () => loadOrders();
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+    window.addEventListener('storage', loadOrders);
+    return () => window.removeEventListener('storage', loadOrders);
+  }, [navigate]);
 
   const updateOrderStatus = (id: string, newStatus: string) => {
     const updatedOrders = orders.map(order => 
