@@ -50,9 +50,9 @@ const LocalProducts = () => {
     { id: 13, name: "Sorgho", price: 15000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1623064037721-304163048228?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 14, name: "Citron", price: 100, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1585059895524-72359e06133a?auto=format&fit=crop&q=80", quantity: 1 },
     { id: 15, name: "Arachide", price: 8000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 19, name: "Bissap Rouge", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 20, name: "Bissap Blanc", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 21, name: "Pain de singe", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 19, name: "Bissap Rouge", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 20, name: "Bissap Blanc", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1550583724-125581f77833?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: 21, name: "Pain de singe", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80", quantity: 1 },
   ];
 
   const [products, setProducts] = useState<LocalProduct[]>(initialProducts);
@@ -60,12 +60,22 @@ const LocalProducts = () => {
   useEffect(() => {
     const saved = localStorage.getItem('local_products');
     if (saved) {
-      const savedProducts = JSON.parse(saved);
-      const merged = initialProducts.map(p => {
-        const savedP = savedProducts.find((sp: any) => sp.id === p.id);
-        return savedP ? { ...p, ...savedP } : p;
-      });
-      setProducts(merged);
+      try {
+        const savedProducts = JSON.parse(saved);
+        const merged = initialProducts.map(p => {
+          const savedP = savedProducts.find((sp: any) => sp.id === p.id);
+          if (!savedP) return p;
+          
+          // Si l'image sauvegardée est un upload personnalisé (base64), on la garde.
+          // Sinon, on utilise l'image du code pour permettre les mises à jour visuelles.
+          const imageToUse = savedP.image?.startsWith('data:image') ? savedP.image : p.image;
+          
+          return { ...p, ...savedP, image: imageToUse };
+        });
+        setProducts(merged);
+      } catch (e) {
+        console.error("Erreur fusion localStorage", e);
+      }
     }
   }, []);
 
