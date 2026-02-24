@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, CreditCard, ArrowRight, Loader2, MapPin, ExternalLink } from 'lucide-react';
+import { CheckCircle2, CreditCard, ArrowRight, Loader2, MapPin, ExternalLink, ShieldCheck, Lock } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
@@ -26,6 +26,8 @@ const Checkout = () => {
   const [orderId, setOrderId] = useState("");
   const [isVerified, setIsVerified] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isAuthorizedByAdmin, setIsAuthorizedByAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -35,6 +37,9 @@ const Checkout = () => {
   });
 
   useEffect(() => {
+    const adminStatus = localStorage.getItem('is_super_admin') === 'true';
+    setIsAdmin(adminStatus);
+
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -59,38 +64,32 @@ const Checkout = () => {
   const deliveryFee = zoneFees[zone] + (totalItems * 200);
   const finalTotal = totalPrice + deliveryFee;
 
-  // Helper pour formater les prix sans caractères spéciaux problématiques pour jsPDF
   const formatPricePDF = (num: number) => {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " FCFA";
   };
 
   const generatePDF = (id: string, data: any) => {
     const doc = new jsPDF();
-    
     doc.setFillColor(22, 101, 52);
     doc.rect(0, 0, 210, 40, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.text("BALLOU AGRI CONNECT", 105, 25, { align: "center" });
-    
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
     doc.text(`RECU DE COMMANDE : ${id}`, 20, 50);
     doc.text(`Date : ${new Date().toLocaleDateString()}`, 20, 60);
-    
     doc.setFont("helvetica", "bold");
     doc.text("CLIENT :", 20, 75);
     doc.setFont("helvetica", "normal");
     doc.text(`${data.name}`, 20, 82);
     doc.text(`${data.phone}`, 20, 89);
     doc.text(`${data.address} (${zone.toUpperCase()})`, 20, 96);
-    
     doc.line(20, 105, 190, 105);
     doc.text("Produit", 20, 112);
     doc.text("Qté", 120, 112);
     doc.text("Prix", 150, 112);
     doc.line(20, 115, 190, 115);
-    
     let y = 122;
     cart.forEach(item => {
       doc.text(item.name, 20, y);
@@ -98,7 +97,6 @@ const Checkout = () => {
       doc.text(formatPricePDF(item.price * item.quantity), 150, y);
       y += 10;
     });
-    
     doc.line(20, y, 190, y);
     y += 10;
     doc.text("Sous-total :", 120, y);
@@ -111,17 +109,19 @@ const Checkout = () => {
     doc.setFont("helvetica", "bold");
     doc.text("TOTAL :", 120, y);
     doc.text(formatPricePDF(finalTotal), 150, y);
-    
     doc.setFontSize(10);
     doc.setFont("helvetica", "italic");
     doc.text("Merci de votre confiance en l'agriculture locale de Ballou.", 105, 280, { align: "center" });
-    
     doc.save(`Recu_BAC-${id}.pdf`);
   };
 
   const handleVerifyPayment = async () => {
     if (!formData.phone) {
       showError("Veuillez entrer votre numéro de téléphone d'abord.");
+      return;
+    }
+    if (!isAuthorizedByAdmin) {
+      showError("En attente de l'autorisation de l'administrateur.");
       return;
     }
     setIsVerifying(true);
@@ -137,11 +137,9 @@ const Checkout = () => {
       showError("Veuillez d'abord vérifier votre paiement.");
       return;
     }
-
     setIsSubmitting(true);
     const newOrderId = Math.random().toString(36).substr(2, 5).toUpperCase();
     setOrderId(`BAC-${newOrderId}`);
-
     const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
     const newOrder = {
       id: `BAC-${newOrderId}`,
@@ -157,9 +155,7 @@ const Checkout = () => {
       isNew: true
     };
     localStorage.setItem('purchase_history', JSON.stringify([newOrder, ...history]));
-
     generatePDF(newOrderId, formData);
-    
     await new Promise(resolve => setTimeout(resolve, 1000));
     setIsSubmitting(false);
     setIsOrdered(true);
@@ -273,14 +269,43 @@ const Checkout = () => {
                         PAYER AVEC WAVE <ExternalLink className="ml-2 h-4 w-4" />
                       </a>
                     </Button>
-                    <Button 
-                      type="button"
-                      onClick={handleVerifyPayment} 
-                      disabled={isVerifying || isVerified}
-                      className={`w-full h-12 font-bold ${isVerified ? 'bg-green-600' : 'bg-white border-blue-200 text-blue-700 hover:bg-blue-50'}`}
-                    >
-                      {isVerifying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isVerified ? <><CheckCircle2 className="mr-2 h-5 w-5" /> PAIEMENT VÉRIFIÉ</> : "VÉRIFIER MON PAIEMENT"}
-                    </Button>
+
+                    {/* Section d'autorisation Admin (Simulation) */}
+                    {isAdmin && (
+                      <div className="mt-4 p-4 bg-orange-100 rounded-xl border border-orange-200">
+                        <p className="text-[10px] font-black text-orange-800 uppercase mb-2 flex items-center justify-center">
+                          <ShieldCheck className="w-3 h-3 mr-1" /> Contrôle Super Admin
+                        </p>
+                        <Button 
+                          type="button"
+                          onClick={() => {
+                            setIsAuthorizedByAdmin(!isAuthorizedByAdmin);
+                            showSuccess(isAuthorizedByAdmin ? "Autorisation retirée" : "Autorisation accordée au client");
+                          }}
+                          className={`w-full h-10 text-xs font-bold ${isAuthorizedByAdmin ? 'bg-green-600' : 'bg-orange-600'}`}
+                        >
+                          {isAuthorizedByAdmin ? "ANNULER L'AUTORISATION" : "AUTORISER LA VÉRIFICATION"}
+                        </Button>
+                      </div>
+                    )}
+
+                    <div className="relative">
+                      {!isAuthorizedByAdmin && !isVerified && (
+                        <div className="absolute inset-0 bg-stone-100/50 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-xl">
+                          <p className="text-[10px] font-black text-gray-400 uppercase flex items-center">
+                            <Lock className="w-3 h-3 mr-1" /> En attente d'autorisation admin
+                          </p>
+                        </div>
+                      )}
+                      <Button 
+                        type="button"
+                        onClick={handleVerifyPayment} 
+                        disabled={isVerifying || isVerified || !isAuthorizedByAdmin}
+                        className={`w-full h-12 font-bold ${isVerified ? 'bg-green-600' : 'bg-white border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                      >
+                        {isVerifying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isVerified ? <><CheckCircle2 className="mr-2 h-5 w-5" /> PAIEMENT VÉRIFIÉ</> : "VÉRIFIER MON PAIEMENT"}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
