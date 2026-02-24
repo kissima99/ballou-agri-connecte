@@ -16,7 +16,8 @@ import {
   Clock,
   Star,
   CheckCircle2,
-  Users
+  Users,
+  Headphones
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -39,7 +40,7 @@ const Index = () => {
             <Star className="h-3 w-3 fill-orange-400" /> Plateforme n°1 à Ballou
           </div>
           <h1 className="text-5xl md:text-8xl font-black mb-8 tracking-tighter leading-[0.9]">
-            BALLOU <span className="text-orange-500">CONNECT</span>
+            BALLOU AGRI <span className="text-orange-500">CONNECT</span>
           </h1>
           <p className="text-xl md:text-2xl mb-12 text-green-100 max-w-3xl mx-auto leading-relaxed font-medium">
             L'excellence agricole de Ballou livrée à Dakar, et vos besoins essentiels de la capitale livrés chez vous en 24h.
@@ -54,16 +55,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-
-      {/* Trust Banner */}
-      <div className="bg-white border-b py-8">
-        <div className="container px-4 mx-auto flex flex-wrap justify-center md:justify-between items-center gap-8 opacity-60 grayscale hover:grayscale-0 transition-all">
-          <div className="flex items-center gap-2 font-black text-xl text-gray-400 italic">BALLOU AGRI</div>
-          <div className="flex items-center gap-2 font-black text-xl text-gray-400 italic">DAKAR EXPRESS</div>
-          <div className="flex items-center gap-2 font-black text-xl text-gray-400 italic">VALLEE DU FLEUVE</div>
-          <div className="flex items-center gap-2 font-black text-xl text-gray-400 italic">SENEGAL CONNECT</div>
-        </div>
-      </div>
 
       {/* Main Features */}
       <section className="py-24 container px-4 mx-auto">
@@ -113,35 +104,31 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Support Section with Image */}
+      {/* Support Section with Call Center Logo */}
       <section className="py-24 bg-stone-100 border-y">
         <div className="container px-4 mx-auto">
           <div className="max-w-6xl mx-auto bg-white rounded-[3rem] overflow-hidden shadow-2xl flex flex-col lg:flex-row items-stretch">
-            <div className="lg:w-1/2 relative min-h-[400px]">
-              <img 
-                src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&q=80" 
-                alt="Service Client Ballou Connect" 
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
-              <div className="absolute bottom-8 left-8 bg-white/90 backdrop-blur p-4 rounded-2xl shadow-xl flex items-center gap-4">
-                <div className="bg-green-500 h-3 w-3 rounded-full animate-pulse" />
-                <span className="text-sm font-black text-gray-900 uppercase tracking-widest">Support en ligne</span>
+            <div className="lg:w-1/2 bg-green-900 flex flex-col items-center justify-center p-20 text-white text-center">
+              <div className="w-40 h-40 bg-white/10 rounded-full flex items-center justify-center mb-8 border-4 border-white/20">
+                <Headphones className="w-24 h-24 text-orange-500" />
               </div>
+              <h3 className="text-3xl font-black mb-4">CENTRE D'APPEL</h3>
+              <p className="text-green-100 font-medium">BALLOU AGRI CONNECT</p>
+              <div className="mt-8 bg-orange-500 px-6 py-2 rounded-full font-black text-sm animate-pulse">LIGNE DIRECTE</div>
             </div>
             <div className="lg:w-1/2 p-12 md:p-20 flex flex-col justify-center">
               <div className="flex items-center gap-3 text-orange-600 mb-6 font-black uppercase tracking-widest text-sm">
                 <HeartHandshake className="h-6 w-6" /> Service Client 24/7
               </div>
               <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-8 leading-[1.1]">Besoin d'aide pour votre commande ?</h2>
-              <p className="text-gray-500 text-xl mb-10 font-medium leading-relaxed">Notre équipe locale est disponible à tout moment pour répondre à vos questions sur les livraisons, les paiements ou les produits.</p>
+              <p className="text-gray-500 text-xl mb-10 font-medium leading-relaxed">Notre équipe locale est disponible à tout moment pour répondre à vos questions.</p>
               
               <div className="flex flex-col sm:flex-row gap-6">
                 <div className="flex items-center gap-4 bg-stone-50 p-6 rounded-[2rem] border border-stone-100 flex-1">
                   <div className="bg-green-100 p-4 rounded-2xl text-green-600"><PhoneCall className="h-8 w-8" /></div>
                   <div>
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Appelez-nous</p>
-                    <p className="text-2xl font-black text-gray-900">77 225 45 48</p>
+                    <p className="text-2xl font-black text-gray-900">78 225 45 48</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 bg-stone-50 p-6 rounded-[2rem] border border-stone-100 flex-1">

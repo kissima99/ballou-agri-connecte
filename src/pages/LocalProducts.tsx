@@ -30,6 +30,7 @@ const LocalProducts = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   
   const initialProducts: LocalProduct[] = [
     { id: 1, name: "Riz de la vallée", price: 17500, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 17500, pricePerKg: 400 },
@@ -55,6 +56,12 @@ const LocalProducts = () => {
   const [products, setProducts] = useState<LocalProduct[]>(initialProducts);
 
   useEffect(() => {
+    const checkAdmin = () => {
+      setIsSuperAdmin(localStorage.getItem('is_super_admin') === 'true');
+    };
+    checkAdmin();
+    window.addEventListener('storage', checkAdmin);
+    
     const saved = localStorage.getItem('local_products');
     if (saved) {
       const savedProducts = JSON.parse(saved);
@@ -64,6 +71,7 @@ const LocalProducts = () => {
       });
       setProducts(merged);
     }
+    return () => window.removeEventListener('storage', checkAdmin);
   }, []);
 
   const toggleKg = (id: number) => {
@@ -149,19 +157,22 @@ const LocalProducts = () => {
               <p className="text-gray-600">Direction : <span className="font-bold text-orange-600">Ballou vers Dakar</span></p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {isEditMode && (
-              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md h-9 px-4 text-sm font-bold">
-                <Save className="w-4 h-4 mr-2" /> ENREGISTRER PRIX
-              </Button>
-            )}
-            <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-green-100">
-              <Switch id="edit-mode" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500 scale-90" />
-              <Label htmlFor="edit-mode" className="text-xs font-medium flex items-center cursor-pointer">
-                <Edit3 className="w-3.5 h-3.5 mr-1 text-orange-600" /> Mode Édition
-              </Label>
+          
+          {isSuperAdmin && (
+            <div className="flex items-center gap-3">
+              {isEditMode && (
+                <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md h-9 px-4 text-sm font-bold">
+                  <Save className="w-4 h-4 mr-2" /> ENREGISTRER PRIX
+                </Button>
+              )}
+              <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-green-100">
+                <Switch id="edit-mode" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500 scale-90" />
+                <Label htmlFor="edit-mode" className="text-xs font-medium flex items-center cursor-pointer">
+                  <Edit3 className="w-3.5 h-3.5 mr-1 text-orange-600" /> Mode Édition
+                </Label>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

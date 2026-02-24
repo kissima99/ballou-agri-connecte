@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { CheckCircle2, CreditCard, Banknote, ArrowRight, Mail, QrCode, Truck, Loader2, Home, Download } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CheckCircle2, CreditCard, Banknote, ArrowRight, Mail, QrCode, Loader2, Download, MapPin } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
@@ -15,11 +16,9 @@ import { useCart } from '@/context/CartContext';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cart, totalPrice, clearCart } = useCart();
+  const { cart, totalPrice, clearCart, totalItems } = useCart();
   
-  const deliveryFee = 2000;
-  const finalTotal = totalPrice + deliveryFee;
-
+  const [zone, setZone] = useState("dakar");
   const [paymentMethod, setPaymentMethod] = useState("wave");
   const [isOrdered, setIsOrdered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,63 +33,16 @@ const Checkout = () => {
     address: ""
   });
 
-  const wavePaymentUrl = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
-
-  const generatePDF = (oId: string) => {
-    const doc = new jsPDF();
-    
-    doc.setFontSize(22);
-    doc.setTextColor(22, 163, 74);
-    doc.text("BALLOU-AGRI-CONNECT", 105, 20, { align: "center" });
-    
-    doc.setFontSize(12);
-    doc.setTextColor(100);
-    doc.text(`Recu de Commande #${oId}`, 105, 30, { align: "center" });
-    doc.text(`Date: ${new Date().toLocaleDateString('fr-FR')}`, 105, 37, { align: "center" });
-
-    doc.setTextColor(0);
-    doc.setFontSize(14);
-    doc.text("Informations Client", 20, 55);
-    doc.setFontSize(10);
-    doc.text(`Nom: ${formData.name}`, 20, 65);
-    doc.text(`Telephone: ${formData.phone}`, 20, 72);
-    doc.text(`Email: ${formData.email}`, 20, 79);
-    doc.text(`Adresse: ${formData.address}`, 20, 86);
-
-    doc.setFontSize(14);
-    doc.text("Details de la Commande", 20, 105);
-    doc.setFontSize(10);
-    
-    let y = 115;
-    cart.forEach((item) => {
-      doc.text(`${item.quantity}x ${item.name} (${item.direction})`, 20, y);
-      doc.text(`${(item.price * item.quantity).toLocaleString()} FCFA`, 160, y);
-      y += 10;
-    });
-
-    doc.line(20, y, 190, y);
-    y += 10;
-    doc.text("Frais de livraison", 20, y);
-    doc.text(`${deliveryFee.toLocaleString()} FCFA`, 160, y);
-    
-    y += 15;
-    doc.setFontSize(16);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(22, 163, 74);
-    doc.text("TOTAL GENERAL", 20, y);
-    doc.text(`${finalTotal.toLocaleString()} FCFA`, 160, y);
-
-    doc.save(`Recu_${oId}_BallouAgri.pdf`);
+  // Calcul dynamique des frais
+  const zoneFees: Record<string, number> = {
+    "dakar": 2000,
+    "tamba": 3500,
+    "bakel": 1500,
+    "ballou": 500
   };
 
-  const handleVerifyPayment = () => {
-    setIsVerifying(true);
-    setTimeout(() => {
-      setIsVerifying(false);
-      setIsVerified(true);
-      showSuccess("Paiement vérifié !");
-    }, 2000);
-  };
+  const deliveryFee = zoneFees[zone] + (totalItems * 200); // 200 FCFA par article supplémentaire
+  const finalTotal = totalPrice + deliveryFee;
 
   const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,13 +65,16 @@ const Checkout = () => {
       amount: finalTotal,
       status: "Payé",
       customer: formData.name,
-      email: formData.email
+      email: formData.email,
+      phone: formData.phone,
+      zone: zone,
+      address: formData.address,
+      isNew: true // Pour la notification admin
     };
     localStorage.setItem('purchase_history', JSON.stringify([newOrder, ...history]));
 
     setIsSubmitting(false);
     setIsOrdered(true);
-    generatePDF(newOrderId);
     clearCart();
     showSuccess(`Commande confirmée !`);
   };
@@ -134,11 +89,7 @@ const Checkout = () => {
               <CheckCircle2 className="w-12 h-12 text-green-600" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Achat Confirmé !</h1>
-            <p className="text-gray-600 mb-2">Référence : <span className="font-bold text-green-700">{orderId}</span></p>
-            <div className="bg-green-50 p-4 rounded-xl mb-8 flex items-center justify-center gap-3">
-              <Download className="h-5 w-5 text-green-600" />
-              <p className="text-sm font-medium text-green-800">Le reçu PDF a été téléchargé.</p>
-            </div>
+            <p className="text-gray-600 mb-8">Référence : <span className="font-bold text-green-700">{orderId}</span></p>
             <div className="flex flex-col gap-3">
               <Button onClick={() => navigate('/tracking')} className="bg-blue-600 hover:bg-blue-700 w-full font-bold">Suivre mon colis</Button>
               <Button onClick={() => navigate('/')} variant="ghost" className="w-full">Retour à l'accueil</Button>
@@ -165,10 +116,24 @@ const Checkout = () => {
             <Card className="border-none shadow-sm">
               <CardHeader>
                 <CardTitle className="text-xl flex items-center">
-                  <Mail className="mr-2 h-5 w-5 text-green-600" /> Informations Livraison
+                  <MapPin className="mr-2 h-5 w-5 text-green-600" /> Zone & Livraison
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Zone de livraison</Label>
+                  <Select value={zone} onValueChange={setZone}>
+                    <SelectTrigger className="h-12 rounded-xl border-stone-200">
+                      <SelectValue placeholder="Choisir votre zone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dakar">Dakar (Capitale)</SelectItem>
+                      <SelectItem value="tamba">Tambacounda (Région)</SelectItem>
+                      <SelectItem value="bakel">Bakel (Ville)</SelectItem>
+                      <SelectItem value="ballou">Ballou (Local)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nom complet</Label>
@@ -176,16 +141,12 @@ const Checkout = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Téléphone</Label>
-                    <Input id="phone" placeholder="77 000 00 00" required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+                    <Input id="phone" placeholder="78 225 45 48" required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Adresse Email</Label>
-                  <Input id="email" type="email" placeholder="votre@email.com" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Lieu de livraison exact</Label>
-                  <Input id="address" placeholder="Quartier, Maison..." required value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
+                  <Label htmlFor="address">Adresse exacte</Label>
+                  <Input id="address" placeholder="Quartier, Rue, Maison..." required value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
                 </div>
               </CardContent>
             </Card>
@@ -197,7 +158,7 @@ const Checkout = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <RadioGroup value={paymentMethod} onValueChange={(val) => { setPaymentMethod(val); setIsVerified(false); }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <RadioGroupItem value="wave" id="wave" className="peer sr-only" />
                     <Label htmlFor="wave" className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent cursor-pointer peer-data-[state=checked]:border-blue-500">
@@ -220,22 +181,6 @@ const Checkout = () => {
                     </Label>
                   </div>
                 </RadioGroup>
-
-                {paymentMethod === 'wave' && (
-                  <div className="mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-100 text-center">
-                    <QrCode className="mx-auto h-32 w-32 mb-4 text-blue-600" />
-                    <Button asChild className="bg-blue-600 w-full font-bold"><a href={wavePaymentUrl} target="_blank" rel="noopener noreferrer" onClick={() => setIsVerified(true)}>OUVRIR WAVE</a></Button>
-                  </div>
-                )}
-                
-                {paymentMethod === 'om' && (
-                  <div className="mt-8 p-6 bg-orange-50 rounded-2xl border border-orange-100 text-center">
-                    <p className="text-sm text-orange-700 mb-4 font-bold">Transfert vers <strong>78 225 45 48</strong>.</p>
-                    <Button onClick={handleVerifyPayment} disabled={isVerifying} className="bg-orange-600 w-full font-bold">
-                      {isVerifying ? <Loader2 className="animate-spin h-4 w-4" /> : "VÉRIFIER LE PAIEMENT"}
-                    </Button>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>
@@ -244,28 +189,14 @@ const Checkout = () => {
             <Card className="border-none shadow-lg bg-green-900 text-white">
               <CardHeader><CardTitle>Résumé du Paiement</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
-                  {cart.map(item => (
-                    <div key={item.id} className="flex justify-between text-xs">
-                      <span className="opacity-70">{item.quantity}x {item.name}</span>
-                      <span>{(item.price * item.quantity).toLocaleString()} FCFA</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="border-t border-white/20 pt-4 flex justify-between text-sm"><span className="opacity-70">Sous-total</span><span>{totalPrice.toLocaleString()} FCFA</span></div>
-                <div className="flex justify-between text-sm"><span className="opacity-70">Frais de livraison</span><span>{deliveryFee.toLocaleString()} FCFA</span></div>
+                <div className="flex justify-between text-sm"><span className="opacity-70">Articles ({totalItems})</span><span>{totalPrice.toLocaleString()} FCFA</span></div>
+                <div className="flex justify-between text-sm"><span className="opacity-70">Livraison ({zone})</span><span>{deliveryFee.toLocaleString()} FCFA</span></div>
                 <div className="border-t border-white/20 pt-4 flex justify-between font-bold text-2xl"><span>TOTAL</span><span className="text-orange-400">{finalTotal.toLocaleString()} FCFA</span></div>
               </CardContent>
               <CardFooter>
-                {(isVerified || paymentMethod === 'cash') ? (
-                  <Button onClick={handleOrder} disabled={isSubmitting} className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold">
-                    {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "CONFIRMER L'ACHAT"}
-                  </Button>
-                ) : (
-                  <div className="w-full p-4 bg-white/10 rounded-xl text-center text-xs opacity-60 font-bold">
-                    PAIEMENT REQUIS
-                  </div>
-                )}
+                <Button onClick={handleOrder} disabled={isSubmitting} className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold">
+                  {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "CONFIRMER L'ACHAT"}
+                </Button>
               </CardFooter>
             </Card>
           </div>

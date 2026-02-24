@@ -1,18 +1,18 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Menu, 
   ShoppingCart, 
   Leaf, 
   Truck, 
   Package, 
   ChevronDown,
-  User,
   BarChart3,
   History,
-  ShieldAlert
+  ShieldAlert,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
@@ -23,16 +23,31 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from '@/context/CartContext';
+import { showSuccess } from '@/utils/toast';
 
 const Navbar = () => {
   const { totalItems } = useCart();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const adminStatus = localStorage.getItem('is_super_admin') === 'true';
+    setIsAdmin(adminStatus);
+  }, []);
+
+  const toggleAdmin = () => {
+    const newStatus = !isAdmin;
+    setIsAdmin(newStatus);
+    localStorage.setItem('is_super_admin', String(newStatus));
+    showSuccess(newStatus ? "Mode Super Admin Activé" : "Mode Client Activé");
+    window.dispatchEvent(new Event('storage')); // Notifier les autres composants
+  };
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="container flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center space-x-2">
           <Leaf className="h-6 w-6 text-green-600" />
-          <span className="text-xl font-black tracking-tighter text-green-800">BALLOU<span className="text-orange-500">CONNECT</span></span>
+          <span className="text-xl font-black tracking-tighter text-green-800">BALLOU AGRI <span className="text-orange-500">CONNECT</span></span>
         </Link>
 
         <div className="hidden md:flex items-center space-x-6">
@@ -75,12 +90,24 @@ const Navbar = () => {
             <BarChart3 className="mr-1 h-4 w-4" /> Insights
           </Link>
 
-          <Link to="/admin" className="text-sm font-bold text-orange-600 hover:text-orange-700 flex items-center transition-colors bg-orange-50 px-3 py-1.5 rounded-full">
-            <ShieldAlert className="mr-1 h-4 w-4" /> Admin
-          </Link>
+          {isAdmin && (
+            <Link to="/admin" className="text-sm font-bold text-orange-600 hover:text-orange-700 flex items-center transition-colors bg-orange-50 px-3 py-1.5 rounded-full">
+              <ShieldAlert className="mr-1 h-4 w-4" /> Admin
+            </Link>
+          )}
         </div>
 
         <div className="flex items-center space-x-4">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleAdmin}
+            className={`rounded-full ${isAdmin ? 'text-orange-600 bg-orange-50' : 'text-gray-400'}`}
+            title={isAdmin ? "Déconnexion Admin" : "Connexion Super Admin"}
+          >
+            {isAdmin ? <Unlock className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+          </Button>
+
           <div className="relative">
             <Link to="/cart">
               <Button variant="outline" size="icon" className="rounded-2xl border-green-200 bg-green-50 hover:bg-green-100 h-11 w-11 transition-all hover:scale-105">
