@@ -1,11 +1,11 @@
 "use client";
 
+import React, { useEffect, useState } from 'react';
 import { Auth as SupabaseAuth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
@@ -13,11 +13,13 @@ const Login = () => {
   const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
+    // Vérification de la session initiale
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) navigate('/');
     });
 
+    // Écoute des changements d'état d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) navigate('/');
