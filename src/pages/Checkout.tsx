@@ -270,7 +270,6 @@ const Checkout = () => {
                       </a>
                     </Button>
 
-                    {/* Section d'autorisation Admin (Simulation) */}
                     {isAdmin && (
                       <div className="mt-4 p-4 bg-orange-100 rounded-xl border border-orange-200">
                         <p className="text-[10px] font-black text-orange-800 uppercase mb-2 flex items-center justify-center">
