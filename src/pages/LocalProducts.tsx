@@ -62,15 +62,10 @@ const LocalProducts = () => {
     if (saved) {
       try {
         const savedProducts = JSON.parse(saved);
+        // Fusion simple : si le produit existe dans le localStorage, on prend TOUTES ses données (y compris l'image modifiée)
         const merged = initialProducts.map(p => {
           const savedP = savedProducts.find((sp: any) => sp.id === p.id);
-          if (!savedP) return p;
-          
-          // Si l'image sauvegardée est un upload personnalisé (base64), on la garde.
-          // Sinon, on utilise l'image du code pour permettre les mises à jour visuelles.
-          const imageToUse = savedP.image?.startsWith('data:image') ? savedP.image : p.image;
-          
-          return { ...p, ...savedP, image: imageToUse };
+          return savedP ? { ...p, ...savedP } : p;
         });
         setProducts(merged);
       } catch (e) {
@@ -117,6 +112,7 @@ const LocalProducts = () => {
           p.id === productId ? { ...p, image: base64Image } : p
         );
         setProducts(newProducts);
+        // On sauvegarde immédiatement l'image dans le localStorage
         localStorage.setItem('local_products', JSON.stringify(newProducts));
         showSuccess("Image enregistrée !");
       };

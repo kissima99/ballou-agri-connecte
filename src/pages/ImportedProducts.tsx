@@ -55,7 +55,7 @@ const ImportedProducts = () => {
         { id: 110, name: "Oeufs", price: 25000, unit: "carton", image: "https://images.unsplash.com/photo-1506976785307-8732e854ad03?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 111, name: "Sucre importé", price: 28000, unit: "sac", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 28000, pricePerKg: 700 },
         { id: 114, name: "Chocolat Nutella", price: 3500, unit: "unité", image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 115, name: "Mayonnaise", price: 2500, unit: "unité", image: "https://images.unsplash.com/photo-1585325701166-381996df2961?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 115, name: "Mayonnaise", price: 2500, unit: "unité", image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 116, name: "Sac de savon Madar", price: 15000, unit: "sac", image: "https://images.unsplash.com/photo-1600857062241-98e5dba7f214?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 117, name: "Sac de savon Sabar", price: 14500, unit: "sac", image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 112, name: "Chips barbecue", price: 1000, unit: "unité", image: "https://images.unsplash.com/photo-1566478431373-7821e93ee6b2?auto=format&fit=crop&q=80", quantity: 1 },
