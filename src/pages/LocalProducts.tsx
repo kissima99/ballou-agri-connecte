@@ -8,10 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, PlusCircle, Scale } from 'lucide-react';
-import { showSuccess } from '@/utils/toast';
+import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, PlusCircle, Scale, Loader2 } from 'lucide-react';
+import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
+import { supabase } from "@/integrations/supabase/client";
 
 interface LocalProduct {
   id: number;
@@ -30,6 +31,7 @@ const LocalProducts = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const initialProducts: LocalProduct[] = [
     { id: 1, name: "Riz de la vallée", price: 17500, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 17500, pricePerKg: 400 },
@@ -58,20 +60,41 @@ const LocalProducts = () => {
   const [products, setProducts] = useState<LocalProduct[]>(initialProducts);
 
   useEffect(() => {
-    const saved = localStorage.getItem('local_products');
-    if (saved) {
-      try {
-        const savedProducts = JSON.parse(saved);
-        // Fusion simple : si le produit existe dans le localStorage, on prend TOUTES ses données (y compris l'image modifiée)
-        const merged = initialProducts.map(p => {
-          const savedP = savedProducts.find((sp: any) => sp.id === p.id);
-          return savedP ? { ...p, ...savedP } : p;
-        });
-        setProducts(merged);
-      } catch (e) {
-        console.error("Erreur fusion localStorage", e);
+    const loadProducts = async () => {
+      // 1. Chargement local immédiat
+      const saved = localStorage.getItem('local_products');
+      let currentProducts = initialProducts;
+      if (saved) {
+        try {
+          const savedProducts = JSON.parse(saved);
+          currentProducts = initialProducts.map(p => {
+            const savedP = savedProducts.find((sp: any) => sp.id === p.id);
+            return savedP ? { ...p, ...savedP } : p;
+          });
+        } catch (e) {}
       }
-    }
+      setProducts(currentProducts);
+
+      // 2. Synchronisation avec Supabase
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('category', 'local');
+        
+        if (data && data.length > 0) {
+          const merged = currentProducts.map(p => {
+            const dbP = data.find((dp: any) => dp.id === String(p.id));
+            return dbP ? { ...p, price: dbP.price, image: dbP.image, unit: dbP.unit } : p;
+          });
+          setProducts(merged);
+          localStorage.setItem('local_products', JSON.stringify(merged));
+        }
+      } catch (err) {
+        console.error("Erreur sync Supabase", err);
+      }
+    };
+    loadProducts();
   }, []);
 
   const toggleKg = (id: number) => {
@@ -112,18 +135,43 @@ const LocalProducts = () => {
           p.id === productId ? { ...p, image: base64Image } : p
         );
         setProducts(newProducts);
-        // On sauvegarde immédiatement l'image dans le localStorage
         localStorage.setItem('local_products', JSON.stringify(newProducts));
-        showSuccess("Image enregistrée !");
+        showSuccess("Image prête pour synchronisation !");
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSave = () => {
-    localStorage.setItem('local_products', JSON.stringify(products));
-    setIsEditMode(false);
-    showSuccess("Catalogue local mis à jour !");
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Sauvegarde locale
+      localStorage.setItem('local_products', JSON.stringify(products));
+
+      // Synchronisation Supabase
+      const productsToSync = products.map(p => ({
+        id: String(p.id),
+        name: p.name,
+        price: p.price,
+        image: p.image,
+        unit: p.unit,
+        origin: p.origin,
+        category: 'local'
+      }));
+
+      const { error } = await supabase
+        .from('products')
+        .upsert(productsToSync, { onConflict: 'id' });
+
+      if (error) throw error;
+
+      setIsEditMode(false);
+      showSuccess("Catalogue synchronisé avec Supabase !");
+    } catch (err: any) {
+      showError("Erreur de synchronisation : " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddToCart = (product: LocalProduct) => {
@@ -163,9 +211,11 @@ const LocalProducts = () => {
             {isEditMode && (
               <Button 
                 onClick={handleSave} 
+                disabled={isSaving}
                 className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black"
               >
-                <Save className="w-5 h-5 mr-2" /> SAUVEGARDER LES PRIX
+                {isSaving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} 
+                SYNCHRONISER SUPABASE
               </Button>
             )}
             <div className="flex items-center space-x-3 bg-white p-2.5 px-4 rounded-xl shadow-md border border-green-200">
