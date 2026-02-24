@@ -21,26 +21,36 @@ const Tracking = () => {
       return;
     }
 
-    const direction = order?.direction || "Dakar -> Ballou";
+    const direction = order?.direction || (order?.id?.startsWith('local') ? "Ballou -> Dakar" : "Dakar -> Ballou");
+    const status = order?.status || "En attente";
     
+    // Logic to determine which steps are completed based on status
+    // Statuses: "Payé", "En cours", "Livré"
+    const getCompletion = (stepIndex: number) => {
+      if (status === "Livré") return true;
+      if (status === "En cours") return stepIndex <= 2; // First 3 steps completed
+      if (status === "Payé") return stepIndex <= 0; // Only first step completed
+      return false;
+    };
+
     // Steps based on direction
     const steps = direction === "Dakar -> Ballou" 
       ? [
-          { location: "Dakar - Entrepôt", status: "Colis Réceptionné", time: "Départ Programmé", completed: true },
-          { location: "Tambacounda", status: "En Transit", time: "En cours", completed: true },
-          { location: "Bakel", status: "Vérification Poste", time: "Bientôt", completed: false },
-          { location: "Ballou", status: "Livraison Finale", time: "Arrivée sous 24h", completed: false },
+          { location: "Dakar - Entrepôt", status: "Colis Réceptionné", time: "Départ Programmé", completed: getCompletion(0) },
+          { location: "Tambacounda", status: "En Transit", time: "En cours", completed: getCompletion(1) },
+          { location: "Bakel", status: "Vérification Poste", time: "Bientôt", completed: getCompletion(2) },
+          { location: "Ballou", status: "Livraison Finale", time: "Arrivée sous 24h", completed: getCompletion(3) },
         ]
       : [
-          { location: "Ballou - Poste Locale", status: "Colis Réceptionné", time: "Expédié", completed: true },
-          { location: "Bakel", status: "Transit Régional", time: "Passage en cours", completed: true },
-          { location: "Tambacounda", status: "Transit National", time: "Bientôt", completed: false },
-          { location: "Dakar - Hub Central", status: "Livraison Finale", time: "Arrivée sous 24h", completed: false },
+          { location: "Ballou - Poste Locale", status: "Colis Réceptionné", time: "Expédié", completed: getCompletion(0) },
+          { location: "Bakel", status: "Transit Régional", time: "Passage en cours", completed: getCompletion(1) },
+          { location: "Tambacounda", status: "Transit National", time: "Bientôt", completed: getCompletion(2) },
+          { location: "Dakar - Hub Central", status: "Livraison Finale", time: "Arrivée sous 24h", completed: getCompletion(3) },
         ];
 
     setTrackingData({
       id: orderId || "BAC-DEMO",
-      status: "En transit (Traitement 24h)",
+      status: status === "Payé" ? "Traitement en cours" : status === "En cours" ? "En transit" : "Livré",
       direction: direction,
       steps: steps
     });
@@ -122,11 +132,11 @@ const Tracking = () => {
                     <div className={`absolute -left-10 mt-1.5 h-6 w-6 rounded-full border-4 border-white shadow-md transition-all duration-300 ${step.completed ? 'bg-green-600 scale-110' : 'bg-gray-200'}`}>
                       {step.completed && <CheckCircle2 className="absolute -top-1 -left-1 h-6 w-6 text-green-600 bg-white rounded-full shadow-inner" />}
                     </div>
-                    <div className="flex-1 bg-stone-50 p-4 rounded-xl border border-stone-100 group-hover:border-green-200 transition-colors">
+                    <div className={`flex-1 p-4 rounded-xl border transition-colors ${step.completed ? 'bg-green-50/50 border-green-100 group-hover:border-green-200' : 'bg-stone-50 border-stone-100'}`}>
                       <div className="flex justify-between items-center mb-1">
                         <h4 className={`font-bold text-base ${step.completed ? 'text-gray-900' : 'text-gray-400'}`}>{step.location}</h4>
-                        <span className="text-[10px] font-bold text-gray-400 bg-white px-2 py-1 rounded-full border border-gray-100 uppercase">
-                          <Clock className="mr-1 h-3 w-3 inline" /> {step.time}
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full border uppercase ${step.completed ? 'text-green-600 bg-white border-green-100' : 'text-gray-400 bg-white border-gray-100'}`}>
+                          <Clock className="mr-1 h-3 w-3 inline" /> {step.completed ? 'Validé' : step.time}
                         </span>
                       </div>
                       <p className={`text-sm ${step.completed ? 'text-green-700 font-medium' : 'text-gray-400'}`}>{step.status}</p>
