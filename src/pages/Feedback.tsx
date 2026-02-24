@@ -35,7 +35,7 @@ const Feedback = () => {
   };
 
   const getMailtoUrl = () => {
-    const email = "contact@ballouagri.com";
+    const email = "contact@ballouagriconnect.com";
     const subject = encodeURIComponent("Avis Client - Ballou Agri Connect");
     const body = encodeURIComponent(`Nom: ${name}\nNote: ${rating}/5\nCommentaire: ${comment}`);
     return `mailto:${email}?subject=${subject}&body=${body}`;
@@ -140,7 +140,7 @@ const Feedback = () => {
             </div>
             
             <p className="text-center text-xs text-gray-400 font-medium uppercase tracking-widest">
-              Votre message sera pré-rempli avec vos informations.
+              Votre message sera envoyé à contact@ballouagriconnect.com
             </p>
           </div>
         )}
