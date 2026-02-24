@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, CreditCard, Banknote, ArrowRight, Mail, QrCode, Loader2, Download, MapPin } from 'lucide-react';
+import { CheckCircle2, CreditCard, ArrowRight, Loader2, MapPin, ExternalLink } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
@@ -33,6 +33,8 @@ const Checkout = () => {
     address: ""
   });
 
+  const waveLink = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
+
   const zoneFees: Record<string, number> = {
     "dakar": 2000,
     "tamba": 3500,
@@ -46,20 +48,17 @@ const Checkout = () => {
   const generatePDF = (id: string, data: any) => {
     const doc = new jsPDF();
     
-    // Header
-    doc.setFillColor(22, 101, 52); // Green-800
+    doc.setFillColor(22, 101, 52);
     doc.rect(0, 0, 210, 40, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.text("BALLOU AGRI CONNECT", 105, 25, { align: "center" });
     
-    // Order Info
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
     doc.text(`RECU DE COMMANDE : ${id}`, 20, 50);
     doc.text(`Date : ${new Date().toLocaleDateString()}`, 20, 60);
     
-    // Customer Info
     doc.setFont("helvetica", "bold");
     doc.text("CLIENT :", 20, 75);
     doc.setFont("helvetica", "normal");
@@ -67,14 +66,12 @@ const Checkout = () => {
     doc.text(`${data.phone}`, 20, 89);
     doc.text(`${data.address} (${zone.toUpperCase()})`, 20, 96);
     
-    // Table Header
     doc.line(20, 105, 190, 105);
     doc.text("Produit", 20, 112);
     doc.text("Qté", 120, 112);
     doc.text("Prix", 150, 112);
     doc.line(20, 115, 190, 115);
     
-    // Items
     let y = 122;
     cart.forEach(item => {
       doc.text(item.name, 20, y);
@@ -83,7 +80,6 @@ const Checkout = () => {
       y += 10;
     });
     
-    // Totals
     doc.line(20, y, 190, y);
     y += 10;
     doc.text("Sous-total :", 120, y);
@@ -97,7 +93,6 @@ const Checkout = () => {
     doc.text("TOTAL :", 120, y);
     doc.text(`${finalTotal.toLocaleString()} FCFA`, 150, y);
     
-    // Footer
     doc.setFontSize(10);
     doc.setFont("helvetica", "italic");
     doc.text("Merci de votre confiance en l'agriculture locale de Ballou.", 105, 280, { align: "center" });
@@ -111,11 +106,10 @@ const Checkout = () => {
       return;
     }
     setIsVerifying(true);
-    // Simulation de vérification des fonds
     await new Promise(resolve => setTimeout(resolve, 2000));
     setIsVerifying(false);
     setIsVerified(true);
-    showSuccess("Paiement reçu et vérifié ! Vous pouvez confirmer l'achat.");
+    showSuccess("Paiement reçu et vérifié !");
   };
 
   const handleOrder = async (e: React.FormEvent) => {
@@ -151,7 +145,7 @@ const Checkout = () => {
     setIsSubmitting(false);
     setIsOrdered(true);
     clearCart();
-    showSuccess(`Commande confirmée ! Reçu téléchargé.`);
+    showSuccess(`Commande confirmée !`);
   };
 
   if (isOrdered) {
@@ -164,7 +158,7 @@ const Checkout = () => {
               <CheckCircle2 className="w-12 h-12 text-green-600" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Achat Confirmé !</h1>
-            <p className="text-gray-600 mb-8">Votre reçu a été généré automatiquement. Référence : <span className="font-bold text-green-700">{orderId}</span></p>
+            <p className="text-gray-600 mb-8">Votre reçu PDF a été téléchargé. Référence : <span className="font-bold text-green-700">{orderId}</span></p>
             <div className="flex flex-col gap-3">
               <Button onClick={() => navigate('/tracking')} className="bg-blue-600 hover:bg-blue-700 w-full font-bold">Suivre mon colis</Button>
               <Button onClick={() => navigate('/')} variant="ghost" className="w-full">Retour à l'accueil</Button>
@@ -238,7 +232,7 @@ const Checkout = () => {
                     <RadioGroupItem value="wave" id="wave" className="peer sr-only" />
                     <Label htmlFor="wave" className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent cursor-pointer peer-data-[state=checked]:border-blue-500">
                       <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold mb-2">W</div>
-                      <span className="font-bold">Wave (78 225 45 48)</span>
+                      <span className="font-bold">Wave</span>
                     </Label>
                   </div>
                   <div>
@@ -252,16 +246,23 @@ const Checkout = () => {
 
                 <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-center">
                   <p className="text-sm text-blue-800 mb-4 font-medium">
-                    Veuillez effectuer le transfert de <span className="font-bold">{finalTotal.toLocaleString()} FCFA</span> au numéro <span className="font-bold">78 225 45 48</span> avant de vérifier.
+                    Veuillez effectuer le transfert de <span className="font-bold">{finalTotal.toLocaleString()} FCFA</span>.
                   </p>
-                  <Button 
-                    type="button"
-                    onClick={handleVerifyPayment} 
-                    disabled={isVerifying || isVerified}
-                    className={`w-full h-12 font-bold ${isVerified ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'}`}
-                  >
-                    {isVerifying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isVerified ? <><CheckCircle2 className="mr-2 h-5 w-5" /> PAIEMENT VÉRIFIÉ</> : "VÉRIFIER MON PAIEMENT"}
-                  </Button>
+                  <div className="flex flex-col gap-3">
+                    <Button asChild className="bg-blue-600 hover:bg-blue-700 h-12 font-bold">
+                      <a href={waveLink} target="_blank" rel="noopener noreferrer">
+                        PAYER AVEC WAVE <ExternalLink className="ml-2 h-4 w-4" />
+                      </a>
+                    </Button>
+                    <Button 
+                      type="button"
+                      onClick={handleVerifyPayment} 
+                      disabled={isVerifying || isVerified}
+                      className={`w-full h-12 font-bold ${isVerified ? 'bg-green-600' : 'bg-white border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                    >
+                      {isVerifying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isVerified ? <><CheckCircle2 className="mr-2 h-5 w-5" /> PAIEMENT VÉRIFIÉ</> : "VÉRIFIER MON PAIEMENT"}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -296,7 +297,6 @@ const Checkout = () => {
                 </Button>
               </CardFooter>
             </Card>
-            <p className="text-[10px] text-center text-gray-400 font-medium uppercase tracking-widest">Un reçu PDF sera généré après confirmation</p>
           </div>
         </div>
       </div>

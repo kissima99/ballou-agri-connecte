@@ -12,7 +12,8 @@ import {
   History,
   ShieldAlert,
   Lock,
-  Unlock
+  Unlock,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
@@ -39,7 +40,7 @@ const Navbar = () => {
     setIsAdmin(newStatus);
     localStorage.setItem('is_super_admin', String(newStatus));
     showSuccess(newStatus ? "Mode Super Admin Activé" : "Mode Client Activé");
-    window.dispatchEvent(new Event('storage')); // Notifier les autres composants
+    window.dispatchEvent(new Event('storage'));
   };
 
   return (
@@ -88,6 +89,10 @@ const Navbar = () => {
           
           <Link to="/insights" className="text-sm font-bold text-gray-600 hover:text-green-600 flex items-center transition-colors">
             <BarChart3 className="mr-1 h-4 w-4" /> Insights
+          </Link>
+
+          <Link to="/feedback" className="text-sm font-bold text-gray-600 hover:text-orange-600 flex items-center transition-colors">
+            <MessageSquare className="mr-1 h-4 w-4" /> Avis
           </Link>
 
           {isAdmin && (
