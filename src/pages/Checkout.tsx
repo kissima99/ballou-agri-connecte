@@ -13,6 +13,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { useCart } from '@/context/CartContext';
+import { supabase } from "@/integrations/supabase/client";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -33,6 +34,19 @@ const Checkout = () => {
     address: ""
   });
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        showError("Veuillez vous connecter pour passer une commande.");
+        navigate('/login');
+      } else {
+        setFormData(prev => ({ ...prev, email: session.user.email || "" }));
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
   const waveLink = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
 
   const zoneFees: Record<string, number> = {
@@ -44,6 +58,11 @@ const Checkout = () => {
 
   const deliveryFee = zoneFees[zone] + (totalItems * 200);
   const finalTotal = totalPrice + deliveryFee;
+
+  // Helper pour formater les prix sans caractères spéciaux problématiques pour jsPDF
+  const formatPricePDF = (num: number) => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " FCFA";
+  };
 
   const generatePDF = (id: string, data: any) => {
     const doc = new jsPDF();
@@ -76,22 +95,22 @@ const Checkout = () => {
     cart.forEach(item => {
       doc.text(item.name, 20, y);
       doc.text(item.quantity.toString(), 120, y);
-      doc.text(`${(item.price * item.quantity).toLocaleString()} FCFA`, 150, y);
+      doc.text(formatPricePDF(item.price * item.quantity), 150, y);
       y += 10;
     });
     
     doc.line(20, y, 190, y);
     y += 10;
     doc.text("Sous-total :", 120, y);
-    doc.text(`${totalPrice.toLocaleString()} FCFA`, 150, y);
+    doc.text(formatPricePDF(totalPrice), 150, y);
     y += 10;
     doc.text("Livraison :", 120, y);
-    doc.text(`${deliveryFee.toLocaleString()} FCFA`, 150, y);
+    doc.text(formatPricePDF(deliveryFee), 150, y);
     y += 10;
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text("TOTAL :", 120, y);
-    doc.text(`${finalTotal.toLocaleString()} FCFA`, 150, y);
+    doc.text(formatPricePDF(finalTotal), 150, y);
     
     doc.setFontSize(10);
     doc.setFont("helvetica", "italic");

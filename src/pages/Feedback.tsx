@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MessageSquare, Send, Star, ThumbsUp, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, Star, ThumbsUp, Loader2, LogIn } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from 'react-router-dom';
 
 const Feedback = () => {
   const [isSent, setIsSent] = useState(false);
@@ -18,16 +19,26 @@ const Feedback = () => {
   const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
       if (user) setName(user.email?.split('@')[0] || "");
-    });
+      setIsLoading(false);
+    };
+    getUser();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      showError("Veuillez vous connecter pour laisser un avis.");
+      return;
+    }
+
     if (rating === 0) {
       showError("Veuillez donner une note.");
       return;
@@ -35,27 +46,37 @@ const Feedback = () => {
 
     setIsSubmitting(true);
     
-    const { error } = await supabase
-      .from('feedbacks')
-      .insert([
-        { 
-          user_id: user?.id,
-          user_name: name,
-          rating: rating,
-          comment: comment
-        }
-      ]);
+    try {
+      const { error } = await supabase
+        .from('feedbacks')
+        .insert([
+          { 
+            user_id: user.id,
+            user_name: name,
+            rating: rating,
+            comment: comment
+          }
+        ]);
 
-    setIsSubmitting(false);
+      if (error) throw error;
 
-    if (error) {
-      showError("Erreur lors de l'envoi. Réessayez.");
-      console.error(error);
-    } else {
       showSuccess("Merci pour votre retour !");
       setIsSent(true);
+    } catch (err: any) {
+      showError("Erreur lors de l'envoi. Vérifiez votre connexion.");
+      console.error("Feedback error:", err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-green-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -69,7 +90,18 @@ const Feedback = () => {
           <p className="text-gray-500 text-lg font-medium">Aidez-nous à améliorer BALLOU AGRI CONNECT.</p>
         </div>
 
-        {isSent ? (
+        {!user ? (
+          <Card className="border-none shadow-xl text-center py-16 rounded-[2.5rem]">
+            <CardContent>
+              <LogIn className="w-16 h-16 text-gray-300 mx-auto mb-6" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Connexion requise</h2>
+              <p className="text-gray-500 mb-8">Vous devez être connecté pour laisser un avis et nous aider à nous améliorer.</p>
+              <Button asChild className="bg-green-600 hover:bg-green-700 h-12 px-8 font-bold">
+                <Link to="/login">Se connecter / S'inscrire</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : isSent ? (
           <Card className="border-none shadow-xl text-center py-16 rounded-[2.5rem]">
             <CardContent>
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -78,7 +110,7 @@ const Feedback = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Message bien reçu !</h2>
               <p className="text-gray-500 mb-8">Votre avis est désormais visible par l'équipe Admin.</p>
               <Button asChild className="bg-green-600 hover:bg-green-700">
-                <a href="/">Retour à l'accueil</a>
+                <Link to="/">Retour à l'accueil</Link>
               </Button>
             </CardContent>
           </Card>

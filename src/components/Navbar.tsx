@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   ShoppingCart, 
   Leaf, 
@@ -13,7 +13,9 @@ import {
   ShieldAlert,
   Lock,
   Unlock,
-  MessageSquare
+  MessageSquare,
+  LogOut,
+  User
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
@@ -24,15 +26,28 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from '@/context/CartContext';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
+import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
   const { totalItems } = useCart();
+  const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const adminStatus = localStorage.getItem('is_super_admin') === 'true';
     setIsAdmin(adminStatus);
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const toggleAdmin = () => {
@@ -41,6 +56,16 @@ const Navbar = () => {
     localStorage.setItem('is_super_admin', String(newStatus));
     showSuccess(newStatus ? "Mode Super Admin Activé" : "Mode Client Activé");
     window.dispatchEvent(new Event('storage'));
+  };
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      showError("Erreur lors de la déconnexion.");
+    } else {
+      showSuccess("Déconnexion réussie.");
+      navigate('/');
+    }
   };
 
   return (
@@ -103,6 +128,28 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-4">
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 text-gray-700 font-bold">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700">
+                    <User className="h-4 w-4" />
+                  </div>
+                  <span className="hidden sm:inline text-xs truncate max-w-[100px]">{user.email?.split('@')[0]}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg">
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" /> Déconnexion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button asChild variant="ghost" className="text-green-700 font-bold">
+              <Link to="/login">Connexion</Link>
+            </Button>
+          )}
+
           <Button 
             variant="ghost" 
             size="icon" 
