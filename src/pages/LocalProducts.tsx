@@ -30,7 +30,6 @@ const LocalProducts = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const [isEditMode, setIsEditMode] = useState(false);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   
   const initialProducts: LocalProduct[] = [
     { id: 1, name: "Riz de la vallée", price: 17500, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 17500, pricePerKg: 400 },
@@ -56,12 +55,6 @@ const LocalProducts = () => {
   const [products, setProducts] = useState<LocalProduct[]>(initialProducts);
 
   useEffect(() => {
-    const checkAdmin = () => {
-      setIsSuperAdmin(localStorage.getItem('is_super_admin') === 'true');
-    };
-    checkAdmin();
-    window.addEventListener('storage', checkAdmin);
-    
     const saved = localStorage.getItem('local_products');
     if (saved) {
       const savedProducts = JSON.parse(saved);
@@ -71,7 +64,6 @@ const LocalProducts = () => {
       });
       setProducts(merged);
     }
-    return () => window.removeEventListener('storage', checkAdmin);
   }, []);
 
   const toggleKg = (id: number) => {
@@ -158,88 +150,115 @@ const LocalProducts = () => {
             </div>
           </div>
           
-          {isSuperAdmin && (
-            <div className="flex items-center gap-3">
-              {isEditMode && (
-                <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600 shadow-md h-9 px-4 text-sm font-bold">
-                  <Save className="w-4 h-4 mr-2" /> ENREGISTRER PRIX
-                </Button>
-              )}
-              <div className="flex items-center space-x-3 bg-white p-2 px-3 rounded-xl shadow-sm border border-green-100">
-                <Switch id="edit-mode" checked={isEditMode} onCheckedChange={setIsEditMode} className="data-[state=checked]:bg-orange-500 scale-90" />
-                <Label htmlFor="edit-mode" className="text-xs font-medium flex items-center cursor-pointer">
-                  <Edit3 className="w-3.5 h-3.5 mr-1 text-orange-600" /> Mode Édition
-                </Label>
-              </div>
+          <div className="flex items-center gap-4 z-50">
+            {isEditMode && (
+              <Button 
+                onClick={handleSave} 
+                className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black"
+              >
+                <Save className="w-5 h-5 mr-2" /> SAUVEGARDER LES PRIX
+              </Button>
+            )}
+            <div className="flex items-center space-x-3 bg-white p-2.5 px-4 rounded-xl shadow-md border border-green-200">
+              <Switch 
+                id="edit-mode-local" 
+                checked={isEditMode} 
+                onCheckedChange={setIsEditMode} 
+                className="data-[state=checked]:bg-orange-500" 
+              />
+              <Label htmlFor="edit-mode-local" className="text-sm font-bold flex items-center cursor-pointer select-none">
+                <Edit3 className="w-4 h-4 mr-2 text-orange-600" /> Mode Édition
+              </Label>
             </div>
-          )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {products.map((product) => (
-            <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all group bg-white">
-              <div className="relative h-36 overflow-hidden">
-                <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-xl transition-all group bg-white rounded-2xl">
+              <div className="relative h-40 overflow-hidden">
+                <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                 <div className="absolute top-2 left-2 flex flex-col gap-1">
-                  <Badge className="bg-white/90 text-green-800 backdrop-blur text-[10px] h-5 px-1.5">
-                    <MapPin className="h-2.5 w-2.5 mr-1" /> {product.origin}
+                  <Badge className="bg-white/90 text-green-800 backdrop-blur text-[10px] h-5 px-2 font-bold shadow-sm">
+                    <MapPin className="h-3 w-3 mr-1" /> {product.origin}
                   </Badge>
                   {(product.id === 1 || product.id === 18) && (
                     <Button 
                       size="sm" 
                       variant="secondary" 
-                      className={`h-5 px-1.5 text-[9px] font-bold shadow-sm ${product.isKg ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white/90 text-orange-700 hover:bg-white'}`}
+                      className={`h-6 px-2 text-[10px] font-black shadow-lg ${product.isKg ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white/90 text-orange-700 hover:bg-white'}`}
                       onClick={() => toggleKg(product.id)}
                     >
-                      <Scale className="h-2.5 w-2.5 mr-1" /> {product.isKg ? 'MODE SAC' : 'MODE KG'}
+                      <Scale className="h-3 w-3 mr-1.5" /> {product.isKg ? 'MODE SAC' : 'MODE KG'}
                     </Button>
                   )}
                 </div>
                 {isEditMode && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <label className="cursor-pointer bg-white text-gray-900 px-3 py-1.5 rounded-full flex items-center text-xs font-bold shadow-lg">
-                      <Upload className="w-3.5 h-3.5 mr-1.5" /> Changer
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
+                    <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl transform hover:scale-105 active:scale-95 transition-all">
+                      <Upload className="w-4 h-4 mr-2" /> CHANGER L'IMAGE
                       <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, product.id)} />
                     </label>
                   </div>
                 )}
               </div>
-              <CardContent className="pt-3 pb-2 px-4">
-                <h3 className="font-bold text-sm text-gray-900 truncate">{product.name}</h3>
-                <div className="mt-1 flex items-center justify-between">
-                  <div>
+              <CardContent className="pt-4 pb-3 px-5">
+                <h3 className="font-bold text-base text-gray-900 truncate mb-1">{product.name}</h3>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex-1">
                     {isEditMode ? (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5 bg-orange-50 p-1 rounded-lg border border-orange-100">
                         <Input 
                           type="number" 
                           value={product.price} 
                           onChange={(e) => updatePrice(product.id, e.target.value)}
-                          className="h-7 w-20 text-xs font-bold px-1 border-orange-200 focus:border-orange-500"
+                          className="h-8 w-full text-sm font-black px-2 border-none bg-transparent focus-visible:ring-0"
                         />
-                        <span className="text-[10px] font-bold">FCFA</span>
+                        <span className="text-[10px] font-black text-orange-700 pr-1">FCFA</span>
                       </div>
                     ) : (
-                      <p className="text-lg font-bold text-green-700 leading-none">{product.price.toLocaleString()} FCFA</p>
+                      <div>
+                        <p className="text-xl font-black text-green-700 leading-none">{product.price.toLocaleString()} FCFA</p>
+                      </div>
                     )}
-                    <p className="text-[10px] text-gray-500 mt-1">/ {product.unit}</p>
+                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{product.unit}</p>
                   </div>
-                  <div className="flex items-center gap-1.5 bg-stone-100 rounded-lg p-0.5">
-                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md" onClick={() => updateQuantity(product.id, -1)}>
-                      <Minus className="h-2.5 w-2.5" />
+                  <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" 
+                      onClick={() => updateQuantity(product.id, -1)}
+                    >
+                      <Minus className="h-3 w-3" />
                     </Button>
-                    <span className="font-bold text-xs min-w-[15px] text-center">{product.quantity}</span>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md" onClick={() => updateQuantity(product.id, 1)}>
-                      <Plus className="h-2.5 w-2.5" />
+                    <span className="font-black text-sm min-w-[20px] text-center">{product.quantity}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" 
+                      onClick={() => updateQuantity(product.id, 1)}
+                    >
+                      <Plus className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="pb-3 pt-0 px-4 flex flex-col gap-2">
-                <Button size="sm" variant="outline" className="w-full border-green-600 text-green-700 hover:bg-green-50 h-8 text-[10px] font-bold" onClick={() => handleAddToCart(product)}>
-                  <PlusCircle className="mr-1.5 h-3.5 w-3.5" /> AJOUTER AU PANIER
+              <CardFooter className="pb-4 pt-0 px-5 flex flex-col gap-2">
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="w-full border-green-600 text-green-700 hover:bg-green-50 h-10 text-[10px] font-black shadow-sm" 
+                  onClick={() => handleAddToCart(product)}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" /> AJOUTER AU PANIER
                 </Button>
-                <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 h-8 text-[10px] font-bold" onClick={() => handleBuyNow(product)}>
-                  <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> ACHETER
+                <Button 
+                  size="lg" 
+                  className="w-full bg-green-600 hover:bg-green-700 h-10 text-[10px] font-black shadow-md" 
+                  onClick={() => handleBuyNow(product)}
+                >
+                  <ShoppingCart className="mr-2 h-4 w-4" /> ACHETER MAINTENANT
                 </Button>
               </CardFooter>
             </Card>
