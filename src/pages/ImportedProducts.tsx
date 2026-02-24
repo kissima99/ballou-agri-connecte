@@ -73,6 +73,12 @@ const ImportedProducts = () => {
       id: "frais",
       name: "Frais",
       products: [
+        { id: 210, name: "Banane", price: 1000, unit: "kg", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 211, name: "Pomme", price: 1500, unit: "kg", image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 212, name: "Ananas", price: 1200, unit: "kg", image: "https://images.unsplash.com/photo-1550258114-b834e70e9be1?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 213, name: "Orange", price: 800, unit: "kg", image: "https://images.unsplash.com/photo-1547514701-42782101795e?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 214, name: "Mandarine", price: 900, unit: "kg", image: "https://images.unsplash.com/photo-1557800636-894a64c1696f?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 215, name: "Raisin", price: 2500, unit: "kg", image: "https://images.unsplash.com/photo-1537640538966-79f369b41e8f?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 209, name: "Confumé frais", price: 2000, unit: "unité", image: "https://images.unsplash.com/photo-1589927986089-35812388d1f4?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 207, name: "Saucissons poulet", price: 2500, unit: "unité", image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 208, name: "Saucissons viande", price: 2800, unit: "unité", image: "https://images.unsplash.com/photo-1532636875304-0c89119d9b4d?auto=format&fit=crop&q=80", quantity: 1 },
