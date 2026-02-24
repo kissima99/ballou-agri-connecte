@@ -49,6 +49,7 @@ const ImportedProducts = () => {
       products: [
         { id: 101, name: "Pomme de terre", price: 12000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 102, name: "Oignon Importé", price: 10000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 118, name: "Nescafe importé", price: 3500, unit: "unité", image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 110, name: "Oeufs", price: 25000, unit: "carton", image: "https://images.unsplash.com/photo-1506976785307-8732e854ad03?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 111, name: "Sucre importé", price: 28000, unit: "sac", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 28000, pricePerKg: 700 },
         { id: 114, name: "Chocolat Nutella", price: 3500, unit: "unité", image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&q=80", quantity: 1 },
@@ -70,6 +71,7 @@ const ImportedProducts = () => {
       id: "frais",
       name: "Frais",
       products: [
+        { id: 209, name: "Confumé frais", price: 2000, unit: "unité", image: "https://images.unsplash.com/photo-1589927986089-35812388d1f4?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 207, name: "Saucissons poulet", price: 2500, unit: "unité", image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 208, name: "Saucissons viande", price: 2800, unit: "unité", image: "https://images.unsplash.com/photo-1532636875304-0c89119d9b4d?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 206, name: "Fraise", price: 4500, unit: "barquette", image: "https://images.unsplash.com/photo-1464960726344-4861873193ec?auto=format&fit=crop&q=80", quantity: 1 },
