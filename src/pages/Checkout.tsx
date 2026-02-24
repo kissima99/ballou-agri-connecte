@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, CreditCard, ArrowRight, Loader2, MapPin, ExternalLink, ShieldCheck, Lock } from 'lucide-react';
+import { CheckCircle2, CreditCard, ArrowRight, Loader2, MapPin, ExternalLink, ShieldCheck, Lock, ShoppingBag } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
@@ -197,6 +197,32 @@ const Checkout = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
+            {/* Liste des produits visuelle */}
+            <Card className="border-none shadow-sm overflow-hidden">
+              <CardHeader className="bg-stone-100/50">
+                <CardTitle className="text-lg flex items-center">
+                  <ShoppingBag className="mr-2 h-5 w-5 text-green-600" /> Récapitulatif des articles
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-stone-100">
+                  {cart.map((item) => (
+                    <div key={`${item.id}-${item.direction}`} className="flex items-center gap-4 p-4">
+                      <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-lg shadow-sm" />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-gray-900 text-sm truncate">{item.name}</h4>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase">{item.direction}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-black text-green-700 text-sm">{(item.price * item.quantity).toLocaleString()} FCFA</p>
+                        <p className="text-[10px] text-gray-400 font-medium">Qté: {item.quantity}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="border-none shadow-sm">
               <CardHeader>
                 <CardTitle className="text-xl flex items-center">
