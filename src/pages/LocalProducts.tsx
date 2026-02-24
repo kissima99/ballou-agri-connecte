@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, PlusCircle, Scale, Loader2, CloudUpload } from 'lucide-react';
+import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, PlusCircle, Scale, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
@@ -28,13 +28,6 @@ interface LocalProduct {
   category?: string;
 }
 
-const INITIAL_LOCAL_PRODUCTS: LocalProduct[] = [
-  { id: 1, name: "Riz de la Vallée", price: 17500, unit: "sac 25kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80", quantity: 1, is_kg: false, base_price_sac: 17500, price_per_kg: 800 },
-  { id: 2, name: "Oignons Frais", price: 9000, unit: "sac 25kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1, is_kg: false, base_price_sac: 9000, price_per_kg: 500 },
-  { id: 3, name: "Maïs Jaune", price: 12000, unit: "sac 50kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?auto=format&fit=crop&q=80", quantity: 1 },
-  { id: 4, name: "Patate Douce", price: 8500, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80", quantity: 1 },
-];
-
 const LocalProducts = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
@@ -44,68 +37,49 @@ const LocalProducts = () => {
 
   const fetchProducts = async () => {
     setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('category', 'local');
-      
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        setProducts(data.map(p => ({ ...p, quantity: 1 })));
-      } else {
-        setProducts(INITIAL_LOCAL_PRODUCTS);
-      }
-    } catch (err) {
-      console.error(err);
-      setProducts(INITIAL_LOCAL_PRODUCTS);
-    } finally {
-      setIsLoading(false);
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('category', 'local');
+    
+    if (error) {
+      showError("Erreur lors du chargement des produits.");
+    } else {
+      setProducts(data.map(p => ({ ...p, quantity: 1 })));
     }
+    setIsLoading(false);
   };
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
-      for (const product of products) {
-        const { error } = await supabase
-          .from('products')
-          .upsert({
-            name: product.name,
-            price: product.price,
-            unit: product.unit,
-            image: product.image,
-            category: 'local',
-            origin: product.origin,
-            is_kg: product.is_kg,
-            base_price_sac: product.base_price_sac,
-            price_per_kg: product.price_per_kg
-          }, { onConflict: 'name' });
-        
-        if (error) throw error;
+  const toggleKg = (id: string | number) => {
+    setProducts(products.map(p => {
+      if (p.id === id) {
+        const newIsKg = !p.is_kg;
+        return {
+          ...p,
+          is_kg: newIsKg,
+          unit: newIsKg ? "kg" : "sac",
+          price: newIsKg ? (p.price_per_kg || 500) : (p.base_price_sac || 17500)
+        };
       }
-      setIsEditMode(false);
-      showSuccess("Catalogue synchronisé avec succès !");
-      fetchProducts();
-    } catch (error: any) {
-      showError("Erreur de synchronisation : " + error.message);
-    } finally {
-      setIsLoading(false);
-    }
+      return p;
+    }));
   };
 
   const updateQuantity = (id: string | number, delta: number) => {
-    setProducts(products.map(p => p.id === id ? { ...p, quantity: Math.max(1, p.quantity + delta) } : p));
+    setProducts(products.map(p => 
+      p.id === id ? { ...p, quantity: Math.max(1, p.quantity + delta) } : p
+    ));
   };
 
   const updatePrice = (id: string | number, newPrice: string) => {
     const price = parseInt(newPrice) || 0;
-    setProducts(products.map(p => p.id === id ? { ...p, price: price } : p));
+    setProducts(products.map(p => 
+      p.id === id ? { ...p, price: price } : p
+    ));
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, productId: string | number) => {
@@ -114,10 +88,39 @@ const LocalProducts = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64Image = reader.result as string;
-        setProducts(products.map(p => p.id === productId ? { ...p, image: base64Image } : p));
+        setProducts(products.map(p => 
+          p.id === productId ? { ...p, image: base64Image } : p
+        ));
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleSave = async () => {
+    setIsLoading(true);
+    for (const product of products) {
+      const { error } = await supabase
+        .from('products')
+        .upsert({
+          id: typeof product.id === 'string' ? product.id : undefined,
+          name: product.name,
+          price: product.price,
+          unit: product.unit,
+          image: product.image,
+          category: 'local',
+          origin: product.origin,
+          is_kg: product.is_kg,
+          base_price_sac: product.base_price_sac,
+          price_per_kg: product.price_per_kg
+        });
+      if (error) {
+        showError(`Erreur pour ${product.name}: ${error.message}`);
+        break;
+      }
+    }
+    setIsEditMode(false);
+    showSuccess("Catalogue synchronisé avec le cloud !");
+    fetchProducts();
   };
 
   const handleAddToCart = (product: LocalProduct) => {
@@ -151,7 +154,7 @@ const LocalProducts = () => {
           <div className="flex items-center gap-4 z-50">
             {isEditMode && (
               <Button onClick={handleSave} className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black">
-                <CloudUpload className="w-5 h-5 mr-2" /> SYNCHRONISER VERS LE CLOUD
+                <Save className="w-5 h-5 mr-2" /> SYNCHRONISER
               </Button>
             )}
             <div className="flex items-center space-x-3 bg-white p-2.5 px-4 rounded-xl shadow-md border border-green-200">
