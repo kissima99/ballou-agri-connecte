@@ -100,6 +100,8 @@ const ImportedProducts = () => {
         { id: 304, name: "Semence Gombo", price: 3500, unit: "sachet", image: "https://images.unsplash.com/photo-1592419044706-39796d40f98c?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 305, name: "Semence Carrotte", price: 4000, unit: "sachet", image: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 306, name: "Semence pastéque", price: 4500, unit: "sachet", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 307, name: "Semence piment", price: 3500, unit: "sachet", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 308, name: "Semence Concombre", price: 3000, unit: "sachet", image: "https://images.unsplash.com/photo-1449339854873-750e6df51301?auto=format&fit=crop&q=80", quantity: 1 },
       ]
     }
   ];
