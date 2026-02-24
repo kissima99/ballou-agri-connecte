@@ -1,23 +1,60 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MessageSquare, Send, Star, ThumbsUp } from 'lucide-react';
-import { showSuccess } from '@/utils/toast';
+import { MessageSquare, Send, Star, ThumbsUp, Loader2 } from 'lucide-react';
+import { showSuccess, showError } from '@/utils/toast';
+import { supabase } from "@/integrations/supabase/client";
 
 const Feedback = () => {
   const [isSent, setIsSent] = useState(false);
   const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [name, setName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      if (user) setName(user.email?.split('@')[0] || "");
+    });
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    showSuccess("Merci pour votre retour ! Nous allons l'étudier avec attention.");
-    setIsSent(true);
+    if (rating === 0) {
+      showError("Veuillez donner une note.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    const { error } = await supabase
+      .from('feedbacks')
+      .insert([
+        { 
+          user_id: user?.id,
+          user_name: name,
+          rating: rating,
+          comment: comment
+        }
+      ]);
+
+    setIsSubmitting(false);
+
+    if (error) {
+      showError("Erreur lors de l'envoi. Réessayez.");
+      console.error(error);
+    } else {
+      showSuccess("Merci pour votre retour !");
+      setIsSent(true);
+    }
   };
 
   return (
@@ -29,7 +66,7 @@ const Feedback = () => {
             <MessageSquare className="w-8 h-8 text-orange-600" />
           </div>
           <h1 className="text-4xl font-black text-gray-900 mb-4">Vos Commentaires</h1>
-          <p className="text-gray-500 text-lg font-medium">Aidez-nous à améliorer BALLOU AGRI CONNECT pour mieux vous servir.</p>
+          <p className="text-gray-500 text-lg font-medium">Aidez-nous à améliorer BALLOU AGRI CONNECT.</p>
         </div>
 
         {isSent ? (
@@ -39,7 +76,7 @@ const Feedback = () => {
                 <ThumbsUp className="w-10 h-10 text-green-600" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Message bien reçu !</h2>
-              <p className="text-gray-500 mb-8">Votre avis est précieux pour l'évolution de notre plateforme.</p>
+              <p className="text-gray-500 mb-8">Votre avis est désormais visible par l'équipe Admin.</p>
               <Button asChild className="bg-green-600 hover:bg-green-700">
                 <a href="/">Retour à l'accueil</a>
               </Button>
@@ -69,29 +106,36 @@ const Feedback = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nom (Optionnel)</Label>
-                    <Input id="name" placeholder="Votre nom" className="rounded-xl" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email (Optionnel)</Label>
-                    <Input id="email" type="email" placeholder="votre@email.com" className="rounded-xl" />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Votre Nom</Label>
+                  <Input 
+                    id="name" 
+                    placeholder="Votre nom" 
+                    className="rounded-xl" 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="comment">Vos suggestions d'amélioration</Label>
                   <Textarea 
                     id="comment" 
-                    placeholder="Ex: Plus de moyens de paiement, suivi plus précis, nouveaux produits..." 
+                    placeholder="Ex: Plus de moyens de paiement, suivi plus précis..." 
                     className="min-h-[150px] rounded-2xl"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
                     required
                   />
                 </div>
 
-                <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold shadow-lg rounded-2xl">
-                  ENVOYER MON AVIS <Send className="ml-2 h-5 w-5" />
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold shadow-lg rounded-2xl"
+                >
+                  {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : "ENVOYER MON AVIS"} <Send className="ml-2 h-5 w-5" />
                 </Button>
               </form>
             </CardContent>

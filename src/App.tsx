@@ -15,6 +15,7 @@ import Cart from "./pages/Cart";
 import PurchaseHistory from "./pages/PurchaseHistory";
 import AdminDashboard from "./pages/AdminDashboard";
 import Feedback from "./pages/Feedback";
+import Login from "./pages/Login";
 import WhatsAppButton from "./components/WhatsAppButton";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/tracking" element={<Tracking />} />
             <Route path="/local-products" element={<LocalProducts />} />
             <Route path="/imported-products" element={<ImportedProducts />} />
