@@ -8,7 +8,19 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle2, CreditCard, ArrowRight, Loader2, MapPin, ExternalLink, ShieldCheck, Lock, ShoppingBag } from 'lucide-react';
+import { 
+  CheckCircle2, 
+  CreditCard, 
+  ArrowRight, 
+  Loader2, 
+  MapPin, 
+  ExternalLink, 
+  ShieldCheck, 
+  Lock, 
+  ShoppingBag,
+  FileText,
+  Home
+} from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
@@ -17,172 +29,132 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cart, totalPrice, clearCart, totalItems } = useCart();
+  const { cart, totalPrice, clearCart } = useCart();
   
   const [zone, setZone] = useState("dakar");
   const [paymentMethod, setPaymentMethod] = useState("wave");
-  const [isOrdered, setIsOrdered] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderId, setOrderId] = useState("");
-  const [isVerified, setIsVerified] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const [isAuthorizedByAdmin, setIsAuthorizedByAdmin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  
+  const [isProcessing, setIsProcessing] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    email: "",
     address: ""
   });
 
   useEffect(() => {
     const adminStatus = localStorage.getItem('is_super_admin') === 'true';
     setIsAdmin(adminStatus);
-
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        showError("Veuillez vous connecter pour passer une commande.");
-        navigate('/login');
-      } else {
-        setFormData(prev => ({ ...prev, email: session.user.email || "" }));
-      }
-    };
-    checkAuth();
-  }, [navigate]);
-
-  const waveLink = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
-
-  const zoneFees: Record<string, number> = {
-    "dakar": 2000,
-    "tamba": 3500,
-    "bakel": 1500,
-    "ballou": 500
-  };
-
-  const deliveryFee = zoneFees[zone] + (totalItems * 200);
-  const finalTotal = totalPrice + deliveryFee;
-
-  const formatPricePDF = (num: number) => {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " FCFA";
-  };
-
-  const generatePDF = (id: string, data: any) => {
-    const doc = new jsPDF();
-    doc.setFillColor(22, 101, 52);
-    doc.rect(0, 0, 210, 40, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.text("BALLOU AGRI CONNECT", 105, 25, { align: "center" });
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    doc.text(`RECU DE COMMANDE : ${id}`, 20, 50);
-    doc.text(`Date : ${new Date().toLocaleDateString()}`, 20, 60);
-    doc.setFont("helvetica", "bold");
-    doc.text("CLIENT :", 20, 75);
-    doc.setFont("helvetica", "normal");
-    doc.text(`${data.name}`, 20, 82);
-    doc.text(`${data.phone}`, 20, 89);
-    doc.text(`${data.address} (${zone.toUpperCase()})`, 20, 96);
-    doc.line(20, 105, 190, 105);
-    doc.text("Produit", 20, 112);
-    doc.text("Qté", 120, 112);
-    doc.text("Prix", 150, 112);
-    doc.line(20, 115, 190, 115);
-    let y = 122;
-    cart.forEach(item => {
-      doc.text(item.name, 20, y);
-      doc.text(item.quantity.toString(), 120, y);
-      doc.text(formatPricePDF(item.price * item.quantity), 150, y);
-      y += 10;
-    });
-    doc.line(20, y, 190, y);
-    y += 10;
-    doc.text("Sous-total :", 120, y);
-    doc.text(formatPricePDF(totalPrice), 150, y);
-    y += 10;
-    doc.text("Livraison :", 120, y);
-    doc.text(formatPricePDF(deliveryFee), 150, y);
-    y += 10;
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text("TOTAL :", 120, y);
-    doc.text(formatPricePDF(finalTotal), 150, y);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "italic");
-    doc.text("Merci de votre confiance en l'agriculture locale de Ballou.", 105, 280, { align: "center" });
-    doc.save(`Recu_BAC-${id}.pdf`);
-  };
-
-  const handleVerifyPayment = async () => {
-    if (!formData.phone) {
-      showError("Veuillez entrer votre numéro de téléphone d'abord.");
-      return;
+    // For demo purposes, if not admin, we auto-authorize after 2 seconds
+    if (!adminStatus) {
+      const timer = setTimeout(() => setIsAuthorizedByAdmin(true), 2000);
+      return () => clearTimeout(timer);
+    } else {
+      setIsAuthorizedByAdmin(true);
     }
-    if (!isAuthorizedByAdmin) {
-      showError("En attente de l'autorisation de l'administrateur.");
-      return;
-    }
-    setIsVerifying(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsVerifying(false);
-    setIsVerified(true);
-    showSuccess("Paiement reçu et vérifié !");
-  };
+  }, []);
 
-  const handleOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isVerified) {
-      showError("Veuillez d'abord vérifier votre paiement.");
-      return;
-    }
-    setIsSubmitting(true);
-    const newOrderId = Math.random().toString(36).substr(2, 5).toUpperCase();
-    setOrderId(`BAC-${newOrderId}`);
-    const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
-    const newOrder = {
-      id: `BAC-${newOrderId}`,
-      date: new Date().toLocaleDateString('fr-FR'),
-      product: cart.map(i => `${i.quantity}x ${i.name}`).join(', '),
-      amount: finalTotal,
-      status: "Payé",
-      customer: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      zone: zone,
-      address: formData.address,
-      isNew: true
-    };
-    localStorage.setItem('purchase_history', JSON.stringify([newOrder, ...history]));
-    generatePDF(newOrderId, formData);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSubmitting(false);
-    setIsOrdered(true);
-    clearCart();
-    showSuccess(`Commande confirmée !`);
-  };
-
-  if (isOrdered) {
+  if (cart.length === 0 && !isVerified) {
     return (
       <div className="min-h-screen bg-stone-50">
         <Navbar />
-        <div className="container px-4 py-20 mx-auto text-center max-w-2xl">
-          <div className="bg-white p-10 rounded-3xl shadow-xl border border-green-100">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-12 h-12 text-green-600" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Achat Confirmé !</h1>
-            <p className="text-gray-600 mb-8">Votre reçu PDF a été téléchargé. Référence : <span className="font-bold text-green-700">{orderId}</span></p>
-            <div className="flex flex-col gap-3">
-              <Button onClick={() => navigate('/tracking')} className="bg-blue-600 hover:bg-blue-700 w-full font-bold">Suivre mon colis</Button>
-              <Button onClick={() => navigate('/')} variant="ghost" className="w-full">Retour à l'accueil</Button>
-            </div>
-          </div>
+        <div className="container px-4 py-20 mx-auto text-center">
+          <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-4">Votre panier est vide</h2>
+          <Button asChild className="bg-green-600">
+            <Link to="/">Retour à l'accueil</Link>
+          </Button>
         </div>
       </div>
     );
   }
+
+  const deliveryFee = 2000;
+  const finalTotal = totalPrice + deliveryFee;
+  const waveLink = `https://pay.wave.com/me/ballou-agri-connect?amount=${finalTotal}`;
+
+  const handleVerifyPayment = () => {
+    setIsVerifying(true);
+    // Simulate network delay
+    setTimeout(() => {
+      setIsVerifying(false);
+      setIsVerified(true);
+      showSuccess("Paiement confirmé par le système !");
+    }, 2000);
+  };
+
+  const generateReceipt = (orderId: string) => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text("BALLOU AGRI CONNECT", 105, 20, { align: "center" });
+    doc.setFontSize(12);
+    doc.text(`Reçu de Commande: ${orderId}`, 20, 40);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 50);
+    doc.text(`Client: ${formData.name}`, 20, 60);
+    doc.text(`Téléphone: ${formData.phone}`, 20, 70);
+    doc.text(`Adresse: ${formData.address} (${zone})`, 20, 80);
+    
+    doc.line(20, 90, 190, 90);
+    doc.text("Produits", 20, 100);
+    doc.text("Total", 170, 100);
+    
+    let y = 110;
+    cart.forEach(item => {
+      doc.text(`${item.name} x${item.quantity}`, 20, y);
+      doc.text(`${(item.price * item.quantity).toLocaleString()} FCFA`, 170, y);
+      y += 10;
+    });
+    
+    doc.line(20, y, 190, y);
+    doc.text("Frais de livraison", 20, y + 10);
+    doc.text(`${deliveryFee.toLocaleString()} FCFA`, 170, y + 10);
+    doc.setFontSize(14);
+    doc.text("TOTAL PAYÉ", 20, y + 25);
+    doc.text(`${finalTotal.toLocaleString()} FCFA`, 170, y + 25);
+    
+    doc.save(`recu-${orderId}.pdf`);
+  };
+
+  const handleFinalizeOrder = async () => {
+    if (!formData.name || !formData.phone || !formData.address) {
+      showError("Veuillez remplir tous les champs de livraison.");
+      return;
+    }
+
+    setIsProcessing(true);
+    const orderId = `BAC-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+    
+    const newOrder = {
+      id: orderId,
+      customer: formData.name,
+      phone: formData.phone,
+      address: formData.address,
+      zone: zone,
+      amount: finalTotal,
+      status: "Payé",
+      date: new Date().toLocaleDateString(),
+      product: cart.map(i => i.name).join(", "),
+      isNew: true
+    };
+
+    // Save to history
+    const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
+    localStorage.setItem('purchase_history', JSON.stringify([newOrder, ...history]));
+
+    // Trigger storage event for admin dashboard
+    window.dispatchEvent(new Event('storage'));
+
+    setTimeout(() => {
+      generateReceipt(orderId);
+      showSuccess("Commande validée avec succès !");
+      clearCart();
+      setIsProcessing(false);
+      navigate('/history');
+    }, 1500);
+  };
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -197,7 +169,6 @@ const Checkout = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            {/* Liste des produits visuelle */}
             <Card className="border-none shadow-sm overflow-hidden">
               <CardHeader className="bg-stone-100/50">
                 <CardTitle className="text-lg flex items-center">
@@ -244,7 +215,7 @@ const Checkout = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nom complet</Label>
                     <Input id="name" placeholder="Votre nom" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
@@ -338,32 +309,37 @@ const Checkout = () => {
           </div>
 
           <div className="space-y-6">
-            <Card className="border-none shadow-lg bg-green-900 text-white">
+            <Card className="border-none shadow-lg bg-white sticky top-24">
               <CardHeader>
-                <CardTitle>Résumé du Paiement</CardTitle>
+                <CardTitle className="text-xl">Résumé Final</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between text-sm">
-                  <span className="opacity-70">Articles ({totalItems})</span>
-                  <span>{totalPrice.toLocaleString()} FCFA</span>
+                  <span className="text-gray-500">Articles ({cart.length})</span>
+                  <span className="font-bold">{totalPrice.toLocaleString()} FCFA</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="opacity-70">Livraison ({zone})</span>
-                  <span>{deliveryFee.toLocaleString()} FCFA</span>
+                  <span className="text-gray-500">Livraison ({zone})</span>
+                  <span className="font-bold">{deliveryFee.toLocaleString()} FCFA</span>
                 </div>
-                <div className="border-t border-white/20 pt-4 flex justify-between font-bold text-2xl">
-                  <span>TOTAL</span>
-                  <span className="text-orange-400">{finalTotal.toLocaleString()} FCFA</span>
+                <div className="border-t pt-4 flex justify-between items-end">
+                  <span className="font-bold text-gray-900">TOTAL À PAYER</span>
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-green-700">{finalTotal.toLocaleString()} FCFA</p>
+                  </div>
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex flex-col gap-3">
                 <Button 
-                  onClick={handleOrder} 
-                  disabled={!isVerified || isSubmitting} 
-                  className={`w-full h-14 text-lg font-bold shadow-lg ${!isVerified ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}
+                  onClick={handleFinalizeOrder} 
+                  disabled={!isVerified || isProcessing}
+                  className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold shadow-lg disabled:opacity-50"
                 >
-                  {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "CONFIRMER L'ACHAT"}
+                  {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <><FileText className="mr-2 h-5 w-5" /> CONFIRMER LA COMMANDE</>}
                 </Button>
+                <p className="text-[10px] text-center text-gray-400 font-medium uppercase tracking-widest">
+                  Un reçu PDF sera généré automatiquement
+                </p>
               </CardFooter>
             </Card>
           </div>
