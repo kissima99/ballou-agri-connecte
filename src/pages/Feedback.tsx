@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MessageSquare, Send, Star, ThumbsUp, Loader2, LogIn } from 'lucide-react';
+import { MessageSquare, Send, Star, ThumbsUp, Loader2, LogIn, MessageCircle, Mail } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from 'react-router-dom';
@@ -20,6 +20,7 @@ const Feedback = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
@@ -30,6 +31,19 @@ const Feedback = () => {
     };
     getUser();
   }, []);
+
+  const getWhatsAppUrl = () => {
+    const phoneNumber = "782254548";
+    const text = encodeURIComponent(`*Avis Client - Ballou Agri Connect*\n\n*Nom:* ${name}\n*Note:* ${rating}/5\n*Commentaire:* ${comment}`);
+    return `https://wa.me/${phoneNumber}?text=${text}`;
+  };
+
+  const getMailtoUrl = () => {
+    const email = "contact@ballouagri.com";
+    const subject = encodeURIComponent("Avis Client - Ballou Agri Connect");
+    const body = encodeURIComponent(`Nom: ${name}\nNote: ${rating}/5\nCommentaire: ${comment}`);
+    return `mailto:${email}?subject=${subject}&body=${body}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +59,7 @@ const Feedback = () => {
     }
 
     setIsSubmitting(true);
+    setHasError(false);
     
     try {
       const { error } = await supabase
@@ -63,7 +78,8 @@ const Feedback = () => {
       showSuccess("Merci pour votre retour !");
       setIsSent(true);
     } catch (err: any) {
-      showError("Erreur lors de l'envoi. Vérifiez votre connexion.");
+      setHasError(true);
+      showError("Erreur de connexion. Utilisez WhatsApp ou Email ci-dessous.");
       console.error("Feedback error:", err.message);
     } finally {
       setIsSubmitting(false);
@@ -115,63 +131,92 @@ const Feedback = () => {
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden">
-            <CardHeader className="bg-green-900 text-white p-8">
-              <CardTitle className="text-xl">Dites-nous tout</CardTitle>
-              <p className="text-green-100 opacity-80 text-sm">Qu'est-ce qui pourrait être amélioré sur le site ?</p>
-            </CardHeader>
-            <CardContent className="p-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label>Votre note globale</Label>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setRating(star)}
-                        className={`p-1 transition-all ${rating >= star ? 'text-orange-500 scale-110' : 'text-gray-300'}`}
-                      >
-                        <Star className={`w-8 h-8 ${rating >= star ? 'fill-orange-500' : ''}`} />
-                      </button>
-                    ))}
+          <div className="space-y-6">
+            <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden">
+              <CardHeader className="bg-green-900 text-white p-8">
+                <CardTitle className="text-xl">Dites-nous tout</CardTitle>
+                <p className="text-green-100 opacity-80 text-sm">Qu'est-ce qui pourrait être amélioré sur le site ?</p>
+              </CardHeader>
+              <CardContent className="p-8">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label>Votre note globale</Label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setRating(star)}
+                          className={`p-1 transition-all ${rating >= star ? 'text-orange-500 scale-110' : 'text-gray-300'}`}
+                        >
+                          <Star className={`w-8 h-8 ${rating >= star ? 'fill-orange-500' : ''}`} />
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="name">Votre Nom</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Votre nom" 
-                    className="rounded-xl" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Votre Nom</Label>
+                    <Input 
+                      id="name" 
+                      placeholder="Votre nom" 
+                      className="rounded-xl" 
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="comment">Vos suggestions d'amélioration</Label>
-                  <Textarea 
-                    id="comment" 
-                    placeholder="Ex: Plus de moyens de paiement, suivi plus précis..." 
-                    className="min-h-[150px] rounded-2xl"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    required
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="comment">Vos suggestions d'amélioration</Label>
+                    <Textarea 
+                      id="comment" 
+                      placeholder="Ex: Plus de moyens de paiement, suivi plus précis..." 
+                      className="min-h-[150px] rounded-2xl"
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      required
+                    />
+                  </div>
 
-                <Button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold shadow-lg rounded-2xl"
-                >
-                  {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : "ENVOYER MON AVIS"} <Send className="ml-2 h-5 w-5" />
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="w-full bg-green-700 hover:bg-green-800 h-14 text-lg font-bold shadow-lg rounded-2xl"
+                  >
+                    {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : "ENVOYER SUR LE SITE"} <Send className="ml-2 h-5 w-5" />
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button 
+                asChild
+                variant="outline"
+                className="h-16 border-green-500 text-green-700 hover:bg-green-50 rounded-2xl font-bold text-base shadow-sm"
+              >
+                <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer">
+                  <MessageCircle className="mr-2 h-6 w-6" /> ENVOYER VIA WHATSAPP
+                </a>
+              </Button>
+              <Button 
+                asChild
+                variant="outline"
+                className="h-16 border-blue-500 text-blue-700 hover:bg-blue-50 rounded-2xl font-bold text-base shadow-sm"
+              >
+                <a href={getMailtoUrl()}>
+                  <Mail className="mr-2 h-6 w-6" /> ENVOYER PAR EMAIL
+                </a>
+              </Button>
+            </div>
+            
+            {hasError && (
+              <p className="text-center text-red-600 font-bold animate-pulse">
+                ⚠️ Problème de connexion détecté. Veuillez utiliser WhatsApp ou Email ci-dessus.
+              </p>
+            )}
+          </div>
         )}
       </div>
     </div>
