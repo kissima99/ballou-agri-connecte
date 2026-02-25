@@ -1,63 +1,35 @@
-import { jsPDF } from "jspdf";
+import jsPDF from 'jspdf';
 
-export const generateReceipt = (order: any) => {
-  const doc = new jsPDF();
-  
-  // Header
-  doc.setFillColor(22, 163, 74); // Green-600
-  doc.rect(0, 0, 210, 40, 'F');
-  
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
-  doc.text("BALLOU AGRI CONNECT", 105, 20, { align: "center" });
-  
-  doc.setFontSize(10);
-  doc.text("Reçu de Commande Officiel", 105, 30, { align: "center" });
+interface ReceiptData {
+  id: string;
+  customer: string;
+  phone: string;
+  address: string;
+  amount: number;
+  date: string;
+  product: string;
+}
 
-  // Order Info
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(12);
-  doc.text(`N° Commande: ${order.id}`, 20, 55);
-  doc.text(`Date: ${order.date}`, 20, 62);
-  doc.text(`Statut: PAYÉ & CONFIRMÉ`, 20, 69);
-
-  // Customer Info
-  doc.setFont("helvetica", "bold");
-  doc.text("Informations Client:", 20, 85);
-  doc.setFont("helvetica", "normal");
-  doc.text(`Nom: ${order.customer}`, 20, 92);
-  doc.text(`Téléphone: ${order.phone}`, 20, 99);
-  doc.text(`Adresse: ${order.address}`, 20, 106);
-
-  // Products Table Header
-  doc.setFillColor(245, 245, 244); // Stone-100
-  doc.rect(20, 120, 170, 10, 'F');
-  doc.setFont("helvetica", "bold");
-  doc.text("Détails des produits", 25, 127);
-  
-  // Products List
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  const products = order.product.split(", ");
-  let yPos = 140;
-  products.forEach((p: string) => {
-    doc.text(`• ${p}`, 25, yPos);
-    yPos += 7;
-  });
-
-  // Total
-  doc.setDrawColor(22, 163, 74);
-  doc.line(20, yPos + 5, 190, yPos + 5);
-  
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.text(`TOTAL PAYÉ: ${order.amount.toLocaleString()} FCFA`, 190, yPos + 15, { align: "right" });
-
-  // Footer
-  doc.setFontSize(8);
-  doc.setTextColor(150, 150, 150);
-  doc.text("Merci de votre confiance. Ballou Agri Connect - L'excellence agricole.", 105, 280, { align: "center" });
-
-  doc.save(`Recu_BAC_${order.id}.pdf`);
+export const generateReceipt = (data: ReceiptData) => {
+  try {
+    const doc = new jsPDF();
+    doc.setFontSize(12);
+    doc.text(`Commande #${data.id}`, 10, 10);
+    doc.text(`Client : ${data.customer}`, 10, 20);
+    doc.text(`Téléphone : ${data.phone}`, 10, 30);
+    doc.text(`Adresse : ${data.address}`, 10, 40);
+    doc.text(`Montant : ${data.amount.toLocaleString()} FCFA`, 10, 50);
+    doc.text(`Date : ${data.date}`, 10, 60);
+    doc.text(`Produits :`, 10, 70);
+    const productLines = data.product.split(',').map((item, index) => `${index + 1}. ${item}`);
+    productLines.forEach((line, index) => {
+      doc.text(line, 10, 80 + index * 10);
+    });
+    // Ajout du message de remerciement
+    doc.text('Merci pour votre confiance et votre fidélité !', 10, 95);
+    doc.save('reçu_commande.pdf');
+  } catch (error) {
+    console.error('Erreur lors de la génération du reçu:', error);
+    alert('Erreur lors de la génération du reçu. Veuillez réessayer.');
+  }
 };
