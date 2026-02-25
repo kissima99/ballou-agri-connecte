@@ -8,20 +8,17 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { 
   CheckCircle2, 
-  CreditCard, 
   ArrowRight, 
-  MapPin, 
-  ShoppingBag,
   Home,
-  Lock,
-  ShieldCheck,
   ExternalLink,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
+import { generateReceipt } from '@/utils/receipt';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -38,7 +35,6 @@ const Checkout = () => {
   const [isAdminConfirmed, setIsAdminConfirmed] = useState(false);
   const [tempOrderId, setTempOrderId] = useState("");
 
-  // Simuler la vérification du statut admin toutes les 5 secondes si le paiement est envoyé
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (paymentSent && !isAdminConfirmed && tempOrderId) {
@@ -64,7 +60,6 @@ const Checkout = () => {
     const orderId = `BAC-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
     setTempOrderId(orderId);
     
-    // Créer une commande temporaire "En attente de paiement" pour l'admin
     const pendingOrder = {
       id: orderId,
       customer: formData.name,
@@ -74,7 +69,7 @@ const Checkout = () => {
       status: "Attente Paiement",
       paymentValidated: false,
       date: new Date().toLocaleDateString(),
-      product: cart.map(i => i.name).join(", "),
+      product: cart.map(i => `${i.name} (${i.quantity} ${i.unit})`).join(", "),
       isNew: true,
       method: paymentMethod
     };
@@ -93,15 +88,21 @@ const Checkout = () => {
 
     setIsProcessing(true);
     try {
-      // Mettre à jour le statut final de la commande
       const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
+      const currentOrder = history.find((o: any) => o.id === tempOrderId);
+      
       const updatedHistory = history.map((o: any) => 
         o.id === tempOrderId ? { ...o, status: "Payé" } : o
       );
       localStorage.setItem('purchase_history', JSON.stringify(updatedHistory));
       window.dispatchEvent(new Event('storage'));
       
-      showSuccess("Commande confirmée !");
+      // Génération automatique du reçu
+      if (currentOrder) {
+        generateReceipt({ ...currentOrder, status: "Payé" });
+      }
+      
+      showSuccess("Commande confirmée et reçu téléchargé !");
       clearCart();
       setIsProcessing(false);
       navigate('/history');
@@ -120,17 +121,10 @@ const Checkout = () => {
         <Navbar />
         <div className="container px-4 py-20 mx-auto text-center max-w-2xl">
           <div className="bg-white p-10 rounded-3xl shadow-xl border border-stone-100">
-            <ShoppingBag className="w-20 h-20 text-stone-200 mx-auto mb-6" />
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Votre panier est vide</h1>
-            <p className="text-gray-500 mb-8">Commencez vos achats pour voir vos produits ici.</p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild className="bg-green-600 hover:bg-green-700 font-bold">
-                <Link to="/local-products">Produits Locaux</Link>
-              </Button>
-              <Button asChild variant="outline" className="border-blue-200 text-blue-700 font-bold">
-                <Link to="/imported-products">Produits de Dakar</Link>
-              </Button>
-            </div>
+            <Button asChild className="bg-green-600 hover:bg-green-700 font-bold">
+              <Link to="/local-products">Retour aux achats</Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -153,7 +147,6 @@ const Checkout = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* Informations de Livraison */}
             <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">
               <CardHeader className="bg-stone-100/50 py-6">
                 <CardTitle className="text-xl font-bold">1. Informations de Livraison</CardTitle>
@@ -200,7 +193,6 @@ const Checkout = () => {
               </CardContent>
             </Card>
 
-            {/* Méthode de Paiement */}
             <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">
               <CardHeader className="bg-stone-100/50 py-6">
                 <CardTitle className="text-xl font-bold">2. Paiement</CardTitle>
@@ -310,11 +302,17 @@ const Checkout = () => {
                   )}
                 </Button>
 
+                {isAdminConfirmed && (
+                  <p className="text-[10px] text-center text-green-600 font-bold animate-pulse">
+                    <Download className="h-3 w-3 inline mr-1" /> LE REÇU SERA TÉLÉCHARGÉ AUTOMATIQUEMENT
+                  </p>
+                )}
+
                 {!isAdminConfirmed && paymentSent && (
                   <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100">
                     <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
                     <p className="text-[10px] text-blue-700 font-medium">
-                      Le bouton de confirmation s'activera automatiquement dès que l'administrateur aura reçu et validé votre transfert.
+                      Le bouton de confirmation s'activera dès que l'administrateur aura validé votre transfert.
                     </p>
                   </div>
                 )}
