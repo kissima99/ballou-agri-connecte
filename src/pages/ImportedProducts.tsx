@@ -12,7 +12,6 @@ import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Save, U
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { supabase } from "@/integrations/supabase/client";
 
 interface ImportedProduct {
   id: number;
@@ -152,39 +151,15 @@ const ImportedProducts = () => {
     }));
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setIsSaving(true);
     try {
-      // Sauvegarde locale
+      // Sauvegarde locale uniquement
       localStorage.setItem('imported_categories', JSON.stringify(categories));
-
-      // Synchronisation Supabase (gérée avec try/catch)
-      try {
-        const productsToSync = categories.flatMap(cat => 
-          cat.products.map(p => ({
-            id: String(p.id),
-            name: p.name,
-            price: p.price,
-            image: p.image,
-            unit: p.unit,
-            category: cat.id
-          }))
-        );
-
-        const { error } = await supabase
-          .from('products')
-          .upsert(productsToSync, { onConflict: 'id' });
-
-        if (error) throw error;
-
-        showSuccess("Catalogue mis à jour !");
-      } catch (err: any) {
-        showError("Erreur de synchronisation Supabase : " + err.message);
-      }
-
+      showSuccess("Prix sauvegardés localement !");
       setIsEditMode(false);
     } catch (err: any) {
-      showError("Erreur lors de l'enregistrement.");
+      showError("Erreur de sauvegarde locale : " + err.message);
     } finally {
       setIsSaving(false);
     }
@@ -213,29 +188,6 @@ const ImportedProducts = () => {
         )
       };
     }));
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, catId: string, productId: number) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64Image = reader.result as string;
-        const newCats = categories.map(cat => {
-          if (cat.id !== catId) return cat;
-          return {
-            ...cat,
-            products: cat.products.map(p => 
-              p.id === productId ? { ...p, image: base64Image } : p
-            )
-          };
-        });
-        setCategories(newCats);
-        localStorage.setItem('imported_categories', JSON.stringify(newCats));
-        showSuccess("Image enregistrée !");
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleAddToCart = (product: ImportedProduct) => {
@@ -278,7 +230,7 @@ const ImportedProducts = () => {
                 onClick={handleSave} 
                 className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black"
               >
-                <Save className="w-5 h-5 mr-2" /> SAUVEGARDER LES PRIX
+                <Save className="w-5 h-5 mr-2" /> SAUVEGARDER
               </Button>
             )}
             <div className="flex items-center space-x-3 bg-white p-2.5 px-4 rounded-xl shadow-md border border-blue-200">
@@ -327,14 +279,6 @@ const ImportedProducts = () => {
                           </Button>
                         )}
                       </div>
-                      {isEditMode && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
-                          <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl transform hover:scale-105 active:scale-95 transition-all">
-                            <Upload className="w-4 h-4 mr-2" /> CHANGER L'IMAGE
-                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, cat.id, product.id)} />
-                          </label>
-                        </div>
-                      )}
                     </div>
                     <CardContent className="pt-4 pb-3 px-5">
                       <h3 className="font-bold text-base text-gray-900 truncate mb-1">{product.name}</h3>
