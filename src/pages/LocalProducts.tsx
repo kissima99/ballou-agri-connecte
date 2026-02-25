@@ -74,26 +74,6 @@ const LocalProducts = () => {
         } catch (e) {}
       }
       setProducts(currentProducts);
-
-      // 2. Synchronisation avec Supabase (gérée avec try/catch)
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('category', 'local');
-
-        if (data && data.length > 0) {
-          const merged = currentProducts.map(p => {
-            const dbP = data.find((dp: any) => dp.id === String(p.id));
-            return dbP ? { ...p, price: dbP.price, image: dbP.image, unit: dbP.unit } : p;
-          });
-          setProducts(merged);
-          localStorage.setItem('local_products', JSON.stringify(merged));
-        }
-      } catch (err) {
-        console.error("Erreur sync Supabase (table manquante ?)", err);
-        // On continue sans synchroniser
-      }
     };
     loadProducts();
   }, []);
@@ -136,7 +116,6 @@ const LocalProducts = () => {
           p.id === productId ? { ...p, image: base64Image } : p
         );
         setProducts(newProducts);
-        localStorage.setItem('local_products', JSON.stringify(newProducts));
         showSuccess("Image prête pour synchronisation !");
       };
       reader.readAsDataURL(file);
