@@ -12,7 +12,6 @@ import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, PlusCircl
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { supabase } from "@/integrations/supabase/client";
 
 interface LocalProduct {
   id: number;
@@ -60,22 +59,19 @@ const LocalProducts = () => {
   const [products, setProducts] = useState<LocalProduct[]>(initialProducts);
 
   useEffect(() => {
-    const loadProducts = async () => {
-      // 1. Chargement local immédiat
-      const saved = localStorage.getItem('local_products');
-      let currentProducts = initialProducts;
-      if (saved) {
-        try {
-          const savedProducts = JSON.parse(saved);
-          currentProducts = initialProducts.map(p => {
-            const savedP = savedProducts.find((sp: any) => sp.id === p.id);
-            return savedP ? { ...p, ...savedP } : p;
-          });
-        } catch (e) {}
+    const saved = localStorage.getItem('local_products');
+    if (saved) {
+      try {
+        const savedProducts = JSON.parse(saved);
+        const merged = initialProducts.map(p => {
+          const savedP = savedProducts.find((sp: any) => sp.id === p.id);
+          return savedP ? { ...p, ...savedP } : p;
+        });
+        setProducts(merged);
+      } catch (e) {
+        console.error("Erreur lecture localStorage", e);
       }
-      setProducts(currentProducts);
-    };
-    loadProducts();
+    }
   }, []);
 
   const toggleKg = (id: number) => {
@@ -106,51 +102,12 @@ const LocalProducts = () => {
     ));
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, productId: number) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64Image = reader.result as string;
-        const newProducts = products.map(p => 
-          p.id === productId ? { ...p, image: base64Image } : p
-        );
-        setProducts(newProducts);
-        showSuccess("Image prête pour synchronisation !");
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSave = async () => {
+  const handleSave = () => {
     setIsSaving(true);
     try {
-      // Sauvegarde locale
+      // Sauvegarde locale uniquement
       localStorage.setItem('local_products', JSON.stringify(products));
-
-      // Synchronisation Supabase (gérée avec try/catch)
-      try {
-        const productsToSync = products.map(p => ({
-          id: String(p.id),
-          name: p.name,
-          price: p.price,
-          image: p.image,
-          unit: p.unit,
-          origin: p.origin,
-          category: 'local'
-        }));
-
-        const { error } = await supabase
-          .from('products')
-          .upsert(productsToSync, { onConflict: 'id' });
-
-        if (error) throw error;
-
-        showSuccess("Catalogue synchronisé avec Supabase !");
-      } catch (err: any) {
-        showError("Erreur de synchronisation Supabase : " + err.message);
-      }
-
+      showSuccess("Prix sauvegardés localement !");
       setIsEditMode(false);
     } catch (err: any) {
       showError("Erreur de sauvegarde locale : " + err.message);
@@ -199,8 +156,8 @@ const LocalProducts = () => {
                 disabled={isSaving}
                 className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black"
               >
-                {isSaving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} 
-                SYNCHRONISER SUPABASE
+                {isSaving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 w-5 mr-2" />} 
+                SAUVEGARDER
               </Button>
             )}
             <div className="flex items-center space-x-3 bg-white p-2.5 px-4 rounded-xl shadow-md border border-green-200">
@@ -241,7 +198,22 @@ const LocalProducts = () => {
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
                     <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl transform hover:scale-105 active:scale-95 transition-all">
                       <Upload className="w-4 h-4 mr-2" /> CHANGER L'IMAGE
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, product.id)} />
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            const base64Image = reader.result as string;
+                            const newProducts = products.map(p => 
+                              p.id === product.id ? { ...p, image: base64Image } : p
+                            );
+                            setProducts(newProducts);
+                            localStorage.setItem('local_products', JSON.stringify(newProducts));
+                            showSuccess("Image mise à jour !");
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }} />
                     </label>
                   </div>
                 )}
