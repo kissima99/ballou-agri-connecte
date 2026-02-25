@@ -23,9 +23,24 @@ import {
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
-import { jsPDF } from 'jspdf';
 import { useCart } from '@/context/CartContext';
 import { supabase } from "@/integrations/supabase/client";
+import jsPDF from 'jspdf';
+import { Save } from 'lucide-react';
+import { Wave } from 'lucide-react';
+
+interface LocalProduct {
+  id: number;
+  name: string;
+  price: number;
+  unit: string;
+  origin: string;
+  image: string;
+  quantity: number;
+  isKg?: boolean;
+  basePriceSac?: number;
+  pricePerKg?: number;
+}
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -37,8 +52,9 @@ const Checkout = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [isAuthorizedByAdmin, setIsAuthorizedByAdmin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-
+  const [isSaving, setIsSaving] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [products, setProducts] = useState<LocalProduct[]>(initialProducts);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -57,21 +73,6 @@ const Checkout = () => {
     }
   }, []);
 
-  if (cart.length === 0 && !isVerified) {
-    return (
-      <div className="min-h-screen bg-stone-50">
-        <Navbar />
-        <div className="container px-4 py-20 mx-auto text-center">
-          <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-4">Votre panier est vide</h2>
-          <Button asChild className="bg-green-600">
-            <Link to="/">Retour à l'accueil</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   const deliveryFee = 2000;
   const finalTotal = totalPrice + deliveryFee;
   const waveLink = `https://pay.wave.com/me/ballou-agri-connect?amount=${finalTotal}`;
@@ -84,38 +85,6 @@ const Checkout = () => {
       setIsVerified(true);
       showSuccess("Paiement confirmé par le système !");
     }, 2000);
-  };
-
-  const generateReceipt = (orderId: string) => {
-    const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text("BALLOU AGRI CONNECT", 105, 20, { align: "center" });
-    doc.setFontSize(12);
-    doc.text(`Reçu de Commande: ${orderId}`, 20, 40);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 50);
-    doc.text(`Client: ${formData.name}`, 20, 60);
-    doc.text(`Téléphone: ${formData.phone}`, 20, 70);
-    doc.text(`Adresse: ${formData.address} (${zone})`, 20, 80);
-    
-    doc.line(20, 90, 190, 90);
-    doc.text("Produits", 20, 100);
-    doc.text("Total", 170, 100);
-    
-    let y = 110;
-    cart.forEach(item => {
-      doc.text(`${item.name} x${item.quantity}`, 20, y);
-      doc.text(`${(item.price * item.quantity).toLocaleString()} FCFA`, 170, y);
-      y += 10;
-    });
-    
-    doc.line(20, y, 190, y);
-    doc.text("Frais de livraison", 20, y + 10);
-    doc.text(`${deliveryFee.toLocaleString()} FCFA`, 170, y + 10);
-    doc.setFontSize(14);
-    doc.text("TOTAL PAYÉ", 20, y + 25);
-    doc.text(`${finalTotal.toLocaleString()} FCFA`, 170, y + 25);
-    
-    doc.save(`recu-${orderId}.pdf`);
   };
 
   const handleFinalizeOrder = async () => {
@@ -156,191 +125,264 @@ const Checkout = () => {
     }, 1500);
   };
 
+  const generateReceipt = (orderId: string) => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text("BALLOU AGRI CONNECT", 105, 20, { align: "center" });
+    doc.setFontSize(12);
+    doc.text(`Reçu de Commande: ${orderId}`, 20, 40);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 50);
+    doc.text(`Client: ${formData.name}`, 20, 60);
+    doc.text(`Téléphone: ${formData.phone}`, 20, 70);
+    doc.text(`Adresse: ${formData.address} (${zone})`, 20, 80);
+    
+    doc.line(20, 90, 190, 90);
+    doc.text("Produits", 20, 100);
+    doc.text("Total", 170, 100);
+    
+    let y = 110;
+    cart.forEach(item => {
+      doc.text(`${item.name} x${item.quantity}`, 20, y);
+      doc.text(`{(item.price * item.quantity).toLocaleString()} FCFA`, 170, y);
+      y += 10;
+    });
+    
+    doc.line(20, y, 190, y);
+    doc.text("Frais de livraison", 20, y + 10);
+    doc.text(`${deliveryFee.toLocaleString()} FCFA`, 170, y + 10);
+    doc.setFontSize(14);
+    doc.text("TOTAL PAYÉ", 20, y + 25);
+    doc.text(`${finalTotal.toLocaleString()} FCFA`, 170, y + 25);
+    
+    doc.save(`recu-${orderId}.pdf`);
+  };
+
+  const handleSync = async () => {
+    setIsSaving(true);
+    try {
+      // Sauvegarde locale
+      localStorage.setItem('local_products', JSON.stringify(products));
+
+      // Synchronisation Supabase
+      const productsToSync = products.map(p => ({
+        id: String(p.id),
+        name: p.name,
+        price: p.price,
+        image: p.image,
+        unit: p.unit,
+        origin: p.origin,
+        category: 'local'
+      }));
+
+      const { error } = await supabase
+        .from('products')
+        .upsert(productsToSync, { onConflict: 'id' });
+
+      if (error) throw error;
+
+      setIsEditMode(false);
+      showSuccess("Catalogue synchronisé avec Supabase !");
+    } catch (err: any) {
+      showError("Erreur de synchronisation : " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAddToCart = (product: LocalProduct) => {
+    addToCart({
+      id: `local-${product.id}-${product.unit}`,
+      name: product.name,
+      price: product.price,
+      quantity: product.quantity,
+      image: product.image,
+      direction: 'Ballou -> Dakar',
+      unit: product.unit
+    });
+    showSuccess(`${product.name} (${product.unit}) ajouté au panier !`);
+  };
+
+  const handleBuyNow = (product: LocalProduct) => {
+    handleAddToCart(product);
+    navigate('/cart');
+  };
+
   return (
     <div className="min-h-screen bg-stone-50">
       <Navbar />
       <div className="container px-4 py-12 mx-auto max-w-5xl">
-        <div className="flex items-center gap-4 mb-8">
-          <Button asChild variant="outline" size="icon" className="rounded-full">
-            <Link to="/cart"><ArrowRight className="h-4 w-4 rotate-180 text-green-700" /></Link>
+        <div className="flex items-center gap-4 mb-10 gap-4">
+          <Button asChild variant="outline" size="icon" className="rounded-full border-green-200">
+            <Link to="/"><Home className="h-4 w-4 text-green-700" /></Link>
           </Button>
-          <h1 className="text-3xl font-bold text-green-900">Finaliser l'achat</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-green-900 mb-4">Finaliser l'achat</h1>
+            <p className="text-gray-500 font-medium">Votre panier est actuellement vide</p>
+          </div>
         </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="border-none shadow-sm overflow-hidden">
-              <CardHeader className="bg-stone-100/50">
-                <CardTitle className="text-lg flex items-center">
-                  <ShoppingBag className="mr-2 h-5 w-5 text-green-600" /> Récapitulatif des articles
-                </CardTitle>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">
+              <CardHeader className="bg-stone-100/50 py-6">
+                <CardTitle className="text-xl font-bold">Votre Panier</CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
-                <div className="divide-y divide-stone-100">
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {cart.map((item) => (
-                    <div key={`${item.id}-${item.direction}`} className="flex items-center gap-4 p-4">
-                      <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-lg shadow-sm" />
+                    <div key={item.id} className="flex items-center gap-2">
+                      <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-lg shadow-sm" />
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-gray-900 text-sm truncate">{item.name}</h4>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase">{item.direction}</p>
+                        <h4 className="font-bold text-gray-900 truncate">{item.name}</h4>
+                        <p className="text-[10px] text-gray-400 font-medium">{item.direction}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-black text-green-700 text-sm">{(item.price * item.quantity).toLocaleString()} FCFA</p>
-                        <p className="text-[10px] text-gray-400 font-medium">Qté: {item.quantity}</p>
+                        <p className="font-black text-green-700 text-sm">{item.price.toLocaleString()} FCFA</p>
+                        <p className="text-[10px] text-gray-400 font-medium">x{item.quantity}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
+          </div>
 
-            <Card className="border-none shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-xl flex items-center">
-                  <MapPin className="mr-2 h-5 w-5 text-green-600" /> Zone & Livraison
-                </CardTitle>
+          <div className="lg:col-span-1">
+            <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">
+              <CardHeader className="bg-stone-100/50 py-6">
+                <CardTitle className="text-xl font-bold">Informations de Livraison</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-6">
                 <div className="space-y-2">
-                  <Label>Zone de livraison</Label>
-                  <Select value={zone} onValueChange={setZone}>
-                    <SelectTrigger className="h-12 rounded-xl border-stone-200">
-                      <SelectValue placeholder="Choisir votre zone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="dakar">Dakar (Capitale)</SelectItem>
-                      <SelectItem value="tamba">Tambacounda (Région)</SelectItem>
-                      <SelectItem value="bakel">Bakel (Ville)</SelectItem>
-                      <SelectItem value="ballou">Ballou (Local)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nom complet</Label>
-                    <Input id="name" placeholder="Votre nom" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Téléphone (Wave/OM)</Label>
-                    <Input id="phone" placeholder="78 225 45 48" required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Adresse exacte</Label>
-                  <Input id="address" placeholder="Quartier, Rue, Maison..." required value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-xl flex items-center">
-                  <CreditCard className="mr-2 h-5 w-5 text-green-600" /> Paiement Sécurisé
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <RadioGroupItem value="wave" id="wave" className="peer sr-only" />
-                    <Label htmlFor="wave" className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent cursor-pointer peer-data-[state=checked]:border-blue-500">
-                      <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold mb-2">W</div>
-                      <span className="font-bold">Wave</span>
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="om" id="om" className="peer sr-only" />
-                    <Label htmlFor="om" className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent cursor-pointer peer-data-[state=checked]:border-orange-500">
-                      <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center text-white font-bold mb-2">OM</div>
-                      <span className="font-bold">Orange Money</span>
-                    </Label>
-                  </div>
-                </RadioGroup>
-
-                <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-center">
-                  <p className="text-sm text-blue-800 mb-4 font-medium">
-                    Veuillez effectuer le transfert de <span className="font-bold">{finalTotal.toLocaleString()} FCFA</span>.
-                  </p>
-                  <div className="flex flex-col gap-3">
-                    <Button asChild className="bg-blue-600 hover:bg-blue-700 h-12 font-bold">
-                      <a href={waveLink} target="_blank" rel="noopener noreferrer">
-                        PAYER AVEC WAVE <ExternalLink className="ml-2 h-4 w-4" />
-                      </a>
-                    </Button>
-
-                    {isAdmin && (
-                      <div className="mt-4 p-4 bg-orange-100 rounded-xl border border-orange-200">
-                        <p className="text-[10px] font-black text-orange-800 uppercase mb-2 flex items-center justify-center">
-                          <ShieldCheck className="w-3 h-3 mr-1" /> Contrôle Super Admin
-                        </p>
-                        <Button 
-                          type="button"
-                          onClick={() => {
-                            setIsAuthorizedByAdmin(!isAuthorizedByAdmin);
-                            showSuccess(isAuthorizedByAdmin ? "Autorisation retirée" : "Autorisation accordée au client");
-                          }}
-                          className={`w-full h-10 text-xs font-bold ${isAuthorizedByAdmin ? 'bg-green-600' : 'bg-orange-600'}`}
-                        >
-                          {isAuthorizedByAdmin ? "ANNULER L'AUTORISATION" : "AUTORISER LA VÉRIFICATION"}
-                        </Button>
-                      </div>
-                    )}
-
-                    <div className="relative">
-                      {!isAuthorizedByAdmin && !isVerified && (
-                        <div className="absolute inset-0 bg-stone-100/50 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-xl">
-                          <p className="text-[10px] font-black text-gray-400 uppercase flex items-center">
-                            <Lock className="w-3 h-3 mr-1" /> En attente d'autorisation admin
-                          </p>
-                        </div>
-                      )}
-                      <Button 
-                        type="button"
-                        onClick={handleVerifyPayment} 
-                        disabled={isVerifying || isVerified || !isAuthorizedByAdmin}
-                        className={`w-full h-12 font-bold ${isVerified ? 'bg-green-600' : 'bg-white border-blue-200 text-blue-700 hover:bg-blue-50'}`}
-                      >
-                        {isVerifying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isVerified ? <><CheckCircle2 className="mr-2 h-5 w-5" /> PAIEMENT VÉRIFIÉ</> : "VÉRIFIER MON PAIEMENT"}
-                      </Button>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                      <MapPin className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-900">Adresse de Livraison</h4>
+                      <p className="text-gray-500 font-medium">Ballou, Tambacounda, Sénégal</p>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
+        </div>
 
-          <div className="space-y-6">
-            <Card className="border-none shadow-lg bg-white sticky top-24">
-              <CardHeader>
-                <CardTitle className="text-xl">Résumé Final</CardTitle>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">
+              <CardHeader className="bg-stone-100/50 py-6">
+                <CardTitle className="text-xl font-bold">Informations de Paiement</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Articles ({cart.length})</span>
-                  <span className="font-bold">{totalPrice.toLocaleString()} FCFA</span>
+              <CardContent className="p-6">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                      <CreditCard className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-900">Méthode de Paiement</h4>
+                      <p className="text-gray-500 font-medium">Veuillez sélectionner votre méthode de paiement</p>
+                    </div>
+                  </div>
+                  <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="wave" id="wave" className="peer sr-only" />
+                      <Label htmlFor="wave" className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-white/50 border border-gray-200 rounded-full flex items-center justify-center">
+                          <Wave className="h-4 w-4 text-gray-600" />
+                        </div>
+                        <span className="font-bold">Paiement Wave</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="om" id="om" className="peer sr-only" />
+                      <Label htmlFor="om" className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-orange-50 rounded-full flex items-center justify-center">
+                          <Lock className="h-4 w-4 text-orange-600" />
+                        </div>
+                        <span className="font-bold">Orange Money</span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Livraison ({zone})</span>
-                  <span className="font-bold">{deliveryFee.toLocaleString()} FCFA</span>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-1">
+            <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">
+              <CardHeader className="bg-stone-100/50 py-6">
+                <CardTitle className="text-xl font-bold">Résumé de la Commande</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900">Articles</h4>
+                        <p className="text-gray-500 font-medium">Votre panier</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                        <ShoppingBag className="h-4 w-4 text-gray-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900">Panier</h4>
+                        <p className="text-gray-500 font-medium">Votre panier</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                        <MapPin className="h-4 w-4 text-gray-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900">Livraison</h4>
+                        <p className="text-gray-500 font-medium">Votre adresse</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                        <Lock className="h-4 w-4 text-gray-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900">Paiement</h4>
+                        <p className="text-gray-500 font-medium">Votre méthode</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="border-t pt-4 flex justify-between items-end">
-                  <span className="font-bold text-gray-900">TOTAL À PAYER</span>
-                  <div className="text-right">
-                    <p className="text-2xl font-black text-green-700">{finalTotal.toLocaleString()} FCFA</p>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-gray-900">Articles</span>
+                    <span className="font-bold text-gray-900">{cart.length} items</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-gray-900">Prix des articles</span>
+                    <span className="font-bold text-gray-900">{totalPrice.toLocaleString()} FCFA</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-gray-900">Frais de livraison</span>
+                    <span className="font-bold text-gray-900">{deliveryFee.toLocaleString()} FCFA</span>
+                  </div>
+                  <div className="border-t pt-4 flex justify-between items-center">
+                    <span className="font-bold text-gray-900">TOTAL À PAYER</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-green-700">{finalTotal.toLocaleString()} FCFA</span>
+                      <div className="bg-green-100 p-1 rounded-xl">
+                        <ArrowRight className="h-4 w-4" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col gap-3">
-                <Button 
-                  onClick={handleFinalizeOrder} 
-                  disabled={!isVerified || isProcessing}
-                  className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold shadow-lg disabled:opacity-50"
-                >
-                  {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <><FileText className="mr-2 h-5 w-5" /> CONFIRMER LA COMMANDE</>}
-                </Button>
-                <p className="text-[10px] text-center text-gray-400 font-medium uppercase tracking-widest">
-                  Un reçu PDF sera généré automatiquement
-                </p>
-              </CardFooter>
             </Card>
           </div>
         </div>
