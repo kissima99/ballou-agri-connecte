@@ -12,6 +12,7 @@ import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, PlusCircl
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
+import { supabase } from "@/integrations/supabase/client";
 
 interface LocalProduct {
   id: number;
@@ -102,12 +103,51 @@ const LocalProducts = () => {
     ));
   };
 
-  const handleSave = () => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, productId: number) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64Image = reader.result as string;
+        const newProducts = products.map(p => 
+          p.id === productId ? { ...p, image: base64Image } : p
+        );
+        setProducts(newProducts);
+        showSuccess("Image prête pour synchronisation !");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Sauvegarde locale uniquement
+      // Sauvegarde locale
       localStorage.setItem('local_products', JSON.stringify(products));
-      showSuccess("Prix sauvegardés localement !");
+
+      // Synchronisation Supabase
+      try {
+        const productsToSync = products.map(p => ({
+          id: String(p.id),
+          name: p.name,
+          price: p.price,
+          image: p.image,
+          unit: p.unit,
+          origin: p.origin,
+          category: 'local'
+        }));
+
+        const { error } = await supabase
+          .from('products')
+          .upsert(productsToSync, { onConflict: 'id' });
+
+        if (error) throw error;
+
+        showSuccess("Catalogue synchronisé avec Supabase !");
+      } catch (err: any) {
+        showError("Erreur de synchronisation Supabase : " + err.message);
+      }
+
       setIsEditMode(false);
     } catch (err: any) {
       showError("Erreur de sauvegarde locale : " + err.message);
@@ -143,7 +183,7 @@ const LocalProducts = () => {
             <Button asChild variant="outline" size="icon" className="rounded-full border-green-200">
               <Link to="/"><Home className="h-4 w-4 text-green-700" /></Link>
             </Button>
-            <div>
+            <div {
               <h1 className="text-3xl font-bold text-green-900">Produits Locaux</h1>
               <p className="text-gray-600">Direction : <span className="font-bold text-orange-600">Ballou vers Dakar</span></p>
             </div>
@@ -156,8 +196,8 @@ const LocalProducts = () => {
                 disabled={isSaving}
                 className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black"
               >
-                {isSaving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 w-5 mr-2" />} 
-                SAUVEGARDER
+                {isSaving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} 
+                SYNCHRONISER SUPABASE
               </Button>
             )}
             <div className="flex items-center space-x-3 bg-white p-2.5 px-4 rounded-xl shadow-md border border-green-200">
@@ -194,6 +234,14 @@ const LocalProducts = () => {
                     </Button>
                   )}
                 </div>
+                {isEditMode && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
+                    <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl transform hover:scale-105 active:scale-95 transition-all">
+                      <Upload className="w-4 h-4 mr-2" /> CHANGER L'IMAGE
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, product.id)} />
+                    </label>
+                  </div>
+                )}
               </div>
               <CardContent className="pt-4 pb-3 px-5">
                 <h3 className="font-bold text-base text-gray-900 truncate mb-1">{product.name}</h3>
