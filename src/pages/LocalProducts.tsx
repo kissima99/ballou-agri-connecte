@@ -142,11 +142,14 @@ const LocalProducts = () => {
         image: p.image,
         unit: p.unit,
         origin: p.origin,
-        category: 'local'
+        category: 'local',
+        updated_at: new Date().toISOString()
       }));
 
-      // Utilisation de la fonction RPC pour forcer l'enregistrement
-      const { error } = await supabase.rpc('upsert_products_from_json', { p_payload: payload });
+      // Utilisation de upsert direct au lieu de RPC
+      const { error } = await supabase
+        .from('products')
+        .upsert(payload, { onConflict: 'id' });
 
       if (error) throw error;
 
