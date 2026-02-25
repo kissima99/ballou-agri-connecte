@@ -183,7 +183,7 @@ const LocalProducts = () => {
             <Button asChild variant="outline" size="icon" className="rounded-full border-green-200">
               <Link to="/"><Home className="h-4 w-4 text-green-700" /></Link>
             </Button>
-            <div {
+            <div>
               <h1 className="text-3xl font-bold text-green-900">Produits Locaux</h1>
               <p className="text-gray-600">Direction : <span className="font-bold text-orange-600">Ballou vers Dakar</span></p>
             </div>
