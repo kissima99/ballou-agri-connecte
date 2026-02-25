@@ -8,14 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, PlusCircle, Scale, Loader2 } from 'lucide-react';
+import { ShoppingCart, MapPin, Edit3, Save, Minus, Plus, Home, Upload, PlusCircle, Scale, Loader2, RefreshCw } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { supabase } from "@/integrations/supabase/client";
 
 interface LocalProduct {
-  id: number;
+  id: string | number;
   name: string;
   price: number;
   unit: string;
@@ -32,50 +32,63 @@ const LocalProducts = () => {
   const { addToCart } = useCart();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const initialProducts: LocalProduct[] = [
-    { id: 1, name: "Riz de la vallée", price: 17500, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 17500, pricePerKg: 400 },
-    { id: 2, name: "Oignon Local", price: 12000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 3, name: "Maïs", price: 500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 4, name: "Piment rouge", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 5, name: "Piment vert", price: 1800, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 16, name: "Poivron vert", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1563565312-8335ff593d93?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 17, name: "Poivron Rouge", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1589483232748-515c025575bc?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 18, name: "Sucre Local", price: 25000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 25000, pricePerKg: 600 },
-    { id: 6, name: "Choux", price: 500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 7, name: "Aubergine africaine", price: 1200, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 8, name: "Gombo", price: 1000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1464454709131-ffd692591ee5?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 9, name: "Tomate", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 10, name: "Concombre", price: 400, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1449339854873-750e6df51301?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 11, name: "Salade", price: 300, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 12, name: "Patate douce", price: 10000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 13, name: "Sorgho", price: 15000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1623064037721-304163048228?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 14, name: "Citron", price: 100, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1585059895524-72359e06133a?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 15, name: "Arachide", price: 8000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 19, name: "Bissap Rouge", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 20, name: "Bissap Blanc", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1550583724-125581f77833?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: 21, name: "Pain de singe", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "1", name: "Riz de la vallée", price: 17500, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 17500, pricePerKg: 400 },
+    { id: "2", name: "Oignon Local", price: 12000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "3", name: "Maïs", price: 500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "4", name: "Piment rouge", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "5", name: "Piment vert", price: 1800, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "16", name: "Poivron vert", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1563565312-8335ff593d93?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "17", name: "Poivron Rouge", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1589483232748-515c025575bc?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "18", name: "Sucre Local", price: 25000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 25000, pricePerKg: 600 },
+    { id: "6", name: "Choux", price: 500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "7", name: "Aubergine africaine", price: 1200, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "8", name: "Gombo", price: 1000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1464454709131-ffd692591ee5?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "9", name: "Tomate", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "10", name: "Concombre", price: 400, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1449339854873-750e6df51301?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "11", name: "Salade", price: 300, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "12", name: "Patate douce", price: 10000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "13", name: "Sorgho", price: 15000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1623064037721-304163048228?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "14", name: "Citron", price: 100, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1585059895524-72359e06133a?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "15", name: "Arachide", price: 8000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "19", name: "Bissap Rouge", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "20", name: "Bissap Blanc", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1550583724-125581f77833?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "21", name: "Pain de singe", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80", quantity: 1 },
   ];
 
   const [products, setProducts] = useState<LocalProduct[]>(initialProducts);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('local_products');
-    if (saved) {
-      try {
-        const savedProducts = JSON.parse(saved);
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('category', 'local');
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
         const merged = initialProducts.map(p => {
-          const savedP = savedProducts.find((sp: any) => sp.id === p.id);
-          return savedP ? { ...p, ...savedP } : p;
+          const dbP = data.find((dp: any) => dp.id === String(p.id));
+          return dbP ? { ...p, ...dbP, price: Number(dbP.price), quantity: 1 } : p;
         });
         setProducts(merged);
-      } catch (e) {
-        console.error("Erreur lecture localStorage", e);
       }
+    } catch (err: any) {
+      console.error("Erreur lors du chargement des produits:", err.message);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchProducts();
   }, []);
 
-  const toggleKg = (id: number) => {
+  const toggleKg = (id: string | number) => {
     setProducts(products.map(p => {
       if (p.id === id) {
         const newIsKg = !p.isKg;
@@ -90,20 +103,20 @@ const LocalProducts = () => {
     }));
   };
 
-  const updateQuantity = (id: number, delta: number) => {
+  const updateQuantity = (id: string | number, delta: number) => {
     setProducts(products.map(p => 
       p.id === id ? { ...p, quantity: Math.max(1, p.quantity + delta) } : p
     ));
   };
 
-  const updatePrice = (id: number, newPrice: string) => {
+  const updatePrice = (id: string | number, newPrice: string) => {
     const price = parseInt(newPrice) || 0;
     setProducts(products.map(p => 
       p.id === id ? { ...p, price: price } : p
     ));
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, productId: number) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, productId: string | number) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -122,35 +135,26 @@ const LocalProducts = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Sauvegarde locale
-      localStorage.setItem('local_products', JSON.stringify(products));
+      const productsToSync = products.map(p => ({
+        id: String(p.id),
+        name: p.name,
+        price: p.price,
+        image: p.image,
+        unit: p.unit,
+        origin: p.origin,
+        category: 'local'
+      }));
 
-      // Synchronisation Supabase
-      try {
-        const productsToSync = products.map(p => ({
-          id: String(p.id),
-          name: p.name,
-          price: p.price,
-          image: p.image,
-          unit: p.unit,
-          origin: p.origin,
-          category: 'local'
-        }));
+      const { error } = await supabase
+        .from('products')
+        .upsert(productsToSync, { onConflict: 'id' });
 
-        const { error } = await supabase
-          .from('products')
-          .upsert(productsToSync, { onConflict: 'id' });
+      if (error) throw error;
 
-        if (error) throw error;
-
-        showSuccess("Catalogue synchronisé avec Supabase !");
-      } catch (err: any) {
-        showError("Erreur de synchronisation Supabase : " + err.message);
-      }
-
+      showSuccess("Catalogue synchronisé avec Supabase !");
       setIsEditMode(false);
     } catch (err: any) {
-      showError("Erreur de sauvegarde locale : " + err.message);
+      showError("Erreur de synchronisation : " + err.message);
     } finally {
       setIsSaving(false);
     }
@@ -190,6 +194,15 @@ const LocalProducts = () => {
           </div>
 
           <div className="flex items-center gap-4 z-50">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={fetchProducts} 
+              className="rounded-full text-gray-400 hover:text-green-600"
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
             {isEditMode && (
               <Button 
                 onClick={handleSave} 
@@ -197,7 +210,7 @@ const LocalProducts = () => {
                 className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black"
               >
                 {isSaving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} 
-                SYNCHRONISER SUPABASE
+                SYNCHRONISER
               </Button>
             )}
             <div className="flex items-center space-x-3 bg-white p-2.5 px-4 rounded-xl shadow-md border border-green-200">
@@ -214,97 +227,104 @@ const LocalProducts = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-xl transition-all group bg-white rounded-2xl">
-              <div className="relative h-40 overflow-hidden">
-                <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                <div className="absolute top-2 left-2 flex flex-col gap-1">
-                  <Badge className="bg-white/90 text-green-800 backdrop-blur text-[10px] h-5 px-2 font-bold shadow-sm">
-                    <MapPin className="h-3 w-3 mr-1" /> {product.origin}
-                  </Badge>
-                  {(product.id === 1 || product.id === 18) && (
-                    <Button 
-                      size="sm" 
-                      variant="secondary" 
-                      className={`h-6 px-2 text-[10px] font-black shadow-lg ${product.isKg ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white/90 text-orange-700 hover:bg-white'}`}
-                      onClick={() => toggleKg(product.id)}
-                    >
-                      <Scale className="h-3 w-3 mr-1.5" /> {product.isKg ? 'MODE SAC' : 'MODE KG'}
-                    </Button>
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="h-12 w-12 animate-spin text-green-600 mb-4" />
+            <p className="text-gray-500 font-medium">Chargement du catalogue...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {products.map((product) => (
+              <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-xl transition-all group bg-white rounded-2xl">
+                <div className="relative h-40 overflow-hidden">
+                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <div className="absolute top-2 left-2 flex flex-col gap-1">
+                    <Badge className="bg-white/90 text-green-800 backdrop-blur text-[10px] h-5 px-2 font-bold shadow-sm">
+                      <MapPin className="h-3 w-3 mr-1" /> {product.origin}
+                    </Badge>
+                    {(product.id === "1" || product.id === "18") && (
+                      <Button 
+                        size="sm" 
+                        variant="secondary" 
+                        className={`h-6 px-2 text-[10px] font-black shadow-lg ${product.isKg ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white/90 text-orange-700 hover:bg-white'}`}
+                        onClick={() => toggleKg(product.id)}
+                      >
+                        <Scale className="h-3 w-3 mr-1.5" /> {product.isKg ? 'MODE SAC' : 'MODE KG'}
+                      </Button>
+                    )}
+                  </div>
+                  {isEditMode && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
+                      <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl transform hover:scale-105 active:scale-95 transition-all">
+                        <Upload className="w-4 h-4 mr-2" /> CHANGER L'IMAGE
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, product.id)} />
+                      </label>
+                    </div>
                   )}
                 </div>
-                {isEditMode && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
-                    <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl transform hover:scale-105 active:scale-95 transition-all">
-                      <Upload className="w-4 h-4 mr-2" /> CHANGER L'IMAGE
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, product.id)} />
-                    </label>
+                <CardContent className="pt-4 pb-3 px-5">
+                  <h3 className="font-bold text-base text-gray-900 truncate mb-1">{product.name}</h3>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex-1">
+                      {isEditMode ? (
+                        <div className="flex items-center gap-1.5 bg-orange-50 p-1 rounded-lg border border-orange-100">
+                          <Input 
+                            type="number" 
+                            value={product.price} 
+                            onChange={(e) => updatePrice(product.id, e.target.value)}
+                            className="h-8 w-full text-sm font-black px-2 border-none bg-transparent focus-visible:ring-0"
+                          />
+                          <span className="text-[10px] font-black text-orange-700 pr-1">FCFA</span>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-xl font-black text-green-700 leading-none">{product.price.toLocaleString()} FCFA</p>
+                        </div>
+                      )}
+                      <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{product.unit}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" 
+                        onClick={() => updateQuantity(product.id, -1)}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="font-black text-sm min-w-[20px] text-center">{product.quantity}</span>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" 
+                        onClick={() => updateQuantity(product.id, 1)}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                )}
-              </div>
-              <CardContent className="pt-4 pb-3 px-5">
-                <h3 className="font-bold text-base text-gray-900 truncate mb-1">{product.name}</h3>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex-1">
-                    {isEditMode ? (
-                      <div className="flex items-center gap-1.5 bg-orange-50 p-1 rounded-lg border border-orange-100">
-                        <Input 
-                          type="number" 
-                          value={product.price} 
-                          onChange={(e) => updatePrice(product.id, e.target.value)}
-                          className="h-8 w-full text-sm font-black px-2 border-none bg-transparent focus-visible:ring-0"
-                        />
-                        <span className="text-[10px] font-black text-orange-700 pr-1">FCFA</span>
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-xl font-black text-green-700 leading-none">{product.price.toLocaleString()} FCFA</p>
-                      </div>
-                    )}
-                    <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{product.unit}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" 
-                      onClick={() => updateQuantity(product.id, -1)}
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="font-black text-sm min-w-[20px] text-center">{product.quantity}</span>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" 
-                      onClick={() => updateQuantity(product.id, 1)}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="pb-4 pt-0 px-5 flex flex-col gap-2">
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="w-full border-green-600 text-green-700 hover:bg-green-50 h-10 text-[10px] font-black shadow-sm" 
-                  onClick={() => handleAddToCart(product)}
-                >
-                  <PlusCircle className="mr-2 h-4 w-4" /> AJOUTER AU PANIER
-                </Button>
-                <Button 
-                  size="lg" 
-                  className="w-full bg-green-600 hover:bg-green-700 h-10 text-[10px] font-black shadow-md" 
-                  onClick={() => handleBuyNow(product)}
-                >
-                  <ShoppingCart className="mr-2 h-4 w-4" /> ACHETER MAINTENANT
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+                <CardFooter className="pb-4 pt-0 px-5 flex flex-col gap-2">
+                  <Button 
+                    size="lg" 
+                    variant="outline" 
+                    className="w-full border-green-600 text-green-700 hover:bg-green-50 h-10 text-[10px] font-black shadow-sm" 
+                    onClick={() => handleAddToCart(product)}
+                  >
+                    <PlusCircle className="mr-2 h-4 w-4" /> AJOUTER AU PANIER
+                  </Button>
+                  <Button 
+                    size="lg" 
+                    className="w-full bg-green-600 hover:bg-green-700 h-10 text-[10px] font-black shadow-md" 
+                    onClick={() => handleBuyNow(product)}
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" /> ACHETER MAINTENANT
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

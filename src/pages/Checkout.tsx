@@ -13,12 +13,14 @@ import {
   ExternalLink,
   AlertCircle,
   RefreshCw,
-  Download
+  Download,
+  Loader2
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { generateReceipt } from '@/utils/receipt';
+import { supabase } from "@/integrations/supabase/client";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -34,52 +36,72 @@ const Checkout = () => {
   const [paymentSent, setPaymentSent] = useState(false);
   const [isAdminConfirmed, setIsAdminConfirmed] = useState(false);
   const [tempOrderId, setTempOrderId] = useState("");
+  const [isInitiating, setIsInitiating] = useState(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (paymentSent && !isAdminConfirmed && tempOrderId) {
-      interval = setInterval(() => {
-        const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
-        const order = history.find((o: any) => o.id === tempOrderId);
-        if (order && order.paymentValidated) {
+      interval = setInterval(async () => {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('status')
+          .eq('id', tempOrderId)
+          .single();
+        
+        if (!error && data && (data.status === 'Payé' || data.status === 'En cours' || data.status === 'Livré')) {
           setIsAdminConfirmed(true);
           showSuccess("Paiement confirmé par l'administrateur !");
           clearInterval(interval);
         }
-      }, 3000);
+      }, 5000);
     }
     return () => clearInterval(interval);
   }, [paymentSent, isAdminConfirmed, tempOrderId]);
 
-  const handleInitiatePayment = () => {
+  const handleInitiatePayment = async () => {
     if (!formData.name || !formData.phone || !formData.address) {
       showError("Veuillez remplir vos informations de livraison avant de payer.");
       return;
     }
     
+    setIsInitiating(true);
     const orderId = `BAC-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
     setTempOrderId(orderId);
     
-    const pendingOrder = {
-      id: orderId,
-      customer: formData.name,
-      phone: formData.phone,
-      address: formData.address,
-      amount: totalPrice + 2000,
-      status: "Attente Paiement",
-      paymentValidated: false,
-      date: new Date().toLocaleDateString(),
-      product: cart.map(i => `${i.name} (${i.quantity} ${i.unit})`).join(", "),
-      isNew: true,
-      method: paymentMethod
-    };
-    
-    const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
-    localStorage.setItem('purchase_history', JSON.stringify([pendingOrder, ...history]));
-    window.dispatchEvent(new Event('storage'));
-    
-    setPaymentSent(true);
-    showSuccess("Informations enregistrées. Veuillez procéder au transfert.");
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const pendingOrder = {
+        id: orderId,
+        customer_name: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+        amount: totalPrice + 2000,
+        status: "Attente Paiement",
+        items: cart.map(i => ({ id: i.id, name: i.name, quantity: i.quantity, price: i.price, unit: i.unit })),
+        user_id: user?.id || null,
+        zone: "Dakar", // Par défaut
+        is_new: true
+      };
+      
+      const { error } = await supabase
+        .from('orders')
+        .insert([pendingOrder]);
+
+      if (error) throw error;
+      
+      // Sauvegarde locale pour compatibilité historique
+      const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
+      localStorage.setItem('purchase_history', JSON.stringify([{ ...pendingOrder, date: new Date().toLocaleDateString(), product: cart.map(i => i.name).join(", ") }, ...history]));
+      window.dispatchEvent(new Event('storage'));
+      
+      setPaymentSent(true);
+      showSuccess("Informations enregistrées. Veuillez procéder au transfert.");
+    } catch (err: any) {
+      showError("Erreur lors de l'initialisation: " + err.message);
+    } finally {
+      setIsInitiating(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,26 +110,31 @@ const Checkout = () => {
 
     setIsProcessing(true);
     try {
-      const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
-      const currentOrder = history.find((o: any) => o.id === tempOrderId);
+      const { data: orderData, error: fetchError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', tempOrderId)
+        .single();
+
+      if (fetchError) throw fetchError;
       
-      const updatedHistory = history.map((o: any) => 
-        o.id === tempOrderId ? { ...o, status: "Payé" } : o
-      );
-      localStorage.setItem('purchase_history', JSON.stringify(updatedHistory));
-      window.dispatchEvent(new Event('storage'));
-      
-      // Génération automatique du reçu
-      if (currentOrder) {
-        generateReceipt({ ...currentOrder, status: "Payé" });
-      }
+      // Génération du reçu
+      generateReceipt({
+        id: orderData.id,
+        customer: orderData.customer_name,
+        phone: orderData.phone,
+        address: orderData.address,
+        amount: orderData.amount,
+        date: new Date(orderData.created_at).toLocaleDateString(),
+        product: orderData.items.map((i: any) => `${i.name} (${i.quantity} ${i.unit})`).join(", ")
+      });
       
       showSuccess("Commande confirmée et reçu téléchargé !");
       clearCart();
       setIsProcessing(false);
       navigate('/history');
-    } catch (error) {
-      showError("Erreur lors de la confirmation.");
+    } catch (error: any) {
+      showError("Erreur lors de la confirmation: " + error.message);
       setIsProcessing(false);
     }
   };
@@ -222,8 +249,8 @@ const Checkout = () => {
                 </RadioGroup>
 
                 {!paymentSent ? (
-                  <Button onClick={handleInitiatePayment} className="w-full bg-green-600 hover:bg-green-700 h-12 rounded-xl font-bold">
-                    PROCÉDER AU PAIEMENT
+                  <Button onClick={handleInitiatePayment} disabled={isInitiating} className="w-full bg-green-600 hover:bg-green-700 h-12 rounded-xl font-bold">
+                    {isInitiating ? <Loader2 className="h-5 w-5 animate-spin" /> : "PROCÉDER AU PAIEMENT"}
                   </Button>
                 ) : (
                   <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
@@ -306,15 +333,6 @@ const Checkout = () => {
                   <p className="text-[10px] text-center text-green-600 font-bold animate-pulse">
                     <Download className="h-3 w-3 inline mr-1" /> LE REÇU SERA TÉLÉCHARGÉ AUTOMATIQUEMENT
                   </p>
-                )}
-
-                {!isAdminConfirmed && paymentSent && (
-                  <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100">
-                    <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
-                    <p className="text-[10px] text-blue-700 font-medium">
-                      Le bouton de confirmation s'activera dès que l'administrateur aura validé votre transfert.
-                    </p>
-                  </div>
                 )}
               </CardContent>
             </Card>
