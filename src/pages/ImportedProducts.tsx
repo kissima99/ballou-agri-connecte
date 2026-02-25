@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Save, Upload, PlusCircle, Scale, Loader2 } from 'lucide-react';
+import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Save, Upload, PlusCircle, Scale, Loader2, Tv, Monitor, Zap } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
@@ -41,7 +41,8 @@ const ImportedProducts = () => {
   const categoryIcons: Record<string, React.ReactNode> = {
     importes: <Package className="w-3.5 h-3.5 mr-1.5" />,
     frais: <Apple className="w-3.5 h-3.5 mr-1.5" />,
-    semences: <Sprout className="w-3.5 h-3.5 mr-1.5" />
+    semences: <Sprout className="w-3.5 h-3.5 mr-1.5" />,
+    electroniques: <Zap className="w-3.5 h-3.5 mr-1.5" />
   };
 
   const initialCategories: Category[] = [
@@ -59,7 +60,7 @@ const ImportedProducts = () => {
         { id: 114, name: "Chocolat Nutella", price: 3500, unit: "unité", image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 115, name: "Mayonnaise", price: 2500, unit: "unité", image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 116, name: "Sac de savon Madar", price: 15000, unit: "sac", image: "https://images.unsplash.com/photo-1600857062241-98e5dba7f214?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 117, name: "Sac de savon Sabar", price: 14500, unit: "sac", image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 117, name: "Sac savon SABA", price: 14500, unit: "sac", image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 121, name: "Coffee matte", price: 2500, unit: "unité", image: "https://images.unsplash.com/photo-1583431023233-1f3f3a3bb483?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 122, name: "Lait Dano", price: 1500, unit: "unité", image: "https://images.unsplash.com/photo-1583431023233-1f3f3a3bb483?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 123, name: "Lait Kanja", price: 1800, unit: "unité", image: "https://images.unsplash.com/photo-1583431023233-1f3f3a3bb483?auto=format&fit=crop&q=80", quantity: 1 },
@@ -102,6 +103,18 @@ const ImportedProducts = () => {
         { id: 307, name: "Semence piment", price: 3500, unit: "sachet", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 308, name: "Semence Concombre", price: 3000, unit: "sachet", image: "https://images.unsplash.com/photo-1449339854873-750e6df51301?auto=format&fit=crop&q=80", quantity: 1 },
       ]
+    },
+    {
+      id: "electroniques",
+      name: "Matériel Électronique",
+      products: [
+        { id: 401, name: "Chauffe-Eau", price: 25000, unit: "unité", image: "https://images.unsplash.com/photo-1585130401366-fe05a8d813c4?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 402, name: "Mixeur Fruits", price: 15000, unit: "unité", image: "https://images.unsplash.com/photo-1570222020676-00dc3d170412?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 403, name: "Mixeur Légumes", price: 12000, unit: "unité", image: "https://images.unsplash.com/photo-1585238341267-1cfec2046a55?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 404, name: "Ventilateur", price: 18000, unit: "unité", image: "https://images.unsplash.com/photo-1618944847023-38aa001235f0?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 405, name: "TV SMART", price: 150000, unit: "unité", image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 406, name: "Réfrigérateur", price: 200000, unit: "unité", image: "https://images.unsplash.com/photo-1571175432270-e8a1f5ad05bb?auto=format&fit=crop&q=80", quantity: 1 },
+      ]
     }
   ];
 
@@ -113,7 +126,7 @@ const ImportedProducts = () => {
         const { data, error } = await supabase
           .from('products')
           .select('*')
-          .in('category', ['importes', 'frais', 'semences']);
+          .in('category', ['importes', 'frais', 'semences', 'electroniques']);
 
         if (error) throw error;
 
@@ -171,7 +184,6 @@ const ImportedProducts = () => {
         }))
       );
 
-      // Utilisation de upsert direct au lieu de RPC
       const { error } = await supabase
         .from('products')
         .upsert(payload, { onConflict: 'id' });
@@ -293,12 +305,12 @@ const ImportedProducts = () => {
         </div>
 
         <Tabs defaultValue="importes" className="w-full">
-          <TabsList className="grid grid-cols-3 mb-8 h-auto p-1.5 bg-blue-100/50 rounded-2xl">
+          <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-8 h-auto p-1.5 bg-blue-100/50 rounded-2xl gap-2">
             {categories.map(cat => (
               <TabsTrigger 
                 key={cat.id} 
                 value={cat.id} 
-                className="py-3 text-sm font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-xl transition-all"
+                className="py-3 text-xs md:text-sm font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-xl transition-all"
               >
                 {categoryIcons[cat.id]} {cat.name}
               </TabsTrigger>
