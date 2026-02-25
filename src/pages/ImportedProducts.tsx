@@ -85,7 +85,7 @@ const ImportedProducts = () => {
         { id: 201, name: "Poulet frais", price: 3500, unit: "unité", image: "https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 202, name: "Poissons Séchée", price: 2500, unit: "kg", image: "https://images.unsplash.com/photo-1534604973900-c41ab4c5d010?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 203, name: "Fruit mixte", price: 4000, unit: "panier", image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 204, name: "Citron", price: 1000, unit: "filet", image: "https://images.unsplash.com/photo-1585059895524-72359e06133a?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 204, name: "Citron", price: 100, unit: "filet", image: "https://images.unsplash.com/photo-1585059895524-72359e06133a?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 205, name: "Feuille de menthe", price: 200, unit: "botte", image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&q=80", quantity: 1 },
       ]
     },
@@ -108,24 +108,31 @@ const ImportedProducts = () => {
   const [categories, setCategories] = useState<Category[]>(initialCategories);
 
   useEffect(() => {
-    const saved = localStorage.getItem('imported_categories');
-    if (saved) {
+    const fetchAllImported = async () => {
       try {
-        const savedCats = JSON.parse(saved);
-        const merged = initialCategories.map(cat => {
-          const savedCat = savedCats.find((sc: any) => sc.id === cat.id);
-          if (!savedCat) return cat;
-          const mergedProducts = cat.products.map(p => {
-            const savedP = savedCat.products.find((sp: any) => sp.id === p.id);
-            return savedP ? { ...p, ...savedP } : p;
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .in('category', ['importes', 'frais', 'semences']);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const merged = initialCategories.map(cat => {
+            const catProducts = data.filter((dp: any) => dp.category === cat.id);
+            const mergedProducts = cat.products.map(p => {
+              const dbP = catProducts.find((dp: any) => dp.id === String(p.id));
+              return dbP ? { ...p, ...dbP, price: Number(dbP.price), quantity: 1 } : p;
+            });
+            return { ...cat, products: mergedProducts };
           });
-          return { ...cat, products: mergedProducts };
-        });
-        setCategories(merged);
+          setCategories(merged);
+        }
       } catch (e) {
-        console.error("Erreur lecture localStorage", e);
+        console.error("Erreur lecture Supabase", e);
       }
-    }
+    };
+    fetchAllImported();
   }, []);
 
   const toggleKg = (catId: string, prodId: number) => {
@@ -152,7 +159,6 @@ const ImportedProducts = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      localStorage.setItem('imported_categories', JSON.stringify(categories));
       const productsToSync = categories.flatMap(cat => 
         cat.products.map(p => ({
           id: String(p.id),
@@ -169,7 +175,7 @@ const ImportedProducts = () => {
         .upsert(productsToSync, { onConflict: 'id' });
 
       if (error) throw error;
-      showSuccess("Catalogue mis à jour !");
+      showSuccess("Catalogue enregistré avec succès !");
       setIsEditMode(false);
     } catch (err: any) {
       showError("Erreur lors de l'enregistrement : " + err.message);
@@ -219,8 +225,7 @@ const ImportedProducts = () => {
           };
         });
         setCategories(newCats);
-        localStorage.setItem('imported_categories', JSON.stringify(newCats));
-        showSuccess("Image enregistrée !");
+        showSuccess("Image prête pour enregistrement !");
       };
       reader.readAsDataURL(file);
     }
@@ -268,7 +273,7 @@ const ImportedProducts = () => {
                 className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black"
               >
                 {isSaving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} 
-                SAUVEGARDER LES PRIX
+                ENREGISTRER
               </Button>
             )}
             <div className="flex items-center space-x-3 bg-white p-2.5 px-4 rounded-xl shadow-md border border-blue-200">
