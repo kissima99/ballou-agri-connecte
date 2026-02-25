@@ -135,7 +135,7 @@ const LocalProducts = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const productsToSync = products.map(p => ({
+      const payload = products.map(p => ({
         id: String(p.id),
         name: p.name,
         price: p.price,
@@ -145,9 +145,8 @@ const LocalProducts = () => {
         category: 'local'
       }));
 
-      const { error } = await supabase
-        .from('products')
-        .upsert(productsToSync, { onConflict: 'id' });
+      // Utilisation de la fonction RPC pour forcer l'enregistrement
+      const { error } = await supabase.rpc('upsert_products_from_json', { p_payload: payload });
 
       if (error) throw error;
 

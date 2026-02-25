@@ -159,7 +159,7 @@ const ImportedProducts = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const productsToSync = categories.flatMap(cat => 
+      const payload = categories.flatMap(cat => 
         cat.products.map(p => ({
           id: String(p.id),
           name: p.name,
@@ -170,9 +170,8 @@ const ImportedProducts = () => {
         }))
       );
 
-      const { error } = await supabase
-        .from('products')
-        .upsert(productsToSync, { onConflict: 'id' });
+      // Utilisation de la fonction RPC pour forcer l'enregistrement
+      const { error } = await supabase.rpc('upsert_products_from_json', { p_payload: payload });
 
       if (error) throw error;
       showSuccess("Catalogue enregistré avec succès !");
