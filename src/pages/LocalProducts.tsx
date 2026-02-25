@@ -32,7 +32,7 @@ const LocalProducts = () => {
   const { addToCart } = useCart();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const initialProducts: LocalProduct[] = [
     { id: 1, name: "Riz de la vallée", price: 17500, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 17500, pricePerKg: 400 },
     { id: 2, name: "Oignon Local", price: 12000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
@@ -75,13 +75,13 @@ const LocalProducts = () => {
       }
       setProducts(currentProducts);
 
-      // 2. Synchronisation avec Supabase
+      // 2. Synchronisation avec Supabase (gérée avec try/catch)
       try {
         const { data, error } = await supabase
           .from('products')
           .select('*')
           .eq('category', 'local');
-        
+
         if (data && data.length > 0) {
           const merged = currentProducts.map(p => {
             const dbP = data.find((dp: any) => dp.id === String(p.id));
@@ -91,7 +91,8 @@ const LocalProducts = () => {
           localStorage.setItem('local_products', JSON.stringify(merged));
         }
       } catch (err) {
-        console.error("Erreur sync Supabase", err);
+        console.error("Erreur sync Supabase (table manquante ?)", err);
+        // On continue sans synchroniser
       }
     };
     loadProducts();
@@ -148,27 +149,32 @@ const LocalProducts = () => {
       // Sauvegarde locale
       localStorage.setItem('local_products', JSON.stringify(products));
 
-      // Synchronisation Supabase
-      const productsToSync = products.map(p => ({
-        id: String(p.id),
-        name: p.name,
-        price: p.price,
-        image: p.image,
-        unit: p.unit,
-        origin: p.origin,
-        category: 'local'
-      }));
+      // Synchronisation Supabase (gérée avec try/catch)
+      try {
+        const productsToSync = products.map(p => ({
+          id: String(p.id),
+          name: p.name,
+          price: p.price,
+          image: p.image,
+          unit: p.unit,
+          origin: p.origin,
+          category: 'local'
+        }));
 
-      const { error } = await supabase
-        .from('products')
-        .upsert(productsToSync, { onConflict: 'id' });
+        const { error } = await supabase
+          .from('products')
+          .upsert(productsToSync, { onConflict: 'id' });
 
-      if (error) throw error;
+        if (error) throw error;
+
+        showSuccess("Catalogue synchronisé avec Supabase !");
+      } catch (err: any) {
+        showError("Erreur de synchronisation Supabase : " + err.message);
+      }
 
       setIsEditMode(false);
-      showSuccess("Catalogue synchronisé avec Supabase !");
     } catch (err: any) {
-      showError("Erreur de synchronisation : " + err.message);
+      showError("Erreur de sauvegarde locale : " + err.message);
     } finally {
       setIsSaving(false);
     }
@@ -206,7 +212,7 @@ const LocalProducts = () => {
               <p className="text-gray-600">Direction : <span className="font-bold text-orange-600">Ballou vers Dakar</span></p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-4 z-50">
             {isEditMode && (
               <Button 

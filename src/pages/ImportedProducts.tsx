@@ -8,10 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Save, Upload, PlusCircle, Scale } from 'lucide-react';
+import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Edit3, Save, Upload, PlusCircle, Scale, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
+import { supabase } from "@/integrations/supabase/client";
 
 interface ImportedProduct {
   id: number;
@@ -35,6 +36,7 @@ const ImportedProducts = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const categoryIcons: Record<string, React.ReactNode> = {
     importes: <Package className="w-3.5 h-3.5 mr-1.5" />,
@@ -150,13 +152,41 @@ const ImportedProducts = () => {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setIsSaving(true);
     try {
+      // Sauvegarde locale
       localStorage.setItem('imported_categories', JSON.stringify(categories));
-      showSuccess("Catalogue mis à jour !");
+
+      // Synchronisation Supabase (gérée avec try/catch)
+      try {
+        const productsToSync = categories.flatMap(cat => 
+          cat.products.map(p => ({
+            id: String(p.id),
+            name: p.name,
+            price: p.price,
+            image: p.image,
+            unit: p.unit,
+            category: cat.id
+          }))
+        );
+
+        const { error } = await supabase
+          .from('products')
+          .upsert(productsToSync, { onConflict: 'id' });
+
+        if (error) throw error;
+
+        showSuccess("Catalogue mis à jour !");
+      } catch (err: any) {
+        showError("Erreur de synchronisation Supabase : " + err.message);
+      }
+
       setIsEditMode(false);
-    } catch (err) {
+    } catch (err: any) {
       showError("Erreur lors de l'enregistrement.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -240,7 +270,7 @@ const ImportedProducts = () => {
               <p className="text-gray-600">Direction : <span className="font-bold text-orange-600">Dakar vers Ballou</span></p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-4 z-50">
             {isEditMode && (
               <Button 
