@@ -102,28 +102,33 @@ const Checkout = () => {
     }
   };
 
-  const handleFinalConfirm = () => {
+  const handleFinalConfirm = async () => {
     if (!confirmedOrderData) return;
     
     setIsProcessing(true);
     
     try {
-      // Génération immédiate du reçu PDF
-      generateReceipt({
+      // Génération du reçu PDF
+      const receiptData = {
         id: confirmedOrderData.id,
         customer: confirmedOrderData.customer_name,
         phone: confirmedOrderData.phone,
         address: confirmedOrderData.address,
         amount: confirmedOrderData.amount,
-        date: new Date(confirmedOrderData.created_at).toLocaleDateString(),
+        date: new Date(confirmedOrderData.created_at).toLocaleDateString('fr-FR'),
         product: confirmedOrderData.items.map((i: any) => `${i.name} (${i.quantity} ${i.unit})`).join(", ")
-      });
+      };
+      
+      generateReceipt(receiptData);
+      
+      // Attendre que le téléchargement se lance
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Mise à jour de l'historique local pour le client
+      // Mise à jour de l'historique local
       const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
       const newHistoryItem = {
         id: confirmedOrderData.id,
-        date: new Date(confirmedOrderData.created_at).toLocaleDateString(),
+        date: new Date(confirmedOrderData.created_at).toLocaleDateString('fr-FR'),
         product: confirmedOrderData.items.map((i: any) => i.name).join(", "),
         amount: confirmedOrderData.amount,
         status: "Payé",
@@ -134,13 +139,14 @@ const Checkout = () => {
       localStorage.setItem('purchase_history', JSON.stringify([newHistoryItem, ...history]));
       window.dispatchEvent(new Event('storage'));
 
-      showSuccess("Reçu généré ! Redirection vers votre historique...");
+      showSuccess("Reçu téléchargé ! Redirection vers votre historique...");
       
+      clearCart();
       setTimeout(() => {
-        clearCart();
         navigate('/history');
-      }, 1500);
-    } catch (err) {
+      }, 2000);
+    } catch (err: any) {
+      console.error("Erreur lors de la génération du reçu:", err);
       showError("Erreur lors de la génération du reçu.");
       setIsProcessing(false);
     }
