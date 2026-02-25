@@ -16,17 +16,52 @@ import {
   Bell,
   Truck,
   CreditCard,
-  Check
+  Check,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
+
+  const fetchOrders = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedOrders = data.map(o => ({
+        id: o.id,
+        customer: o.customer_name,
+        phone: o.phone,
+        address: o.address,
+        amount: o.amount,
+        status: o.status,
+        isNew: o.is_new,
+        paymentValidated: o.status !== 'Attente Paiement',
+        method: 'wave' // Par défaut pour l'affichage
+      }));
+
+      setOrders(formattedOrders);
+      setNewOrdersCount(formattedOrders.filter(o => o.isNew).length);
+    } catch (err: any) {
+      showError("Erreur lors du chargement : " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const isAdmin = localStorage.getItem('is_super_admin') === 'true';
@@ -36,44 +71,66 @@ const AdminDashboard = () => {
       return;
     }
 
-    const loadOrders = () => {
-      const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
-      setOrders(history);
-      const newCount = history.filter((o: any) => o.isNew).length;
-      setNewOrdersCount(newCount);
-    };
+    fetchOrders();
 
-    loadOrders();
-    window.addEventListener('storage', loadOrders);
-    return () => window.removeEventListener('storage', loadOrders);
+    // Souscription aux changements en temps réel
+    const channel = supabase
+      .channel('admin_orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchOrders();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [navigate]);
 
-  const updateOrderStatus = (id: string, newStatus: string) => {
-    const updatedOrders = orders.map(order => 
-      order.id === id ? { ...order, status: newStatus, isNew: false } : order
-    );
-    setOrders(updatedOrders);
-    localStorage.setItem('purchase_history', JSON.stringify(updatedOrders));
-    window.dispatchEvent(new Event('storage'));
-    showSuccess(`Commande ${id} mise à jour : ${newStatus}`);
+  const updateOrderStatus = async (id: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus, is_new: false })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      showSuccess(`Commande ${id} mise à jour : ${newStatus}`);
+      fetchOrders();
+    } catch (err: any) {
+      showError("Erreur de mise à jour : " + err.message);
+    }
   };
 
-  const validatePayment = (id: string) => {
-    const updatedOrders = orders.map(order => 
-      order.id === id ? { ...order, paymentValidated: true, isNew: false } : order
-    );
-    setOrders(updatedOrders);
-    localStorage.setItem('purchase_history', JSON.stringify(updatedOrders));
-    window.dispatchEvent(new Event('storage'));
-    showSuccess(`Paiement validé pour la commande ${id}`);
+  const validatePayment = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'Payé', is_new: false })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      showSuccess(`Paiement validé pour la commande ${id}`);
+      fetchOrders();
+    } catch (err: any) {
+      showError("Erreur de validation : " + err.message);
+    }
   };
 
-  const clearNotifications = () => {
-    const updatedOrders = orders.map(o => ({ ...o, isNew: false }));
-    setOrders(updatedOrders);
-    localStorage.setItem('purchase_history', JSON.stringify(updatedOrders));
-    setNewOrdersCount(0);
-    showSuccess("Notifications effacées");
+  const clearNotifications = async () => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ is_new: false })
+        .eq('is_new', true);
+
+      if (error) throw error;
+      showSuccess("Notifications effacées");
+      fetchOrders();
+    } catch (err: any) {
+      showError("Erreur : " + err.message);
+    }
   };
 
   const filteredOrders = orders.filter(order => {
@@ -103,20 +160,31 @@ const AdminDashboard = () => {
               <LayoutDashboard className="h-8 w-8 text-orange-600" /> 
               Super Admin
             </h1>
-            <p className="text-gray-500 font-medium">Gestion des flux et validation des paiements</p>
+            <p className="text-gray-500 font-medium">Gestion des flux et validation des paiements en temps réel</p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={clearNotifications}
-            className={`rounded-full h-12 w-12 p-0 border-orange-200 bg-white relative ${newOrdersCount > 0 ? 'ring-2 ring-orange-500' : ''}`}
-          >
-            <Bell className={`h-6 w-6 ${newOrdersCount > 0 ? 'text-orange-600 animate-swing' : 'text-gray-400'}`} />
-            {newOrdersCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full">
-                {newOrdersCount}
-              </span>
-            )}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={fetchOrders} 
+              className="rounded-full text-gray-400 hover:text-orange-600"
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={clearNotifications}
+              className={`rounded-full h-12 w-12 p-0 border-orange-200 bg-white relative ${newOrdersCount > 0 ? 'ring-2 ring-orange-500' : ''}`}
+            >
+              <Bell className={`h-6 w-6 ${newOrdersCount > 0 ? 'text-orange-600 animate-swing' : 'text-gray-400'}`} />
+              {newOrdersCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full">
+                  {newOrdersCount}
+                </span>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -164,67 +232,68 @@ const AdminDashboard = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader className="bg-stone-50">
-                <TableRow className="hover:bg-transparent border-stone-100">
-                  <TableHead className="font-bold text-gray-900 py-4 pl-6">ID</TableHead>
-                  <TableHead className="font-bold text-gray-900">Client</TableHead>
-                  <TableHead className="font-bold text-gray-900">Méthode</TableHead>
-                  <TableHead className="font-bold text-gray-900">Montant</TableHead>
-                  <TableHead className="font-bold text-gray-900">Statut</TableHead>
-                  <TableHead className="font-bold text-gray-900 text-right pr-6">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredOrders.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-20 text-gray-400 font-medium">Aucune commande.</TableCell></TableRow>
-                ) : (
-                  filteredOrders.map((order) => (
-                    <TableRow key={order.id} className={`border-stone-50 hover:bg-stone-50/50 transition-colors ${order.isNew ? 'bg-orange-50/30' : ''}`}>
-                      <TableCell className="font-black text-orange-600 pl-6">{order.id}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-gray-900">{order.customer}</span>
-                          <span className="text-[10px] text-gray-400 font-medium">{order.phone}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="uppercase text-[9px] font-bold">
-                          {order.method === 'wave' ? 'Wave' : 'Orange Money'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-bold text-gray-900">{order.amount.toLocaleString()} FCFA</TableCell>
-                      <TableCell>
-                        <Badge className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border-none ${
-                          order.status === 'Attente Paiement' ? 'bg-red-100 text-red-700' :
-                          order.status === 'Payé' ? 'bg-orange-100 text-orange-700' :
-                          order.status === 'En cours' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                        }`}>{order.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right pr-6">
-                        <div className="flex justify-end gap-2">
-                          {order.status === 'Attente Paiement' && !order.paymentValidated && (
-                            <Button onClick={() => validatePayment(order.id)} className="bg-red-600 hover:bg-red-700 h-8 px-3 text-[10px] font-bold rounded-lg">
-                              <Check className="w-3 h-3 mr-1" /> VALIDER PAIEMENT
-                            </Button>
-                          )}
-                          {order.status === 'Payé' && (
-                            <Button onClick={() => updateOrderStatus(order.id, 'En cours')} className="bg-blue-600 hover:bg-blue-700 h-8 px-3 text-[10px] font-bold rounded-lg">
-                              <Truck className="w-3 h-3 mr-1" /> EXPÉDIER
-                            </Button>
-                          )}
-                          {order.status === 'En cours' && (
-                            <Button onClick={() => updateOrderStatus(order.id, 'Livré')} className="bg-green-600 hover:bg-green-700 h-8 px-3 text-[10px] font-bold rounded-lg">
-                              <CheckCircle2 className="w-3 h-3 mr-1" /> LIVRER
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="h-10 w-10 animate-spin text-orange-600 mb-4" />
+                <p className="text-gray-500 font-medium">Chargement des commandes...</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader className="bg-stone-50">
+                  <TableRow className="hover:bg-transparent border-stone-100">
+                    <TableHead className="font-bold text-gray-900 py-4 pl-6">ID</TableHead>
+                    <TableHead className="font-bold text-gray-900">Client</TableHead>
+                    <TableHead className="font-bold text-gray-900">Montant</TableHead>
+                    <TableHead className="font-bold text-gray-900">Statut</TableHead>
+                    <TableHead className="font-bold text-gray-900 text-right pr-6">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredOrders.length === 0 ? (
+                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-gray-400 font-medium">Aucune commande trouvée.</TableCell></TableRow>
+                  ) : (
+                    filteredOrders.map((order) => (
+                      <TableRow key={order.id} className={`border-stone-50 hover:bg-stone-50/50 transition-colors ${order.isNew ? 'bg-orange-50/30' : ''}`}>
+                        <TableCell className="font-black text-orange-600 pl-6">{order.id}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-gray-900">{order.customer}</span>
+                            <span className="text-[10px] text-gray-400 font-medium">{order.phone}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-bold text-gray-900">{order.amount.toLocaleString()} FCFA</TableCell>
+                        <TableCell>
+                          <Badge className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border-none ${
+                            order.status === 'Attente Paiement' ? 'bg-red-100 text-red-700' :
+                            order.status === 'Payé' ? 'bg-orange-100 text-orange-700' :
+                            order.status === 'En cours' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                          }`}>{order.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right pr-6">
+                          <div className="flex justify-end gap-2">
+                            {order.status === 'Attente Paiement' && (
+                              <Button onClick={() => validatePayment(order.id)} className="bg-red-600 hover:bg-red-700 h-8 px-3 text-[10px] font-bold rounded-lg">
+                                <Check className="w-3 h-3 mr-1" /> VALIDER PAIEMENT
+                              </Button>
+                            )}
+                            {order.status === 'Payé' && (
+                              <Button onClick={() => updateOrderStatus(order.id, 'En cours')} className="bg-blue-600 hover:bg-blue-700 h-8 px-3 text-[10px] font-bold rounded-lg">
+                                <Truck className="w-3 h-3 mr-1" /> EXPÉDIER
+                              </Button>
+                            )}
+                            {order.status === 'En cours' && (
+                              <Button onClick={() => updateOrderStatus(order.id, 'Livré')} className="bg-green-600 hover:bg-green-700 h-8 px-3 text-[10px] font-bold rounded-lg">
+                                <CheckCircle2 className="w-3 h-3 mr-1" /> LIVRER
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>
