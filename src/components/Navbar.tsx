@@ -95,6 +95,10 @@ const Navbar = () => {
             <MessageSquare className="mr-1 h-4 w-4" /> Avis
           </Link>
 
+          <Link to="/purchase-history" className="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center transition-colors">
+            <History className="mr-1 h-4 w-4" /> Mes Achats
+          </Link>
+
           {isAdmin && (
             <Link to="/admin" className="text-sm font-bold text-orange-600 hover:text-orange-700 flex items-center transition-colors bg-orange-50 px-3 py-1.5 rounded-full">
               <ShieldAlert className="mr-1 h-4 w-4" /> Admin

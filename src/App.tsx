@@ -17,6 +17,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import Feedback from "@/pages/Feedback";
 import Login from "@/pages/Login";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import PurchaseHistory from "@/pages/PurchaseHistory"; // NEW IMPORT
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/receipt/:orderId" element={<Receipt />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/feedback" element={<Feedback />} />
+            <Route path="/purchase-history" element={<PurchaseHistory />} /> // NEW ROUTE
             <Route path="*" element={<NotFound />} />
           </Routes>
           <WhatsAppButton />
