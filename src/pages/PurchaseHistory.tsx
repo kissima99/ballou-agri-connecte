@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Home, Search } from 'lucide-react';
+import { ShoppingBag, Home, Search, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { generateReceipt } from '@/utils/receipt';
 
 const PurchaseHistory = () => {
   const [history, setHistory] = useState<any[]>([]);
@@ -16,6 +17,20 @@ const PurchaseHistory = () => {
     const savedHistory = JSON.parse(localStorage.getItem('purchase_history') || '[]');
     setHistory(savedHistory);
   }, []);
+
+  const handleDownloadReceipt = (order: any) => {
+    const receiptData = {
+      id: order.id,
+      customer_name: order.customer_name,
+      phone: order.phone,
+      address: order.address,
+      amount: order.amount,
+      status: order.status,
+      items: order.items,
+      date: order.date
+    };
+    generateReceipt(receiptData);
+  };
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -27,7 +42,7 @@ const PurchaseHistory = () => {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-green-900">Historique des Achats</h1>
-            <p className="text-gray-600">Consultez vos commandes passées et leur statut.</p>
+            <p className="text-gray-600">Consultez vos commandes passées et téléchargez vos reçus.</p>
           </div>
         </div>
 
@@ -53,6 +68,7 @@ const PurchaseHistory = () => {
                   <TableHead>Produits</TableHead>
                   <TableHead>Montant</TableHead>
                   <TableHead>Statut</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -62,11 +78,21 @@ const PurchaseHistory = () => {
                     <TableCell>{order.date}</TableCell>
                     <TableCell>{order.customer_name}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{order.product}</TableCell>
-                    <TableCell>{order.amount.toLocaleString()} FCFA</TableCell>
+                    <TableCell className="font-bold">{order.amount.toLocaleString()} FCFA</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                         {order.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleDownloadReceipt(order)}
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      >
+                        <Download className="h-4 w-4 mr-1" /> Reçu PDF
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

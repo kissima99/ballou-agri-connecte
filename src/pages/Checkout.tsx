@@ -119,6 +119,9 @@ const Checkout = () => {
       existingHistory.unshift(historyItem);
       localStorage.setItem('purchase_history', JSON.stringify(existingHistory));
       
+      console.log('Commande sauvegardée dans l\'historique:', historyItem);
+      console.log('Historique complet:', existingHistory);
+      
       // Vider le panier
       clearCart();
       
