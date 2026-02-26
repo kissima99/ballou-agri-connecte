@@ -57,7 +57,6 @@ export const generateReceipt = async (data: ReceiptData) => {
     doc.line(10, 45, 200, 45);
 
     // Informations de la commande
-    doc.setFont('Helvetica', 'normal');
     doc.setFontSize(11);
     doc.setTextColor(textColor);
     doc.text(`N° Commande: ${data.id}`, 15, 55);
@@ -97,6 +96,7 @@ export const generateReceipt = async (data: ReceiptData) => {
     doc.line(15, 130, 195, 130);
 
     // Contenu du tableau
+    doc.setFontSize(10);
     doc.setFont('Helvetica', 'normal');
     let yPosition = 138;
     data.items.forEach((item) => {
@@ -139,4 +139,9 @@ export const generateReceipt = async (data: ReceiptData) => {
     console.error('Erreur lors de la génération du reçu:', error);
     alert('Erreur lors de la génération du reçu. Veuillez réessayer.');
   }
+};
+
+export const viewReceipt = (orderId: string) => {
+  // Simulate receipt viewing (in real app, this would fetch from database or show PDF)
+  alert(`Reçu pour la commande #${orderId} est disponible. Dans une application réelle, cela afficherait le PDF.`);
 };

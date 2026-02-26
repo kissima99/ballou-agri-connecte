@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 
-const History = () => {
+const PurchaseHistory = () => {
   const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
   
   return (
@@ -49,9 +49,9 @@ const History = () => {
   );
 };
 
-const viewReceipt = (orderId: string) => {
+const viewReceipt = (orderId) => {
   // Simulate receipt viewing (in real app, this would fetch from database or show PDF)
   alert(`Reçu pour la commande #${orderId} est disponible. Dans une application réelle, cela afficherait le PDF.`);
 };
 
-export default History;
+export default PurchaseHistory;
