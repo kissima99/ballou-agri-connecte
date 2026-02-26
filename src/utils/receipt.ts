@@ -32,7 +32,7 @@ export const generateReceipt = (data: ReceiptData) => {
 
     doc.setFontSize(12);
     doc.setTextColor(secondaryColor);
-    doc.text('Plateforme d’échange agricole', 105, 28, { align: 'center' });
+    doc.text('Plateforme d\'échange agricole', 105, 28, { align: 'center' });
 
     // Ligne
     doc.setLineWidth(0.5);
@@ -64,7 +64,9 @@ export const generateReceipt = (data: ReceiptData) => {
     doc.text('Montant total:', 15, 100);
     doc.setFontSize(18);
     doc.setTextColor('#d9534f');
-    doc.text(`${data.amount.toLocaleString()} FCFA`, 195, 100, { align: 'right' });
+    // Formatage correct du montant sans caractères spéciaux
+    const formattedAmount = Math.round(data.amount).toLocaleString('fr-FR');
+    doc.text(`${formattedAmount} FCFA`, 195, 100, { align: 'right' });
 
     // Ligne
     doc.setDrawColor(primaryColor);
@@ -88,7 +90,7 @@ export const generateReceipt = (data: ReceiptData) => {
     // Pied de page
     doc.setFontSize(9);
     doc.setTextColor(lightGray);
-    doc.text('BALLOU AGRI CONNECT - Plateforme d’échange agricole', 105, 285, { align: 'center' });
+    doc.text('BALLOU AGRI CONNECT - Plateforme d\'échange agricole', 105, 285, { align: 'center' });
     doc.text('www.ballouagriconnect.com', 105, 292, { align: 'center' });
 
     // Ligne de séparation du footer
