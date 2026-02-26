@@ -17,7 +17,7 @@ interface ReceiptData {
  * signature, couleurs et mise en page adaptée à l'application.
  * @param data Données du reçu
  */
-export const generateReceipt = (data: ReceiptData) => {
+export const generateReceipt = async (data: ReceiptData) => {
   try {
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -82,15 +82,10 @@ export const generateReceipt = (data: ReceiptData) => {
     doc.setDrawColor(primaryColor);
     doc.line(15, 108, 195, 108);
 
-    // QR code vers le suivi de commande
-    const qrUrl = `https://ballouagriconnect.com/order/${data.id}`;
-    const qrCodeDataUrl = await QRCode.toDataURL(qrUrl);
-    doc.addImage(qrCodeDataUrl, 'PNG', 10, 10, 100, 100);
-
-    // Tableau des articles
+    // Produits
     doc.setFontSize(12);
     doc.setTextColor(textColor);
-    doc.text('Articles commandés:', 15, 120);
+    doc.text('Articles commandés:', 15, 118);
     const productLines = data.product.split(',').map((item, index) => `${index + 1}. ${item}`);
     doc.setFontSize(10);
     productLines.forEach((line, index) => {
@@ -117,6 +112,28 @@ export const generateReceipt = (data: ReceiptData) => {
     // Ligne de séparation du footer
     doc.setDrawColor(primaryColor);
     doc.line(10, 280, 200, 280);
+
+    // QR code vers le suivi de commande
+    const qrUrl = `https://ballouagriconnect.com/order/${data.id}`;
+    const qrCodeDataUrl = await QRCode.toDataURL(qrUrl);
+    doc.addImage(qrCodeDataUrl, 'PNG', 10, 10, 100, 100);
+
+    // Ligne
+    doc.setDrawColor(primaryColor);
+    doc.line(10, 280, 200, 280);
+
+    // Signature du client
+    doc.setFontSize(11);
+    doc.text('Signature du client:', 15, 290);
+    doc.text('_______________________________', 15, 295);
+    doc.text('Date:', 15, 300);
+    doc.text(new Date().toLocaleDateString('fr-FR'), 15, 305);
+
+    // Pied de page
+    doc.setFontSize(9);
+    doc.setTextColor(lightGray);
+    doc.text('BALLOU AGRI CONNECT - Plateforme d\'échange agricole', 105, 315, { align: 'center' });
+    doc.text('www.ballouagriconnect.com', 105, 322, { align: 'center' });
 
     doc.save(`reçu_${data.id}.pdf`);
   } catch (error) {
