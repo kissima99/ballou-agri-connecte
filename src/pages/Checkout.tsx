@@ -4,12 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, Trash2, Minus, Plus, ArrowRight, Home, Truck, Loader2, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, Home, Loader2, CheckCircle2, ExternalLink } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
-import { handleOrderConfirmation } from '@/utils/receipt';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -21,7 +20,6 @@ const Checkout = () => {
     email: ""
   });
   const [isProcessing, setIsProcessing] = useState(false);
-  const [confirmedOrderData, setConfirmedOrderData] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -37,7 +35,7 @@ const Checkout = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleInitiatePayment = async () => {
+  const handleCommander = async () => {
     if (!formData.name || !formData.phone || !formData.address || !formData.email) {
       showError("Veuillez remplir tous les champs obligatoires.");
       return;
@@ -73,24 +71,15 @@ const Checkout = () => {
 
       if (error) throw error;
 
-      setConfirmedOrderData(pendingOrder);
-      showSuccess("Commande créée avec succès !");
+      // Open Wave payment link in new tab
+      const wavePaymentUrl = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
+      window.open(wavePaymentUrl, '_blank');
+
+      showSuccess("Commande créée ! Effectuez le paiement via Wave.");
+      clearCart();
+      navigate('/');
     } catch (error: any) {
       showError("Erreur lors de la création de la commande: " + error.message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleConfirmOrder = async () => {
-    if (!confirmedOrderData) return;
-
-    setIsProcessing(true);
-    try {
-      await handleOrderConfirmation(confirmedOrderData, navigate, clearCart);
-    } catch (err) {
-      // Error is already shown in handleOrderConfirmation
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -231,22 +220,13 @@ const Checkout = () => {
               </CardContent>
               <CardFooter className="flex flex-col gap-3">
                 <Button 
-                  onClick={handleInitiatePayment} 
+                  onClick={handleCommander} 
                   disabled={isProcessing}
                   className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold shadow-lg"
                 >
-                  {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
-                  Créer la commande
+                  {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ExternalLink className="mr-2 h-5 w-5" />}
+                  Commander
                 </Button>
-                {confirmedOrderData && (
-                  <Button 
-                    onClick={handleConfirmOrder} 
-                    disabled={isProcessing}
-                    className="w-full bg-green-600 hover:bg-green-700 h-12 font-bold"
-                  >
-                    Confirmer
-                  </Button>
-                )}
               </CardFooter>
             </Card>
           </div>
