@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, Home, Loader2, ExternalLink, Phone, MessageCircle } from 'lucide-react';
+import { ShoppingCart, Home, Loader2, ExternalLink, MessageCircle } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { supabase } from "@/integrations/supabase/client";
@@ -234,12 +234,12 @@ const Checkout = () => {
                       className={`h-12 ${paymentMethod === 'orange' ? 'bg-orange-600 hover:bg-orange-700' : 'border-orange-200 text-orange-700'}`}
                       onClick={() => setPaymentMethod('orange')}
                     >
-                      <Phone className="mr-2 h-4 w-4" /> Orange Money
+                      Orange Money
                     </Button>
                   </div>
                   {paymentMethod === 'orange' && (
                     <div className="bg-orange-50 p-3 rounded-lg text-sm text-orange-700">
-                      <Phone className="mr-2 h-4 w-4 inline" /> Contactez-nous au <strong>782254548</strong> pour finaliser votre paiement Orange Money.
+                      Contactez-nous au <strong>782254548</strong> pour finaliser votre paiement Orange Money.
                     </div>
                   )}
                 </div>
