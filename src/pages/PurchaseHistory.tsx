@@ -1,108 +1,57 @@
-"use client";
-
-import React, { useEffect, useState } from 'react';
-import Navbar from '@/components/Navbar';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Home, Search, Download } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { generateReceipt } from '@/utils/receipt';
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { FileDownload } from 'lucide-react';
 
 const PurchaseHistory = () => {
-  const [history, setHistory] = useState<any[]>([]);
-
-  useEffect(() => {
-    const savedHistory = JSON.parse(localStorage.getItem('purchase_history') || '[]');
-    setHistory(savedHistory);
-  }, []);
-
-  const handleDownloadReceipt = (order: any) => {
-    const receiptData = {
-      id: order.id,
-      customer_name: order.customer_name,
-      phone: order.phone,
-      address: order.address,
-      amount: order.amount,
-      status: order.status,
-      items: order.items,
-      date: order.date
-    };
-    generateReceipt(receiptData);
-  };
-
+  const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
+  
   return (
     <div className="min-h-screen bg-stone-50">
-      <Navbar />
       <div className="container px-4 py-12 mx-auto max-w-5xl">
-        <div className="flex items-center gap-4 mb-10">
-          <Button asChild variant="outline" size="icon" className="rounded-full">
-            <Link to="/"><Home className="h-4 w-4 text-green-700" /></Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-green-900">Historique des Achats</h1>
-            <p className="text-gray-600">Consultez vos commandes passées et téléchargez vos reçus.</p>
-          </div>
+        <h1 className="text-3xl font-bold text-green-900 mt-10">Historique des commandes</h1>
+        
+        <div className="space-y-8">
+          {history.map((item, index) => (
+            <div key={index} className="border border-gray-200 rounded-lg p-6 mb-4 shadow-lg">
+              <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">
+                <CardHeader className="bg-green-700 text-white py-4">
+                  <CardTitle className="text-xl">Commande #${item.id}</CardTitle>
+                </CardHeader>
+                
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span>Date: {item.date}</span>
+                    <span>Montant: {item.amount} FCFA</span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <p><strong>Client:</strong> {item.customer_name}</p>
+                    <p><strong>Adresse:</strong> {item.address}</p>
+                    <p><strong>Produits:</strong> {item.product}</p>
+                  </div>
+                  
+                  <div className="text-center mt-4">
+                    <Button 
+                      onClick={() => viewReceipt(item.id)}
+                      className="bg-green-600 hover:bg-green-700 h-12 rounded-lg font-bold"
+                    >
+                      <FileDownload className="mr-2 h-5 w-5" /> Voir le reçu
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ))}
         </div>
-
-        {history.length === 0 ? (
-          <Card className="border-none shadow-sm text-center py-20">
-            <CardContent>
-              <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-gray-900 mb-2">Aucun achat pour le moment</h3>
-              <p className="text-gray-500 mb-6">Vos commandes apparaîtront ici une fois confirmées.</p>
-              <Button asChild className="bg-green-600 hover:bg-green-700">
-                <Link to="/local-products">Commencer mes achats</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="border-none shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader className="bg-gray-50">
-                <TableRow>
-                  <TableHead>N° Commande</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Produits</TableHead>
-                  <TableHead>Montant</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {history.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-bold text-green-700">{order.id}</TableCell>
-                    <TableCell>{order.date}</TableCell>
-                    <TableCell>{order.customer_name}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{order.product}</TableCell>
-                    <TableCell className="font-bold">{order.amount.toLocaleString()} FCFA</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        {order.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleDownloadReceipt(order)}
-                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                      >
-                        <Download className="h-4 w-4 mr-1" /> Reçu PDF
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        )}
       </div>
     </div>
   );
+};
+
+const viewReceipt = (orderId) => {
+  // Simulate receipt viewing (in real app, this would fetch from database or show PDF)
+  alert(`Reçu pour la commande #${orderId} est disponible. Dans une application réelle, cela afficherait le PDF.`);
 };
 
 export default PurchaseHistory;

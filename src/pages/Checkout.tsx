@@ -97,7 +97,7 @@ const Checkout = () => {
     }
   };
 
-  const handleFinalConfirm = async () => {
+  const handleConfirmOrder = async () => {
     if (!confirmedOrderData) return;
     
     setIsProcessing(true);
@@ -121,10 +121,6 @@ const Checkout = () => {
       localStorage.setItem('purchase_history', JSON.stringify(existingHistory));
       
       console.log('Commande sauvegardée dans l\'historique:', historyItem);
-      console.log('Historique complet:', existingHistory);
-      
-      // Vider le panier
-      clearCart();
       
       // Générer et télécharger automatiquement le reçu PDF
       try {
@@ -135,10 +131,8 @@ const Checkout = () => {
         showSuccess("Commande confirmée ! (Le reçu sera disponible dans l'historique)");
       }
       
-      // Redirection après un court délai
-      setTimeout(() => {
-        navigate('/history');
-      }, 2000);
+      // Redirection vers l'historique pour voir le reçu
+      navigate('/history');
     } catch (err: any) {
       console.error("Erreur lors de la confirmation:", err);
       showError("Erreur lors de la confirmation.");
@@ -267,9 +261,10 @@ const Checkout = () => {
                       </div>
                     </div>
 
+                    {/* Bouton Confirmer clair et visible */}
                     {isAdminConfirmed && (
                       <Button 
-                        onClick={handleFinalConfirm}
+                        onClick={handleConfirmOrder}
                         disabled={isProcessing}
                         className="w-full bg-orange-500 hover:bg-orange-600 h-12 rounded-xl font-bold shadow-lg"
                       >
