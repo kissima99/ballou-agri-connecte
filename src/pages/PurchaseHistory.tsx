@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileDownload } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 const PurchaseHistory = () => {
   const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
@@ -16,7 +16,7 @@ const PurchaseHistory = () => {
             <div key={index} className="border border-gray-200 rounded-lg p-6 mb-4 shadow-lg">
               <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">
                 <CardHeader className="bg-green-700 text-white py-4">
-                  <CardTitle className="text-xl">Commande #${item.id}</CardTitle>
+                  <CardTitle className="text-xl">Commande #{item.id}</CardTitle>
                 </CardHeader>
                 
                 <CardContent className="p-4 space-y-3">
@@ -36,7 +36,7 @@ const PurchaseHistory = () => {
                       onClick={() => viewReceipt(item.id)}
                       className="bg-green-600 hover:bg-green-700 h-12 rounded-lg font-bold"
                     >
-                      <FileDownload className="mr-2 h-5 w-5" /> Voir le reçu
+                      <Download className="mr-2 h-5 w-5" /> Voir le reçu
                     </Button>
                   </div>
                 </CardContent>
