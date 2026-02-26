@@ -33,7 +33,6 @@ const Checkout = () => {
   const [tempOrderId, setTempOrderId] = useState("");
   const [isInitiating, setIsInitiating] = useState(false);
   const [confirmedOrderData, setConfirmedOrderData] = useState<any>(null);
-  const [receiptGenerated, setReceiptGenerated] = useState(false);
 
   // Polling pour vérifier la validation admin
   useEffect(() => {
@@ -98,7 +97,7 @@ const Checkout = () => {
     }
   };
 
-  const handleConfirmAndDownloadReceipt = async () => {
+  const handleFinalConfirm = async () => {
     if (!confirmedOrderData) return;
     
     setIsProcessing(true);
@@ -122,18 +121,21 @@ const Checkout = () => {
       localStorage.setItem('purchase_history', JSON.stringify(existingHistory));
       
       console.log('Commande sauvegardée dans l\'historique:', historyItem);
+      console.log('Historique complet:', existingHistory);
+      
+      // Vider le panier
+      clearCart();
       
       // Générer et télécharger automatiquement le reçu PDF
       try {
         await generateReceipt(historyItem);
-        setReceiptGenerated(true);
-        showSuccess("Votre reçu a été généré et téléchargé automatiquement !");
+        showSuccess("Commande confirmée ! Votre reçu a été téléchargé automatiquement.");
       } catch (receiptError) {
         console.error("Erreur lors de la génération du reçu:", receiptError);
-        showSuccess("Votre reçu a été généré mais la téléchargement a échoué. Vérifiez l'historique des achats.");
+        showSuccess("Commande confirmée ! (Le reçu sera disponible dans l'historique)");
       }
       
-      // Redirection vers l'historique après un court délai
+      // Redirection après un court délai
       setTimeout(() => {
         navigate('/history');
       }, 2000);
@@ -267,11 +269,11 @@ const Checkout = () => {
 
                     {isAdminConfirmed && (
                       <Button 
-                        onClick={handleConfirmAndDownloadReceipt}
+                        onClick={handleFinalConfirm}
                         disabled={isProcessing}
                         className="w-full bg-orange-500 hover:bg-orange-600 h-12 rounded-xl font-bold shadow-lg"
                       >
-                        {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "CONFIRMER"}
+                        {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "CONFIRMER LA COMMANDE"}
                       </Button>
                     )}
                   </div>
