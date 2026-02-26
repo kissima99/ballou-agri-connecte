@@ -1,17 +1,11 @@
-import { toast } from "sonner";
-
 export const showSuccess = (message: string) => {
-  toast.success(message);
+  console.log(`✅ Success: ${message}`);
 };
 
 export const showError = (message: string) => {
-  toast.error(message);
+  console.error(`❌ Error: ${message}`);
 };
 
-export const showLoading = (message: string) => {
-  return toast.loading(message);
-};
-
-export const dismissToast = (toastId: string) => {
-  toast.dismiss(toastId);
+export const clearPurchaseHistory = () => {
+  localStorage.removeItem('purchase_history');
 };

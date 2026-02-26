@@ -2,8 +2,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
+import { clearPurchaseHistory } from '@/utils/toast'; // Import the new function
 
-const PurchaseHistory = () => {
+const History = () => {
   const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
   
   return (
@@ -44,14 +45,25 @@ const PurchaseHistory = () => {
             </div>
           ))}
         </div>
+        
+        {/* Add the clear history button */}
+        <div className="flex justify-end mt-8">
+          <Button 
+            onClick={clearPurchaseHistory} 
+            variant="outline" 
+            className="bg-red-500 hover:bg-red-700 text-white font-bold px-4 py-2 rounded"
+          >
+            Supprimer l'historique
+          </Button>
+        </div>
       </div>
     </div>
   );
 };
 
-const viewReceipt = (orderId) => {
+const viewReceipt = (orderId: string) => {
   // Simulate receipt viewing (in real app, this would fetch from database or show PDF)
   alert(`Reçu pour la commande #${orderId} est disponible. Dans une application réelle, cela afficherait le PDF.`);
 };
 
-export default PurchaseHistory;
+export default History;
