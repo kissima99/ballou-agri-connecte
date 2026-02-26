@@ -1,21 +1,22 @@
-import { Toaster } from "./components/ui/toaster";
-import { Toaster as Sonner } from "./components/ui/sonner";
-import { TooltipProvider } from "./components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { CartProvider } from "./context/CartContext";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Tracking from "./pages/Tracking";
-import LocalProducts from "./pages/LocalProducts";
-import ImportedProducts from "./pages/ImportedProducts";
-import Insights from "./pages/Insights";
-import Cart from "./pages/Cart";
-import AdminDashboard from "./pages/AdminDashboard";
-import Feedback from "./pages/Feedback";
-import Login from "./pages/Login";
-import Checkout from "./pages/Checkout";
-import WhatsAppButton from "./components/WhatsAppButton";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { CartProvider } from "@/context/CartContext";
+import Index from "@/pages/Index";
+import NotFound from "@/pages/NotFound";
+import Tracking from "@/pages/Tracking";
+import LocalProducts from "@/pages/LocalProducts";
+import ImportedProducts from "@/pages/ImportedProducts";
+import Insights from "@/pages/Insights";
+import Cart from "@/pages/Cart";
+import Checkout from "@/pages/Checkout";
+import Receipt from "@/pages/Receipt";
+import AdminDashboard from "@/pages/AdminDashboard";
+import Feedback from "@/pages/Feedback";
+import Login from "@/pages/Login";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/insights" element={<Insights />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/receipt/:orderId" element={<Receipt />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/feedback" element={<Feedback />} />
             <Route path="*" element={<NotFound />} />

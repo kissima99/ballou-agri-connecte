@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, Home, Loader2, CheckCircle2, ExternalLink } from 'lucide-react';
+import { ShoppingCart, Home, Loader2, ExternalLink, Phone, MessageCircle } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { supabase } from "@/integrations/supabase/client";
@@ -16,11 +16,11 @@ const Checkout = () => {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    address: "",
-    email: ""
+    address: ""
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'wave' | 'orange'>('wave');
 
   useEffect(() => {
     const getUser = async () => {
@@ -36,7 +36,7 @@ const Checkout = () => {
   };
 
   const handleCommander = async () => {
-    if (!formData.name || !formData.phone || !formData.address || !formData.email) {
+    if (!formData.name || !formData.phone || !formData.address) {
       showError("Veuillez remplir tous les champs obligatoires.");
       return;
     }
@@ -50,7 +50,6 @@ const Checkout = () => {
         customer_name: formData.name,
         phone: formData.phone,
         address: formData.address,
-        email: formData.email,
         amount: totalPrice + 2000,
         status: "Attente de validation admin",
         items: cart.map(i => ({ 
@@ -71,13 +70,25 @@ const Checkout = () => {
 
       if (error) throw error;
 
-      // Open Wave payment link in new tab
-      const wavePaymentUrl = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
-      window.open(wavePaymentUrl, '_blank');
+      // Open payment link based on selected method
+      if (paymentMethod === 'wave') {
+        const wavePaymentUrl = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
+        window.open(wavePaymentUrl, '_blank');
+      } else {
+        // Orange Money - open WhatsApp with pre-filled message
+        const phoneNumber = "782254548";
+        const message = encodeURIComponent(`Bonjour, je souhaite payer ma commande ${orderId} d'un montant de ${(totalPrice + 2000).toLocaleString()} FCFA via Orange Money.`);
+        const orangeMoneyUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+        window.open(orangeMoneyUrl, '_blank');
+      }
 
-      showSuccess("Commande créée ! Effectuez le paiement via Wave.");
+      showSuccess("Commande créée ! Redirection vers le reçu...");
       clearCart();
-      navigate('/');
+      
+      // Redirect to receipt page after a short delay
+      setTimeout(() => {
+        navigate(`/receipt/${orderId}`);
+      }, 1000);
     } catch (error: any) {
       showError("Erreur lors de la création de la commande: " + error.message);
       setIsProcessing(false);
@@ -145,20 +156,6 @@ const Checkout = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">E-mail *</Label>
-                  <Input 
-                    id="email" 
-                    name="email"
-                    type="email"
-                    placeholder="votre@email.com" 
-                    className="rounded-xl" 
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <p className="text-xs text-gray-500">Votre reçu sera envoyé à cette adresse</p>
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="address">Adresse de livraison *</Label>
                   <Input 
                     id="address" 
@@ -218,14 +215,35 @@ const Checkout = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col gap-3">
+              <CardFooter className="flex flex-col gap-4">
+                <div className="space-y-3 w-full">
+                  <Label className="text-sm font-bold">Moyen de paiement</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      type="button"
+                      variant={paymentMethod === 'wave' ? 'default' : 'outline'}
+                      className={`h-12 ${paymentMethod === 'wave' ? 'bg-blue-600 hover:bg-blue-700' : 'border-blue-200 text-blue-700'}`}
+                      onClick={() => setPaymentMethod('wave')}
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" /> Wave
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={paymentMethod === 'orange' ? 'default' : 'outline'}
+                      className={`h-12 ${paymentMethod === 'orange' ? 'bg-orange-600 hover:bg-orange-700' : 'border-orange-200 text-orange-700'}`}
+                      onClick={() => setPaymentMethod('orange')}
+                    >
+                      <Phone className="mr-2 h-4 w-4" /> Orange Money
+                    </Button>
+                  </div>
+                </div>
                 <Button 
                   onClick={handleCommander} 
                   disabled={isProcessing}
                   className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold shadow-lg"
                 >
-                  {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ExternalLink className="mr-2 h-5 w-5" />}
-                  Commander
+                  {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <MessageCircle className="mr-2 h-5 w-5" />}
+                  Commander & Payer
                 </Button>
               </CardFooter>
             </Card>
