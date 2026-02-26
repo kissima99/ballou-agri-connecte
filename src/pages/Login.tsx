@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from 'react-router-dom';
-import { Lock } from 'lucide-react';
+import { Lock, Mail } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -34,16 +34,16 @@ const Login = () => {
         <Card className="w-full max-w-md border-none shadow-2xl rounded-[2.5rem] overflow-hidden">
           <CardHeader className="bg-green-900 text-white text-center py-10">
             <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/20">
-              <Lock className="w-8 h-8 text-orange-500" />
+              <Mail className="w-8 h-8 text-orange-500" />
             </div>
-            <CardTitle className="text-2xl font-black">Identification</CardTitle>
-            <p className="text-green-100 opacity-80 text-sm mt-2">Connectez-vous à votre compte</p>
+            <CardTitle className="text-2xl font-black">Connexion Magique</CardTitle>
+            <p className="text-green-100 opacity-80 text-sm mt-2">Connectez-vous via un lien envoyé par email</p>
           </CardHeader>
           <CardContent className="p-8">
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               <SupabaseAuth 
                 supabaseClient={supabase}
-                view="sign_in"
+                view="magic_link"
                 appearance={{ 
                   theme: ThemeSupa,
                   variables: {
@@ -56,19 +56,21 @@ const Login = () => {
                   }
                 }}
                 providers={[]}
+                magicLink={true}
                 localization={{
                   variables: {
+                    magic_link: {
+                      email_input_label: 'Adresse Email',
+                      email_input_placeholder: 'votre@email.com',
+                      button_label: 'Envoyer le lien magique',
+                      link_text: 'Se connecter avec un lien magique',
+                      confirmation_text: 'Vérifiez votre boîte mail pour le lien de connexion !',
+                    },
                     sign_in: {
                       email_label: 'Adresse Email',
                       password_label: 'Mot de passe',
                       button_label: 'Se connecter',
-                      link_text: 'Vous avez déjà un compte ? Connectez-vous',
-                    },
-                    sign_up: {
-                      email_label: 'Adresse Email',
-                      password_label: 'Mot de passe',
-                      button_label: "S'inscrire",
-                      link_text: 'Vous n\'avez pas de compte ? Inscrivez-vous',
+                      link_text: 'Utiliser un mot de passe',
                     }
                   }
                 }}
