@@ -32,7 +32,7 @@ export const generateReceipt = (data: ReceiptData) => {
 
     doc.setFontSize(12);
     doc.setTextColor(secondaryColor);
-    doc.text('BALLOU AGRI CONNECT', 105, 20, { align: 'center' });
+    doc.text('BALLOU AGRI CONNECT', 105, 20, { align: 'center' } as any);
 
     // Ligne
     doc.setLineWidth(0.5);
