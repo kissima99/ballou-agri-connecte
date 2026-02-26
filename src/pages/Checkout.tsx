@@ -9,7 +9,10 @@ import {
   Home,
   ExternalLink,
   RefreshCw,
-  Loader2
+  Loader2,
+  Check,
+  Clock,
+  AlertTriangle
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
@@ -75,7 +78,7 @@ const Checkout = () => {
         phone: formData.phone,
         address: formData.address,
         amount: totalPrice + 2000,
-        status: "Attente Paiement",
+        status: "Attente de validation admin",
         items: cart.map(i => ({ id: i.id, name: i.name, quantity: i.quantity, price: i.price, unit: i.unit })),
         user_id: user?.id || null,
         zone: "Dakar",
@@ -270,6 +273,21 @@ const Checkout = () => {
                       >
                         {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "CONFIRMER LA COMMANDE"}
                       </Button>
+                    )}
+
+                    {/* Nouveau bouton "Achat Confirmé" */}
+                    {!isAdminConfirmed && paymentSent && (
+                      <div className="p-6 bg-green-50 border border-green-200 rounded-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                          <AlertTriangle className="h-6 w-6 text-orange-500" />
+                          <h4 className="font-black text-sm text-gray-900">EN ATTENTE DE VALIDATION</h4>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-4">Votre paiement a été envoyé. L'administrateur doit le valider avant que vous puissiez confirmer votre achat.</p>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-orange-500" />
+                          <span className="text-xs text-gray-500">Vérification automatique toutes les 4 secondes</span>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
