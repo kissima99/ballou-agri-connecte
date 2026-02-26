@@ -12,7 +12,6 @@ import ImportedProducts from "./pages/ImportedProducts";
 import Insights from "./pages/Insights";
 import Checkout from "./pages/Checkout";
 import Cart from "./pages/Cart";
-import PurchaseHistory from "./pages/History"; // Import renamed page
 import AdminDashboard from "./pages/AdminDashboard";
 import Feedback from "./pages/Feedback";
 import Login from "./pages/Login";
@@ -36,7 +35,6 @@ const App = () => (
             <Route path="/insights" element={<Insights />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
-            <Route path="/history" element={<PurchaseHistory />} /> {/* Add route for purchase history */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/feedback" element={<Feedback />} />
             <Route path="*" element={<NotFound />} />

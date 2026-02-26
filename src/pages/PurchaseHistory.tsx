@@ -1,7 +1,8 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
+import { clearPurchaseHistory } from '@/utils/toast';
 
 const History = () => {
   const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
@@ -43,6 +44,17 @@ const History = () => {
               </Card>
             </div>
           ))}
+        </div>
+        
+        {/* Add the clear history button */}
+        <div className="flex justify-end mt-8">
+          <Button 
+            onClick={clearPurchaseHistory} 
+            variant="outline" 
+            className="bg-red-500 hover:bg-red-700 text-white font-bold px-4 py-2 rounded"
+          >
+            Supprimer l'historique
+          </Button>
         </div>
       </div>
     </div>

@@ -1,28 +1,21 @@
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 
-interface ReceiptItem {
-  name: string;
-  quantity: number;
-  price: number;
-  unit: string;
-}
-
 interface ReceiptData {
   id: string;
+  date: string;
+  status: string;
   customer_name: string;
   phone: string;
   address: string;
   amount: number;
-  status: string;
-  items: ReceiptItem[];
-  date: string;
+  items: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
 }
 
-/**
- * Génère un reçu PDF professionnel avec le design de l'application
- * @param data Données de la commande
- */
 export const generateReceipt = async (data: ReceiptData) => {
   try {
     const doc = new jsPDF({
@@ -65,10 +58,7 @@ export const generateReceipt = async (data: ReceiptData) => {
 
     // Détails client
     doc.setFontSize(12);
-    doc.setFont('Helvetica', 'bold');
-    doc.text('Informations Client:', 15, 80);
     doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(11);
     doc.text(`Nom: ${data.customer_name}`, 15, 87);
     doc.text(`Téléphone: ${data.phone}`, 15, 94);
     doc.text(`Adresse: ${data.address}`, 15, 101);
@@ -79,24 +69,6 @@ export const generateReceipt = async (data: ReceiptData) => {
 
     // Tableau des articles
     doc.setFontSize(12);
-    doc.setFont('Helvetica', 'bold');
-    doc.text('Articles commandés:', 15, 120);
-    
-    // En-têtes du tableau
-    doc.setFontSize(10);
-    doc.setFont('Helvetica', 'bold');
-    doc.text('Article', 15, 128);
-    doc.text('Qté', 100, 128);
-    doc.text('Prix', 120, 128);
-    doc.text('Total', 160, 128);
-    
-    // Ligne sous les en-têtes
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(lightGray);
-    doc.line(15, 130, 195, 130);
-
-    // Contenu du tableau
-    doc.setFontSize(10);
     doc.setFont('Helvetica', 'normal');
     let yPosition = 138;
     data.items.forEach((item) => {
@@ -139,9 +111,4 @@ export const generateReceipt = async (data: ReceiptData) => {
     console.error('Erreur lors de la génération du reçu:', error);
     alert('Erreur lors de la génération du reçu. Veuillez réessayer.');
   }
-};
-
-export const viewReceipt = (orderId: string) => {
-  // Simulate receipt viewing (in real app, this would fetch from database or show PDF)
-  alert(`Reçu pour la commande #${orderId} est disponible. Dans une application réelle, cela afficherait le PDF.`);
 };

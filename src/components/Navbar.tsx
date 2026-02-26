@@ -84,11 +84,6 @@ const Navbar = () => {
                   <Truck className="mr-2 h-4 w-4 text-orange-600" /> Suivi Colis
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
-                <Link to="/history" className="flex items-center py-2">
-                  <History className="mr-2 h-4 w-4 text-purple-600" /> Mes Achats
-                </Link>
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           
