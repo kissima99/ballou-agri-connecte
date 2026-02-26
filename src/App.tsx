@@ -10,7 +10,6 @@ import Tracking from "./pages/Tracking";
 import LocalProducts from "./pages/LocalProducts";
 import ImportedProducts from "./pages/ImportedProducts";
 import Insights from "./pages/Insights";
-import Checkout from "./pages/Checkout";
 import Cart from "./pages/Cart";
 import AdminDashboard from "./pages/AdminDashboard";
 import Feedback from "./pages/Feedback";
@@ -34,7 +33,6 @@ const App = () => (
             <Route path="/imported-products" element={<ImportedProducts />} />
             <Route path="/insights" element={<Insights />} />
             <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/feedback" element={<Feedback />} />
             <Route path="*" element={<NotFound />} />

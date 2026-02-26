@@ -2,7 +2,6 @@ import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
-import { clearPurchaseHistory } from '@/utils/toast';
 
 const History = () => {
   const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
@@ -13,7 +12,7 @@ const History = () => {
         <h1 className="text-3xl font-bold text-green-900 mt-10">Historique des commandes</h1>
         
         <div className="space-y-8">
-          {history.map((item, index) => (
+          {history.map((item: any, index: number) => (
             <div key={index} className="border border-gray-200 rounded-lg p-6 mb-4 shadow-lg">
               <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">
                 <CardHeader className="bg-green-700 text-white py-4">
@@ -45,25 +44,13 @@ const History = () => {
             </div>
           ))}
         </div>
-        
-        {/* Add the clear history button */}
-        <div className="flex justify-end mt-8">
-          <Button 
-            onClick={clearPurchaseHistory} 
-            variant="outline" 
-            className="bg-red-500 hover:bg-red-700 text-white font-bold px-4 py-2 rounded"
-          >
-            Supprimer l'historique
-          </Button>
-        </div>
       </div>
     </div>
   );
 };
 
 const viewReceipt = (orderId: string) => {
-  // Simulate receipt viewing (in real app, this would fetch from database or show PDF)
-  alert(`Reçu pour la commande #${orderId} est disponible. Dans une application réelle, cela afficherait le PDF.`);
+  alert(`Reçu pour la commande #${orderId} est disponible.`);
 };
 
 export default History;
