@@ -15,6 +15,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { supabase } from '@/integrations/supabase/client';
+import { generateReceipt } from '@/utils/receipt';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -125,10 +126,19 @@ const Checkout = () => {
       // Vider le panier
       clearCart();
       
-      showSuccess("Commande confirmée ! Redirection vers l'historique...");
+      // Générer et télécharger automatiquement le reçu PDF
+      try {
+        await generateReceipt(historyItem);
+        showSuccess("Commande confirmée ! Votre reçu a été téléchargé automatiquement.");
+      } catch (receiptError) {
+        console.error("Erreur lors de la génération du reçu:", receiptError);
+        showSuccess("Commande confirmée ! (Le reçu sera disponible dans l'historique)");
+      }
+      
+      // Redirection après un court délai
       setTimeout(() => {
         navigate('/history');
-      }, 1500);
+      }, 2000);
     } catch (err: any) {
       console.error("Erreur lors de la confirmation:", err);
       showError("Erreur lors de la confirmation.");
