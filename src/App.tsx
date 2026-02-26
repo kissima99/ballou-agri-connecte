@@ -14,6 +14,7 @@ import Cart from "./pages/Cart";
 import AdminDashboard from "./pages/AdminDashboard";
 import Feedback from "./pages/Feedback";
 import Login from "./pages/Login";
+import Checkout from "./pages/Checkout";
 import WhatsAppButton from "./components/WhatsAppButton";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/imported-products" element={<ImportedProducts />} />
             <Route path="/insights" element={<Insights />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/feedback" element={<Feedback />} />
             <Route path="*" element={<NotFound />} />
