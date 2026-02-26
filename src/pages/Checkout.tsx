@@ -6,20 +6,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { 
   CheckCircle2, 
-  ArrowRight, 
   Home,
   ExternalLink,
   RefreshCw,
-  Loader2,
-  FileText,
-  Download // Fixed: Use correct icon name
+  Loader2
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { generateReceipt } from '@/utils/receipt';
 import { supabase } from '@/integrations/supabase/client';
-import ReceiptSummary from '@/components/ReceiptSummary';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -37,8 +32,6 @@ const Checkout = () => {
   const [tempOrderId, setTempOrderId] = useState("");
   const [isInitiating, setIsInitiating] = useState(false);
   const [confirmedOrderData, setConfirmedOrderData] = useState<any>(null);
-  const [showReceipt, setShowReceipt] = useState(false);
-  const [receiptData, setReceiptData] = useState<any>(null);
 
   // Polling pour vérifier la validation admin
   useEffect(() => {
@@ -109,59 +102,39 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
-      // Génération du reçu PDF
-      const receiptData = {
+      // Sauvegarder dans l'historique local
+      const historyItem = {
         id: confirmedOrderData.id,
-        customer: confirmedOrderData.customer_name,
+        customer_name: confirmedOrderData.customer_name,
         phone: confirmedOrderData.phone,
         address: confirmedOrderData.address,
         amount: confirmedOrderData.amount,
-        date: new Date(confirmedOrderData.created_at).toLocaleDateString('fr-FR'),
+        status: confirmedOrderData.status,
+        items: confirmedOrderData.items,
+        date: new Date().toLocaleDateString('fr-FR'),
         product: confirmedOrderData.items.map((i: any) => `${i.name} (${i.quantity} ${i.unit})`).join(", ")
       };
       
-      setReceiptData(receiptData);
-      setShowReceipt(true);
-      // On ne navigue pas immédiatement, on garde le récapitulatif affiché
+      const existingHistory = JSON.parse(localStorage.getItem('purchase_history') || '[]');
+      existingHistory.unshift(historyItem);
+      localStorage.setItem('purchase_history', JSON.stringify(existingHistory));
+      
+      // Vider le panier
+      clearCart();
+      
+      showSuccess("Commande confirmée ! Redirection vers l'historique...");
+      setTimeout(() => {
+        navigate('/history');
+      }, 1500);
     } catch (err: any) {
-      console.error("Erreur lors de la génération du reçu:", err);
-      showError("Erreur lors de la génération du reçu.");
+      console.error("Erreur lors de la confirmation:", err);
+      showError("Erreur lors de la confirmation.");
       setIsProcessing(false);
     }
   };
 
   const deliveryFee = 2000;
   const finalTotal = totalPrice + deliveryFee;
-
-  if (showReceipt) {
-    return (
-      <div className="min-h-screen bg-stone-50">
-        <Navbar />
-        <div className="container px-4 py-12 mx-auto max-w-5xl">
-          <div className="flex items-center gap-4 mb-10">
-            <Button asChild variant="outline" size="icon" className="rounded-full border-green-200">
-              <Link to="/"><Home className="h-4 w-4 text-green-700" /></Link>
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-green-900">Reçu de paiement</h1>
-              <p className="text-gray-500 font-medium">Merci pour votre confiance et votre fidélité !</p>
-            </div>
-          </div>
-
-          <ReceiptSummary data={receiptData} />
-
-          <div className="text-center mt-8">
-            <Button 
-              onClick={() => navigate('/')} 
-              className="bg-green-600 hover:bg-green-700 h-12 px-8 font-bold rounded-lg"
-            >
-              {showReceipt ? "NOUVELLE COMMANDE" : "RETOUR AU CATALOGUE"}
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -173,7 +146,7 @@ const Checkout = () => {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-green-900">Finaliser l'achat</h1>
-            <p className="text-gray-500 font-medium">Paiement sécurisé et reçu automatique</p>
+            <p className="text-gray-500 font-medium">Paiement sécurisé et confirmation automatique</p>
           </div>
         </div>
 
@@ -226,7 +199,7 @@ const Checkout = () => {
 
             <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">
               <CardHeader className="bg-stone-100/50 py-6">
-                <CardTitle className="text-xl font-bold">2. Paiement & Reçu</CardTitle>
+                <CardTitle className="text-xl font-bold">2. Paiement</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
                 {!paymentSent ? (
@@ -276,10 +249,20 @@ const Checkout = () => {
                           {isAdminConfirmed ? "PAIEMENT REÇU !" : "ATTENTE DE VALIDATION ADMIN..."}
                         </p>
                         <p className="text-xs opacity-80">
-                          {isAdminConfirmed ? "Votre reçu est prêt à être téléchargé." : "L'admin valide votre transfert en temps réel."}
+                          {isAdminConfirmed ? "Votre commande est enregistrée." : "L'admin valide votre transfert en temps réel."}
                         </p>
                       </div>
                     </div>
+
+                    {isAdminConfirmed && (
+                      <Button 
+                        onClick={handleFinalConfirm}
+                        disabled={isProcessing}
+                        className="w-full bg-orange-500 hover:bg-orange-600 h-12 rounded-xl font-bold shadow-lg"
+                      >
+                        {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : "CONFIRMER LA COMMANDE"}
+                      </Button>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -307,29 +290,10 @@ const Checkout = () => {
                   </div>
                 </div>
 
-                <Button 
-                  onClick={handleFinalConfirm}
-                  disabled={!isAdminConfirmed || isProcessing}
-                  className={`w-full h-16 rounded-2xl font-black text-lg shadow-lg transition-all ${
-                    isAdminConfirmed 
-                    ? 'bg-orange-500 hover:bg-orange-600 text-white scale-105' 
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  }`}
-                >
-                  {isProcessing ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      {isAdminConfirmed ? <><Download className="h-5 w-5" /> CONFIRMER & REÇU</> : "EN ATTENTE..."}
-                    </span>
-                  )}
-                </Button>
-
-                {isAdminConfirmed && (
-                  <div className="flex items-center justify-center gap-2 text-green-600 font-bold text-[10px] animate-bounce">
-                    <FileText className="h-3 w-3" /> REÇU PDF PRÊT
-                  </div>
-                )}
+                <div className="text-xs text-gray-500 text-center">
+                  <p>Paiement sécurisé via Wave ou Orange Money</p>
+                  <p className="mt-1">Commande confirmée après validation admin</p>
+                </div>
               </CardContent>
             </Card>
           </div>

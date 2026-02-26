@@ -6,9 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Home, Search, FileText, Download } from 'lucide-react';
+import { ShoppingBag, Home, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { generateReceipt } from '@/utils/receipt';
 
 const PurchaseHistory = () => {
   const [history, setHistory] = useState<any[]>([]);
@@ -17,23 +16,6 @@ const PurchaseHistory = () => {
     const savedHistory = JSON.parse(localStorage.getItem('purchase_history') || '[]');
     setHistory(savedHistory);
   }, []);
-
-  const handleDownloadReceipt = (order: any) => {
-    const receiptData = {
-      id: order.id,
-      customer: order.customer_name || "Client",
-      phone: order.phone || "Non disponible",
-      address: order.address || "Non disponible",
-      amount: order.amount || 0,
-      date: order.date || new Date().toLocaleDateString('fr-FR'),
-      product: order.product || "Produit non spécifié"
-    };
-    generateReceipt(receiptData);
-    // Message de remerciement après téléchargement
-    setTimeout(() => {
-      alert('✅ Votre reçu a été téléchargé. Merci pour votre confiance et votre fidélité !');
-    }, 100);
-  };
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -45,7 +27,7 @@ const PurchaseHistory = () => {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-green-900">Historique des Achats</h1>
-            <p className="text-gray-600">Consultez vos commandes passées et téléchargez vos reçus.</p>
+            <p className="text-gray-600">Consultez vos commandes passées et leur statut.</p>
           </div>
         </div>
 
@@ -67,10 +49,10 @@ const PurchaseHistory = () => {
                 <TableRow>
                   <TableHead>N° Commande</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Produit</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Produits</TableHead>
                   <TableHead>Montant</TableHead>
                   <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -78,27 +60,13 @@ const PurchaseHistory = () => {
                   <TableRow key={order.id}>
                     <TableCell className="font-bold text-green-700">{order.id}</TableCell>
                     <TableCell>{order.date}</TableCell>
+                    <TableCell>{order.customer_name}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{order.product}</TableCell>
                     <TableCell>{order.amount.toLocaleString()} FCFA</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                         {order.status}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to="/tracking"><Search className="h-4 w-4 mr-1" /> Suivre</Link>
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-blue-600 hover:text-blue-700"
-                          onClick={() => handleDownloadReceipt(order)}
-                        >
-                          <Download className="h-4 w-4 mr-1" /> Reçu
-                        </Button>
-                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
