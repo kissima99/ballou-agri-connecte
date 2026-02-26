@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,32 +86,45 @@ const ImportedProducts = () => {
         { id: 203, name: "Fruit mixte", price: 4000, unit: "panier", image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 204, name: "Citron", price: 100, unit: "filet", image: "https://images.unsplash.com/photo-1585059895524-72359e06133a?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 205, name: "Feuille de menthe", price: 200, unit: "botte", image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&q=80", quantity: 1 },
+        // NEW PRODUCTS ADDED HERE
+        { id: 301, name: "Jus Casamançaise BOUYE", price: 2500, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 302, name: "Jus Casamançaise DITAX", price: 2500, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 303, name: "Jus Casamançaise NECTAR ORANGE", price: 2500, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 304, name: "Jus Casamançaise TROPICAL", price: 2500, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 305, name: "Jus Casamançaise BISSAP MENTHE", price: 2500, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 306, name: "Jus Casamançaise ANANAS", price: 2500, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 307, name: "Jus Casamançaise GINGEMBRE", price: 2500, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 308, name: "DON SIMON COCKTAIL", price: 2000, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 309, name: "DON SIMON ORANGE", price: 2000, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 310, name: "JUS BOLE MANGUE", price: 2000, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 311, name: "JUS BOLE TROPICAL", price: 2000, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 312, name: "NETTO BISCOTTES 6 CEREALES 300G", price: 1500, unit: "paquet", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
       ]
     },
     {
       id: "semences",
       name: "Semences",
       products: [
-        { id: 301, name: "Semence Oignon", price: 5000, unit: "sachet", image: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 302, name: "Semence Salade", price: 2500, unit: "sachet", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 303, name: "Semence Choux", price: 3000, unit: "sachet", image: "https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 304, name: "Semence Gombo", price: 3500, unit: "sachet", image: "https://images.unsplash.com/photo-1592419044706-39796d40f98c?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 305, name: "Semence Carotte", price: 4000, unit: "sachet", image: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 306, name: "Semence pastéque", price: 4500, unit: "sachet", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 307, name: "Semence piment", price: 3500, unit: "sachet", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 308, name: "Semence Concombre", price: 3000, unit: "sachet", image: "https://images.unsplash.com/photo-1449339854873-750e6df51301?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 401, name: "Semence Oignon", price: 5000, unit: "sachet", image: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 402, name: "Semence Salade", price: 2500, unit: "sachet", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 403, name: "Semence Choux", price: 3000, unit: "sachet", image: "https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 404, name: "Semence Gombo", price: 3500, unit: "sachet", image: "https://images.unsplash.com/photo-1592419044706-39796d40f98c?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 405, name: "Semence Carotte", price: 4000, unit: "sachet", image: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 406, name: "Semence pastéque", price: 4500, unit: "sachet", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 407, name: "Semence piment", price: 3500, unit: "sachet", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 408, name: "Semence Concombre", price: 3000, unit: "sachet", image: "https://images.unsplash.com/photo-1449339854873-750e6df51301?auto=format&fit=crop&q=80", quantity: 1 },
       ]
     },
     {
       id: "electroniques",
       name: "Matériel Électronique",
       products: [
-        { id: 401, name: "Chauffe-Eau", price: 25000, unit: "unité", image: "https://images.unsplash.com/photo-1585130401366-fe05a8d813c4?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 402, name: "Mixeur Fruits", price: 15000, unit: "unité", image: "https://images.unsplash.com/photo-1570222020676-00dc3d170412?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 403, name: "Mixeur Légumes", price: 12000, unit: "unité", image: "https://images.unsplash.com/photo-1585238341267-1cfec2046a55?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 404, name: "Ventilateur", price: 18000, unit: "unité", image: "https://images.unsplash.com/photo-1618944847023-38aa001235f0?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 405, name: "TV SMART", price: 150000, unit: "unité", image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 406, name: "Réfrigérateur", price: 200000, unit: "unité", image: "https://images.unsplash.com/photo-1571175432270-e8a1f5ad05bb?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 501, name: "Chauffe-Eau", price: 25000, unit: "unité", image: "https://images.unsplash.com/photo-1585130401366-fe05a8d813c4?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 502, name: "Mixeur Fruits", price: 15000, unit: "unité", image: "https://images.unsplash.com/photo-1570222020676-00dc3d170412?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 503, name: "Mixeur Légumes", price: 12000, unit: "unité", image: "https://images.unsplash.com/photo-1585238341267-1cfec2046a55?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 504, name: "Ventilateur", price: 18000, unit: "unité", image: "https://images.unsplash.com/photo-1618944847023-38aa001235f0?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 505, name: "TV SMART", price: 150000, unit: "unité", image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 506, name: "Réfrigérateur", price: 200000, unit: "unité", image: "https://images.unsplash.com/photo-1571175432270-e8a1f5ad05bb?auto=format&fit=crop&q=80", quantity: 1 },
       ]
     }
   ];
@@ -286,7 +297,7 @@ const ImportedProducts = () => {
                 disabled={isSaving}
                 className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black"
               >
-                {isSaving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} 
+                {isSaving ? <Loader2 className="w-5 w-5 mr-2 animate-spin" /> : <Save className="w-5 w-5 mr-2" />} 
                 ENREGISTRER
               </Button>
             )}
@@ -298,13 +309,13 @@ const ImportedProducts = () => {
                 className="data-[state=checked]:bg-orange-500" 
               />
               <Label htmlFor="edit-mode-imported" className="text-sm font-bold flex items-center cursor-pointer select-none">
-                <Edit3 className="w-4 h-4 mr-2 text-orange-600" /> Mode Édition
+                <Edit3 className="w-4 w-4 mr-2 text-orange-600" /> Mode Édition
               </Label>
             </div>
           </div>
         </div>
 
-        <Tabs defaultValue="importes" className="w-full">
+        <Tabs defaultValue="frais" className="w-full">
           <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-8 h-auto p-1.5 bg-blue-100/50 rounded-2xl gap-2">
             {categories.map(cat => (
               <TabsTrigger 
@@ -339,7 +350,7 @@ const ImportedProducts = () => {
                       {isEditMode && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
                           <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl transform hover:scale-105 active:scale-95 transition-all">
-                            <Upload className="w-4 h-4 mr-2" /> CHANGER L'IMAGE
+                            <Upload className="w-4 w-4 mr-2" /> CHANGER L'IMAGE
                             <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, cat.id, product.id)} />
                           </label>
                         </div>
