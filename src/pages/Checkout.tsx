@@ -236,6 +236,11 @@ const Checkout = () => {
                       <Phone className="mr-2 h-4 w-4" /> Orange Money
                     </Button>
                   </div>
+                  {paymentMethod === 'orange' && (
+                    <div className="bg-orange-50 p-3 rounded-lg text-sm text-orange-700">
+                      <Phone className="mr-2 h-4 w-4 inline" /> Contactez-nous au <strong>782254548</strong> pour finaliser votre paiement Orange Money.
+                    </div>
+                  )}
                 </div>
                 <Button 
                   onClick={handleCommander} 
