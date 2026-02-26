@@ -15,7 +15,8 @@ import {
   Check,
   Loader2,
   RefreshCw,
-  CheckCircle2
+  CheckCircle2,
+  Trash2
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
@@ -113,6 +114,24 @@ const AdminDashboard = () => {
       fetchOrders();
     } catch (err: any) {
       showError("Erreur de validation.");
+    }
+  };
+
+  const deleteOrder = async (id: string) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement la commande ${id} ?`)) return;
+    
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      showSuccess(`Commande ${id} supprimée avec succès.`);
+      fetchOrders();
+    } catch (err: any) {
+      showError("Erreur lors de la suppression de la commande.");
     }
   };
 
@@ -255,6 +274,13 @@ const AdminDashboard = () => {
                               <CheckCircle2 className="w-3 h-3 mr-1" /> LIVRER
                             </Button>
                           )}
+                          <Button 
+                            onClick={() => deleteOrder(order.id)} 
+                            variant="destructive"
+                            className="bg-red-500 hover:bg-red-600 h-8 px-3 text-[10px] font-bold rounded-lg"
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" /> SUPPRIMER
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
