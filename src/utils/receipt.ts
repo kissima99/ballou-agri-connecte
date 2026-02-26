@@ -119,7 +119,7 @@ export const generateReceipt = async (data: ReceiptData) => {
     doc.text('MONTANT TOTAL:', 15, yPosition + 12);
     doc.setFontSize(18);
     doc.setTextColor('#d9534f');
-    doc.text(`${data.amount.toLocaleString()} FCFA`, 195, yPosition + 12, { align: 'right' });
+    doc.text(`${data.amount} FCFA`, 195, yPosition + 12, { align: 'right' });
 
     // QR Code pour suivi
     const qrUrl = `https://ballouagriconnect.com/order/${data.id}`;
