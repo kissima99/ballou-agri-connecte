@@ -8,7 +8,6 @@ interface ReceiptData {
   customer_name: string;
   phone: string;
   address: string;
-  email: string; // Added email field
   amount: number;
   items: Array<{
     name: string;
@@ -56,16 +55,22 @@ export const generateReceipt = async (data: ReceiptData) => {
     doc.text(`N° Commande: ${data.id}`, 15, 55);
     doc.text(`Date: ${data.date}`, 15, 62);
     doc.text(`Statut: ${data.status}`, 15, 69);
-    doc.text(`E-mail: ${data.email}`, 15, 76); // Added email display
+
+    // Détails client
+    doc.setFontSize(12);
+    doc.setFont('Helvetica', 'normal');
+    doc.text(`Nom: ${data.customer_name}`, 15, 87);
+    doc.text(`Téléphone: ${data.phone}`, 15, 94);
+    doc.text(`Adresse: ${data.address}`, 15, 101);
 
     // Ligne
     doc.setDrawColor(primaryColor);
-    doc.line(15, 85, 195, 85);
+    doc.line(15, 110, 195, 110);
 
     // Tableau des articles
     doc.setFontSize(12);
     doc.setFont('Helvetica', 'normal');
-    let yPosition = 95;
+    let yPosition = 138;
     data.items.forEach((item) => {
       const itemTotal = item.price * item.quantity;
       doc.text(item.name, 15, yPosition);
