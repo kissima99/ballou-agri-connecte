@@ -72,7 +72,8 @@ const Checkout = () => {
 
       // Open payment link based on selected method
       if (paymentMethod === 'wave') {
-        const wavePaymentUrl = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
+        // Corrected Wave payment link
+        const wavePaymentUrl = `https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/?amount=${(totalPrice + 2000).toLocaleString().replace(/ /g, '')}&description=Commande%20Ballou%20Agri%20Connect%20${orderId}`;
         window.open(wavePaymentUrl, '_blank');
       } else {
         // Orange Money - open WhatsApp with pre-filled message
