@@ -1,4 +1,5 @@
-import { jsPDF } from 'jspdf';
+import jsPDF from 'jspdf';
+import QRCode from 'qrcode';
 
 interface ReceiptData {
   id: string;
@@ -8,8 +9,14 @@ interface ReceiptData {
   amount: number;
   date: string;
   product: string;
+  paymentMethod?: string;
 }
 
+/**
+ * Génère un reçu PDF professionnel avec QR code, tableau des articles,
+ * signature, couleurs et mise en page adaptée à l'application.
+ * @param data Données du reçu
+ */
 export const generateReceipt = (data: ReceiptData) => {
   try {
     const doc = new jsPDF({
@@ -23,8 +30,12 @@ export const generateReceipt = (data: ReceiptData) => {
     const secondaryColor = '#f97316'; // Orange
     const textColor = '#212529';
     const lightGray = '#6c757d';
+    const accentColor = '#007bff';
 
-    // En-tête
+    // En-tête avec logo placeholder
+    doc.setFillColor(primaryColor);
+    doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F');
+    doc.setFillColor(textColor);
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(20);
     doc.setTextColor(primaryColor);
@@ -32,9 +43,9 @@ export const generateReceipt = (data: ReceiptData) => {
 
     doc.setFontSize(12);
     doc.setTextColor(secondaryColor);
-    doc.text('BALLOU AGRI CONNECT', 105, 20, { align: 'center' } as any);
+    doc.text('Plateforme d\'échange agricole', 105, 28, { align: 'center' });
 
-    // Ligne
+    // Ligne décorative
     doc.setLineWidth(0.5);
     doc.setDrawColor(primaryColor);
     doc.line(10, 35, 200, 35);
@@ -64,7 +75,6 @@ export const generateReceipt = (data: ReceiptData) => {
     doc.text('Montant total:', 15, 100);
     doc.setFontSize(18);
     doc.setTextColor('#d9534f');
-    // Formatage correct du montant sans caractères spéciaux
     const formattedAmount = Math.round(data.amount).toLocaleString('fr-FR');
     doc.text(`${formattedAmount} FCFA`, 195, 100, { align: 'right' });
 
@@ -72,20 +82,31 @@ export const generateReceipt = (data: ReceiptData) => {
     doc.setDrawColor(primaryColor);
     doc.line(15, 108, 195, 108);
 
-    // Produits
+    // QR code vers le suivi de commande
+    const qrUrl = `https://ballouagriconnect.com/order/${data.id}`;
+    const qrCodeDataUrl = await QRCode.toDataURL(qrUrl);
+    doc.addImage(qrCodeDataUrl, 'PNG', 10, 10, 100, 100);
+
+    // Tableau des articles
     doc.setFontSize(12);
     doc.setTextColor(textColor);
-    doc.text('Produits commandés:', 15, 118);
+    doc.text('Articles commandés:', 15, 120);
     const productLines = data.product.split(',').map((item, index) => `${index + 1}. ${item}`);
     doc.setFontSize(10);
     productLines.forEach((line, index) => {
       doc.text(line, 15, 125 + index * 8);
     });
 
-    // Message de remerciement
-    doc.setFontSize(12);
-    doc.setTextColor(secondaryColor);
-    doc.text('Merci pour votre confiance et votre fidélité !', 105, 200, { align: 'center' });
+    // Ligne
+    doc.setDrawColor(primaryColor);
+    doc.line(15, 150, 195, 150);
+
+    // Signature du client
+    doc.setFontSize(11);
+    doc.text('Signature du client:', 15, 160);
+    doc.text('_______________________________', 15, 165);
+    doc.text('Date:', 15, 170);
+    doc.text(new Date().toLocaleDateString('fr-FR'), 15, 175);
 
     // Pied de page
     doc.setFontSize(9);
