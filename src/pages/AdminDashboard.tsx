@@ -118,8 +118,8 @@ const AdminDashboard = () => {
   };
 
   const deleteOrder = async (id: string) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement la commande ${id} ?`)) return;
-    
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer la commande ${id} ?`)) return;
+
     try {
       const { error } = await supabase
         .from('orders')
@@ -127,11 +127,11 @@ const AdminDashboard = () => {
         .eq('id', id);
 
       if (error) throw error;
-      
-      showSuccess(`Commande ${id} supprimée avec succès.`);
+
+      showSuccess(`Commande ${id} supprimée.`);
       fetchOrders();
     } catch (err: any) {
-      showError("Erreur lors de la suppression de la commande.");
+      showError("Erreur lors de la suppression.");
     }
   };
 
@@ -277,7 +277,7 @@ const AdminDashboard = () => {
                           <Button 
                             onClick={() => deleteOrder(order.id)} 
                             variant="destructive"
-                            className="bg-red-500 hover:bg-red-600 h-8 px-3 text-[10px] font-bold rounded-lg"
+                            className="h-8 px-3 text-[10px] font-bold rounded-lg"
                           >
                             <Trash2 className="w-3 h-3 mr-1" /> SUPPRIMER
                           </Button>
