@@ -3,14 +3,13 @@
 import * as React from "react"
 import { GripVertical } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-const ResizablePrimitive = React.lazy(() => import("react-resizable-panels"))
+import { Panel as ResizablePanelComponent, PanelGroup as ResizablePanelGroupComponent, PanelResizeHandle as ResizablePanelResizeHandleComponent } from "react-resizable-panels"
 
 const ResizablePanelGroup = React.forwardRef<
-  React.ElementRef<typeof ResizablePrimitive.PanelGroup>,
-  React.ComponentProps<typeof ResizablePrimitive.PanelGroup>
+  React.ElementRef<typeof ResizablePanelGroupComponent>,
+  React.ComponentProps<typeof ResizablePanelGroupComponent>
 >(({ className, ...props }, ref) => (
-  <ResizablePrimitive.PanelGroup
+  <ResizablePanelGroupComponent
     ref={ref}
     className={cn(
       "flex h-full w-full data-[panel-group-direction=vertical]:flex-col",
@@ -22,12 +21,12 @@ const ResizablePanelGroup = React.forwardRef<
 ResizablePanelGroup.displayName = "ResizablePanelGroup"
 
 const ResizablePanel = React.forwardRef<
-  React.ElementRef<typeof ResizablePrimitive.Panel>,
-  React.ComponentProps<typeof ResizablePrimitive.Panel> & {
+  React.ElementRef<typeof ResizablePanelComponent>,
+  React.ComponentProps<typeof ResizablePanelComponent> & {
     minSize?: number
   }
 >(({ className, minSize = 0, ...props }, ref) => (
-  <ResizablePrimitive.Panel
+  <ResizablePanelComponent
     ref={ref}
     minSize={minSize}
     className={cn("relative", className)}
@@ -37,12 +36,12 @@ const ResizablePanel = React.forwardRef<
 ResizablePanel.displayName = "ResizablePanel"
 
 const ResizableHandle = React.forwardRef<
-  React.ElementRef<typeof ResizablePrimitive.PanelResizeHandle>,
-  React.ComponentProps<typeof ResizablePrimitive.PanelResizeHandle> & {
+  React.ElementRef<typeof ResizablePanelResizeHandleComponent>,
+  React.ComponentProps<typeof ResizablePanelResizeHandleComponent> & {
     withHandle?: boolean
   }
 >(({ className, withHandle, ...props }, ref) => (
-  <ResizablePrimitive.PanelResizeHandle
+  <ResizablePanelResizeHandleComponent
     ref={ref}
     className={cn(
       "relative flex w-px items-center justify-center bg-border after:absolute after:inset-y-0 after:left-1/2 after:w-1 after:-translate-x-1/2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 data-[panel-group-direction=vertical]:h-px data-[panel-group-direction=vertical]:w-full data-[panel-group-direction=vertical]:after:left-0 data-[panel-group-direction=vertical]:after:h-1 data-[panel-group-direction=vertical]:after:-translate-y-1/2 data-[panel-group-direction=vertical]:after:translate-x-0 [&[data-panel-group-direction=vertical]>div]:rotate-90",
@@ -55,7 +54,7 @@ const ResizableHandle = React.forwardRef<
         <GripVertical className="h-2.5 w-2.5" />
       </div>
     )}
-  </ResizablePrimitive.PanelResizeHandle>
+  </ResizablePanelResizeHandleComponent>
 ))
 ResizableHandle.displayName = "ResizableHandle"
 
