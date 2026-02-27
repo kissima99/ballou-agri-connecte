@@ -5,56 +5,111 @@ import Navbar from '@/components/Navbar';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Truck, MapPin, CheckCircle2, Clock, CalendarDays, ArrowRightLeft } from 'lucide-react';
+import { Search, Truck, CheckCircle2, Clock, CalendarDays, ArrowRightLeft, Loader2 } from 'lucide-react';
 import { showError } from '@/utils/toast';
+import { supabase } from "@/integrations/supabase/client";
+
+type OrderRow = {
+  id: string;
+  status: string;
+  zone: string;
+  created_at: string;
+};
+
+type TrackingStep = {
+  title: string;
+  description: string;
+  completed: boolean;
+};
 
 const Tracking = () => {
   const [orderId, setOrderId] = useState("");
-  const [trackingData, setTrackingData] = useState<any>(null);
+  const [trackingData, setTrackingData] = useState<{
+    id: string;
+    statusLabel: string;
+    direction: string;
+    steps: TrackingStep[];
+    createdAtLabel: string;
+  } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSearch = () => {
-    const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
-    const order = history.find((o: any) => o.id === orderId);
+  const buildSteps = (order: OrderRow) => {
+    const direction = order.zone === "Ballou" ? "Ballou → Dakar" : "Dakar → Ballou";
 
-    if (orderId && !order) {
-      showError("Commande introuvable. Vérifiez votre numéro.");
+    const isPaid = ["Payé", "En cours", "Livré"].includes(order.status);
+    const isShipped = ["En cours", "Livré"].includes(order.status);
+    const isDelivered = order.status === "Livré";
+
+    const steps: TrackingStep[] = [
+      {
+        title: "Commande enregistrée",
+        description: "Votre commande a été reçue et est en attente de traitement.",
+        completed: true,
+      },
+      {
+        title: "Paiement validé",
+        description: "Le paiement a été confirmé et la commande passe à l'étape suivante.",
+        completed: isPaid,
+      },
+      {
+        title: "Colis expédié",
+        description: `Votre colis a quitté le point de départ (${direction}).`,
+        completed: isShipped,
+      },
+      {
+        title: "Livraison",
+        description: "Le colis est livré au destinataire.",
+        completed: isDelivered,
+      },
+    ];
+
+    const statusLabel =
+      order.status === "Attente Paiement" || order.status === "Attente de validation admin"
+        ? "En attente de paiement"
+        : order.status === "Payé"
+          ? "Paiement validé"
+          : order.status === "En cours"
+            ? "En transit"
+            : "Livré";
+
+    return {
+      id: order.id,
+      statusLabel,
+      direction,
+      steps,
+      createdAtLabel: new Date(order.created_at).toLocaleDateString('fr-FR'),
+    };
+  };
+
+  const handleSearch = async () => {
+    const trimmed = orderId.trim().toUpperCase();
+    if (!trimmed) {
+      showError("Veuillez entrer un numéro de commande.");
       return;
     }
 
-    const direction = order?.direction || (order?.id?.startsWith('local') ? "Ballou -> Dakar" : "Dakar -> Ballou");
-    const status = order?.status || "En attente";
-    
-    // Logic to determine which steps are completed based on status
-    // Statuses: "Payé", "En cours", "Livré"
-    const getCompletion = (stepIndex: number) => {
-      if (status === "Livré") return true;
-      if (status === "En cours") return stepIndex <= 2; // First 3 steps completed
-      if (status === "Payé") return stepIndex <= 0; // Only first step completed
-      return false;
-    };
+    setIsLoading(true);
+    setTrackingData(null);
 
-    // Steps based on direction
-    const steps = direction === "Dakar -> Ballou" 
-      ? [
-          { location: "Dakar - Entrepôt", status: "Colis Réceptionné", time: "Départ Programmé", completed: getCompletion(0) },
-          { location: "Tambacounda", status: "En Transit", time: "En cours", completed: getCompletion(1) },
-          { location: "Bakel", status: "Vérification Poste", time: "Bientôt", completed: getCompletion(2) },
-          { location: "Ballou", status: "Livraison Finale", time: "Arrivée sous 24h", completed: getCompletion(3) },
-        ]
-      : [
-          { location: "Ballou - Poste Locale", status: "Colis Réceptionné", time: "Expédié", completed: getCompletion(0) },
-          { location: "Bakel", status: "Transit Régional", time: "Passage en cours", completed: getCompletion(1) },
-          { location: "Tambacounda", status: "Transit National", time: "Bientôt", completed: getCompletion(2) },
-          { location: "Dakar - Hub Central", status: "Livraison Finale", time: "Arrivée sous 24h", completed: getCompletion(3) },
-        ];
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id,status,zone,created_at')
+        .eq('id', trimmed)
+        .single();
 
-    setTrackingData({
-      id: orderId || "BAC-DEMO",
-      status: status === "Payé" ? "Traitement en cours" : status === "En cours" ? "En transit" : "Livré",
-      direction: direction,
-      steps: steps
-    });
+      if (error || !data) {
+        showError("Commande introuvable. Vérifiez votre numéro.");
+        return;
+      }
+
+      setTrackingData(buildSteps(data as OrderRow));
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const activeIndex = trackingData ? trackingData.steps.findIndex((s) => !s.completed) : -1;
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -62,10 +117,9 @@ const Tracking = () => {
       <div className="container px-4 py-12 mx-auto max-w-4xl">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Suivi de votre Colis</h1>
-          <p className="text-gray-600">Entrez votre numéro de commande BAC-XXXXX pour voir l'état réel.</p>
+          <p className="text-gray-600">Entrez votre numéro de commande pour voir toutes les étapes.</p>
         </div>
 
-        {/* Schedule Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
           <Card className="border-l-4 border-l-blue-600 shadow-sm bg-white">
             <CardHeader className="pb-2">
@@ -99,14 +153,19 @@ const Tracking = () => {
         </div>
 
         <div className="flex gap-2 mb-12">
-          <Input 
-            placeholder="Ex: BAC-7F92A" 
+          <Input
+            placeholder="Ex: BAC-7F92A"
             value={orderId}
             onChange={(e) => setOrderId(e.target.value.toUpperCase())}
             className="bg-white border-green-200 focus-visible:ring-green-500 h-12 font-bold"
           />
-          <Button onClick={handleSearch} className="bg-green-600 hover:bg-green-700 h-12 px-8 font-bold shadow-lg">
-            <Search className="mr-2 h-5 w-5" /> RECHERCHER
+          <Button
+            onClick={handleSearch}
+            disabled={isLoading}
+            className="bg-green-600 hover:bg-green-700 h-12 px-8 font-bold shadow-lg"
+          >
+            {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
+            RECHERCHER
           </Button>
         </div>
 
@@ -118,31 +177,75 @@ const Tracking = () => {
                   <CardTitle className="text-xl">Commande {trackingData.id}</CardTitle>
                   <div className="flex items-center mt-1 text-green-100 text-sm font-medium">
                     <ArrowRightLeft className="mr-2 h-4 w-4" /> {trackingData.direction}
+                    <span className="mx-2 opacity-60">•</span>
+                    <span>{trackingData.createdAtLabel}</span>
                   </div>
                 </div>
                 <span className="bg-white/20 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border border-white/30 backdrop-blur-sm">
-                  {trackingData.status}
+                  {trackingData.statusLabel}
                 </span>
               </div>
             </CardHeader>
+
             <CardContent className="pt-10 pb-10 bg-white">
-              <div className="relative space-y-12 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-1 before:bg-green-50">
-                {trackingData.steps.map((step: any, index: number) => (
-                  <div key={index} className="relative flex items-start ml-10 group">
-                    <div className={`absolute -left-10 mt-1.5 h-6 w-6 rounded-full border-4 border-white shadow-md transition-all duration-300 ${step.completed ? 'bg-green-600 scale-110' : 'bg-gray-200'}`}>
-                      {step.completed && <CheckCircle2 className="absolute -top-1 -left-1 h-6 w-6 text-green-600 bg-white rounded-full shadow-inner" />}
-                    </div>
-                    <div className={`flex-1 p-4 rounded-xl border transition-colors ${step.completed ? 'bg-green-50/50 border-green-100 group-hover:border-green-200' : 'bg-stone-50 border-stone-100'}`}>
-                      <div className="flex justify-between items-center mb-1">
-                        <h4 className={`font-bold text-base ${step.completed ? 'text-gray-900' : 'text-gray-400'}`}>{step.location}</h4>
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full border uppercase ${step.completed ? 'text-green-600 bg-white border-green-100' : 'text-gray-400 bg-white border-gray-100'}`}>
-                          <Clock className="mr-1 h-3 w-3 inline" /> {step.completed ? 'Validé' : step.time}
-                        </span>
+              <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-1 before:bg-green-50">
+                {trackingData.steps.map((step, index) => {
+                  const isActive = activeIndex === index;
+                  const isDone = step.completed;
+
+                  return (
+                    <div key={index} className="relative flex items-start ml-10">
+                      <div
+                        className={
+                          "absolute -left-10 mt-1.5 h-6 w-6 rounded-full border-4 border-white shadow-md transition-all duration-300 " +
+                          (isDone ? "bg-green-600 scale-110" : isActive ? "bg-orange-500" : "bg-gray-200")
+                        }
+                      >
+                        {isDone && (
+                          <CheckCircle2 className="absolute -top-1 -left-1 h-6 w-6 text-green-600 bg-white rounded-full shadow-inner" />
+                        )}
                       </div>
-                      <p className={`text-sm ${step.completed ? 'text-green-700 font-medium' : 'text-gray-400'}`}>{step.status}</p>
+
+                      <div
+                        className={
+                          "flex-1 p-4 rounded-xl border transition-colors " +
+                          (isDone
+                            ? "bg-green-50/50 border-green-100"
+                            : isActive
+                              ? "bg-orange-50 border-orange-100"
+                              : "bg-stone-50 border-stone-100")
+                        }
+                      >
+                        <div className="flex justify-between items-center mb-1">
+                          <h4
+                            className={
+                              "font-bold text-base " +
+                              (isDone ? "text-gray-900" : isActive ? "text-gray-900" : "text-gray-400")
+                            }
+                          >
+                            {step.title}
+                          </h4>
+                          <span
+                            className={
+                              "text-[10px] font-bold px-2 py-1 rounded-full border uppercase " +
+                              (isDone
+                                ? "text-green-600 bg-white border-green-100"
+                                : isActive
+                                  ? "text-orange-600 bg-white border-orange-100"
+                                  : "text-gray-400 bg-white border-gray-100")
+                            }
+                          >
+                            <Clock className="mr-1 h-3 w-3 inline" /> {isDone ? "Validé" : isActive ? "En cours" : "À venir"}
+                          </span>
+                        </div>
+                        <p className={"text-sm " + (isDone ? "text-green-700 font-medium" : isActive ? "text-orange-700" : "text-gray-400")}
+                        >
+                          {step.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
