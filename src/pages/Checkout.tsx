@@ -44,13 +44,14 @@ const Checkout = () => {
     setIsProcessing(true);
     try {
       const orderId = `BAC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const totalAmount = totalPrice + 2000;
       
       const pendingOrder = {
         id: orderId,
         customer_name: formData.name,
         phone: formData.phone,
         address: formData.address,
-        amount: totalPrice + 2000,
+        amount: totalAmount,
         status: "Attente de validation admin",
         items: cart.map(i => ({ 
           id: i.id, 
@@ -70,26 +71,30 @@ const Checkout = () => {
 
       if (error) throw error;
 
-      // Open payment link based on selected method
+      // Redirection vers le paiement
       if (paymentMethod === 'wave') {
-        // Corrected Wave payment link
-        const wavePaymentUrl = `https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/?amount=${(totalPrice + 2000).toLocaleString().replace(/ /g, '')}&description=Commande%20Ballou%20Agri%20Connect%20${orderId}`;
+        // Lien Wave officiel avec le montant et la description
+        const wavePaymentUrl = `https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/?amount=${totalAmount}&description=Commande%20${orderId}`;
+        
+        showSuccess("Commande enregistrée ! Redirection vers Wave...");
+        
+        // On ouvre Wave dans un nouvel onglet pour le paiement
         window.open(wavePaymentUrl, '_blank');
       } else {
-        // Orange Money - open WhatsApp with pre-filled message
+        // Orange Money - redirection vers WhatsApp
         const phoneNumber = "782254548";
-        const message = encodeURIComponent(`Bonjour, je souhaite payer ma commande ${orderId} d'un montant de ${(totalPrice + 2000).toLocaleString()} FCFA via Orange Money.`);
+        const message = encodeURIComponent(`Bonjour, je souhaite payer ma commande ${orderId} d'un montant de ${totalAmount.toLocaleString()} FCFA via Orange Money.`);
         const orangeMoneyUrl = `https://wa.me/${phoneNumber}?text=${message}`;
         window.open(orangeMoneyUrl, '_blank');
       }
 
-      showSuccess("Commande créée ! Redirection vers le reçu...");
       clearCart();
       
-      // Redirect to receipt page after a short delay
+      // Redirection vers la page de reçu après un court délai
       setTimeout(() => {
         navigate(`/receipt/${orderId}`);
-      }, 1000);
+      }, 1500);
+
     } catch (error: any) {
       showError("Erreur lors de la création de la commande: " + error.message);
       setIsProcessing(false);
@@ -122,7 +127,7 @@ const Checkout = () => {
           <Button asChild variant="outline" size="icon" className="rounded-full">
             <Link to="/"><Home className="h-4 w-4 text-green-700" /></Link>
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900">Commander</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Finaliser la commande</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -173,7 +178,7 @@ const Checkout = () => {
 
             <Card className="border-none shadow-sm">
               <CardHeader>
-                <CardTitle className="text-xl">Votre commande</CardTitle>
+                <CardTitle className="text-xl">Récapitulatif</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -182,11 +187,10 @@ const Checkout = () => {
                       <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-lg" />
                       <div className="flex-1">
                         <h3 className="font-bold text-gray-900">{item.name}</h3>
-                        <p className="text-sm text-gray-500">{item.unit}</p>
+                        <p className="text-sm text-gray-500">{item.quantity} x {item.unit}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-green-700">{(item.price * item.quantity).toLocaleString()} FCFA</p>
-                        <p className="text-xs text-gray-400">{item.quantity} x {item.price.toLocaleString()}</p>
                       </div>
                     </div>
                   ))}
@@ -198,7 +202,7 @@ const Checkout = () => {
           <div className="space-y-6">
             <Card className="border-none shadow-lg bg-white">
               <CardHeader>
-                <CardTitle className="text-xl">Résumé de la commande</CardTitle>
+                <CardTitle className="text-xl">Total à payer</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between text-sm">
@@ -206,7 +210,7 @@ const Checkout = () => {
                   <span className="font-bold">{totalPrice.toLocaleString()} FCFA</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Livraison</span>
+                  <span className="text-gray-500">Frais de livraison</span>
                   <span className="font-bold">2 000 FCFA</span>
                 </div>
                 <div className="border-t pt-4 flex justify-between items-end">
@@ -237,11 +241,6 @@ const Checkout = () => {
                       Orange Money
                     </Button>
                   </div>
-                  {paymentMethod === 'orange' && (
-                    <div className="bg-orange-50 p-3 rounded-lg text-sm text-orange-700">
-                      Contactez-nous au <strong>782254548</strong> pour finaliser votre paiement Orange Money.
-                    </div>
-                  )}
                 </div>
                 <Button 
                   onClick={handleCommander} 
