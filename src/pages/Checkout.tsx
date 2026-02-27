@@ -1,10 +1,12 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, Home, Loader2, ExternalLink, MessageCircle } from 'lucide-react';
+import { ShoppingCart, Home, Loader2, ExternalLink, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { supabase } from "@/integrations/supabase/client";
@@ -71,29 +73,31 @@ const Checkout = () => {
 
       if (error) throw error;
 
+      showSuccess("Commande enregistrée ! Préparation du paiement...");
+
       // Redirection vers le paiement
       if (paymentMethod === 'wave') {
-        // Lien Wave officiel avec le montant et la description
+        // Lien Wave officiel
         const wavePaymentUrl = `https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/?amount=${totalAmount}&description=Commande%20${orderId}`;
         
-        showSuccess("Commande enregistrée ! Redirection vers Wave...");
+        // On vide le panier avant de partir
+        clearCart();
         
-        // On ouvre Wave dans un nouvel onglet pour le paiement
-        window.open(wavePaymentUrl, '_blank');
+        // Redirection directe pour éviter les bloqueurs de popups
+        setTimeout(() => {
+          window.location.href = wavePaymentUrl;
+        }, 1000);
       } else {
         // Orange Money - redirection vers WhatsApp
         const phoneNumber = "782254548";
         const message = encodeURIComponent(`Bonjour, je souhaite payer ma commande ${orderId} d'un montant de ${totalAmount.toLocaleString()} FCFA via Orange Money.`);
         const orangeMoneyUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-        window.open(orangeMoneyUrl, '_blank');
+        
+        clearCart();
+        setTimeout(() => {
+          window.location.href = orangeMoneyUrl;
+        }, 1000);
       }
-
-      clearCart();
-      
-      // Redirection vers la page de reçu après un court délai
-      setTimeout(() => {
-        navigate(`/receipt/${orderId}`);
-      }, 1500);
 
     } catch (error: any) {
       showError("Erreur lors de la création de la commande: " + error.message);
@@ -132,7 +136,7 @@ const Checkout = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-none shadow-sm">
+            <Card className="border-none shadow-sm rounded-2xl">
               <CardHeader>
                 <CardTitle className="text-xl">Informations de livraison</CardTitle>
               </CardHeader>
@@ -143,7 +147,7 @@ const Checkout = () => {
                     id="name" 
                     name="name"
                     placeholder="Votre nom" 
-                    className="rounded-xl" 
+                    className="rounded-xl h-12" 
                     value={formData.name}
                     onChange={handleInputChange}
                     required
@@ -155,7 +159,7 @@ const Checkout = () => {
                     id="phone" 
                     name="phone"
                     placeholder="78 123 45 67" 
-                    className="rounded-xl" 
+                    className="rounded-xl h-12" 
                     value={formData.phone}
                     onChange={handleInputChange}
                     required
@@ -167,7 +171,7 @@ const Checkout = () => {
                     id="address" 
                     name="address"
                     placeholder="Votre adresse complète" 
-                    className="rounded-xl" 
+                    className="rounded-xl h-12" 
                     value={formData.address}
                     onChange={handleInputChange}
                     required
@@ -176,7 +180,7 @@ const Checkout = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-sm">
+            <Card className="border-none shadow-sm rounded-2xl">
               <CardHeader>
                 <CardTitle className="text-xl">Récapitulatif</CardTitle>
               </CardHeader>
@@ -200,11 +204,11 @@ const Checkout = () => {
           </div>
 
           <div className="space-y-6">
-            <Card className="border-none shadow-lg bg-white">
-              <CardHeader>
+            <Card className="border-none shadow-lg bg-white rounded-3xl overflow-hidden">
+              <CardHeader className="bg-green-900 text-white">
                 <CardTitle className="text-xl">Total à payer</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Sous-total</span>
                   <span className="font-bold">{totalPrice.toLocaleString()} FCFA</span>
@@ -220,36 +224,69 @@ const Checkout = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col gap-4">
-                <div className="space-y-3 w-full">
-                  <Label className="text-sm font-bold">Moyen de paiement</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
+              <CardFooter className="flex flex-col gap-6 pb-8">
+                <div className="space-y-4 w-full">
+                  <Label className="text-sm font-black uppercase tracking-widest text-gray-400">Moyen de paiement</Label>
+                  <div className="grid grid-cols-1 gap-3">
+                    <button
                       type="button"
-                      variant={paymentMethod === 'wave' ? 'default' : 'outline'}
-                      className={`h-12 ${paymentMethod === 'wave' ? 'bg-blue-600 hover:bg-blue-700' : 'border-blue-200 text-blue-700'}`}
                       onClick={() => setPaymentMethod('wave')}
+                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                        paymentMethod === 'wave' 
+                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
+                        : 'border-stone-100 bg-white hover:border-blue-200'
+                      }`}
                     >
-                      <ExternalLink className="mr-2 h-4 w-4" /> Wave
-                    </Button>
-                    <Button
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-black text-xl">W</div>
+                        <div className="text-left">
+                          <p className="font-black text-blue-900">WAVE</p>
+                          <p className="text-[10px] text-blue-600 font-bold">Paiement instantané</p>
+                        </div>
+                      </div>
+                      {paymentMethod === 'wave' && <CheckCircle2 className="h-6 w-6 text-blue-600" />}
+                    </button>
+
+                    <button
                       type="button"
-                      variant={paymentMethod === 'orange' ? 'default' : 'outline'}
-                      className={`h-12 ${paymentMethod === 'orange' ? 'bg-orange-600 hover:bg-orange-700' : 'border-orange-200 text-orange-700'}`}
                       onClick={() => setPaymentMethod('orange')}
+                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                        paymentMethod === 'orange' 
+                        ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200' 
+                        : 'border-stone-100 bg-white hover:border-orange-200'
+                      }`}
                     >
-                      Orange Money
-                    </Button>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white font-black text-xl">O</div>
+                        <div className="text-left">
+                          <p className="font-black text-orange-900">ORANGE MONEY</p>
+                          <p className="text-[10px] text-orange-600 font-bold">Validation via WhatsApp</p>
+                        </div>
+                      </div>
+                      {paymentMethod === 'orange' && <CheckCircle2 className="h-6 w-6 text-orange-600" />}
+                    </button>
                   </div>
                 </div>
+
                 <Button 
                   onClick={handleCommander} 
                   disabled={isProcessing}
-                  className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold shadow-lg"
+                  className={`w-full h-16 text-lg font-black shadow-xl rounded-2xl transition-all transform active:scale-95 ${
+                    paymentMethod === 'wave' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-500 hover:bg-orange-600'
+                  }`}
                 >
-                  {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <MessageCircle className="mr-2 h-5 w-5" />}
-                  Commander & Payer
+                  {isProcessing ? (
+                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                  ) : (
+                    <>
+                      {paymentMethod === 'wave' ? <ExternalLink className="mr-2 h-6 w-6" /> : <MessageCircle className="mr-2 h-6 w-6" />}
+                      PAYER {(totalPrice + 2000).toLocaleString()} FCFA
+                    </>
+                  )}
                 </Button>
+                <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-tighter">
+                  En cliquant, vous serez redirigé vers la plateforme de paiement sécurisée.
+                </p>
               </CardFooter>
             </Card>
           </div>
