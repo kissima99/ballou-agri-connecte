@@ -204,7 +204,7 @@ const Navbar = () => {
           <DialogHeader>
             <DialogTitle>Accès Super Admin</DialogTitle>
             <DialogDescription>
-              Entrez le code <span className="font-semibold">2003</span> pour activer l'accès.
+              Entrez le code Super Admin pour activer l'accès.
             </DialogDescription>
           </DialogHeader>
 
