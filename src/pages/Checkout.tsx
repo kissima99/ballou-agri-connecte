@@ -1,12 +1,10 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, Home, Loader2, ExternalLink, MessageCircle, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, Home, Loader2, ExternalLink, MessageCircle } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { supabase } from "@/integrations/supabase/client";
@@ -46,14 +44,13 @@ const Checkout = () => {
     setIsProcessing(true);
     try {
       const orderId = `BAC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      const totalAmount = totalPrice + 2000;
       
       const pendingOrder = {
         id: orderId,
         customer_name: formData.name,
         phone: formData.phone,
         address: formData.address,
-        amount: totalAmount,
+        amount: totalPrice + 2000,
         status: "Attente de validation admin",
         items: cart.map(i => ({ 
           id: i.id, 
@@ -73,32 +70,26 @@ const Checkout = () => {
 
       if (error) throw error;
 
-      showSuccess("Commande enregistrée ! Préparation du paiement...");
-
-      // Redirection vers le paiement
+      // Open payment link based on selected method
       if (paymentMethod === 'wave') {
-        // Lien Wave officiel
-        const wavePaymentUrl = `https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/?amount=${totalAmount}&description=Commande%20${orderId}`;
-        
-        // On vide le panier avant de partir
-        clearCart();
-        
-        // Redirection directe pour éviter les bloqueurs de popups
-        setTimeout(() => {
-          window.location.href = wavePaymentUrl;
-        }, 1000);
+        // Corrected Wave payment link
+        const wavePaymentUrl = `https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/?amount=${(totalPrice + 2000).toLocaleString().replace(/ /g, '')}&description=Commande%20Ballou%20Agri%20Connect%20${orderId}`;
+        window.open(wavePaymentUrl, '_blank');
       } else {
-        // Orange Money - redirection vers WhatsApp
+        // Orange Money - open WhatsApp with pre-filled message
         const phoneNumber = "782254548";
-        const message = encodeURIComponent(`Bonjour, je souhaite payer ma commande ${orderId} d'un montant de ${totalAmount.toLocaleString()} FCFA via Orange Money.`);
+        const message = encodeURIComponent(`Bonjour, je souhaite payer ma commande ${orderId} d'un montant de ${(totalPrice + 2000).toLocaleString()} FCFA via Orange Money.`);
         const orangeMoneyUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-        
-        clearCart();
-        setTimeout(() => {
-          window.location.href = orangeMoneyUrl;
-        }, 1000);
+        window.open(orangeMoneyUrl, '_blank');
       }
 
+      showSuccess("Commande créée ! Redirection vers le reçu...");
+      clearCart();
+      
+      // Redirect to receipt page after a short delay
+      setTimeout(() => {
+        navigate(`/receipt/${orderId}`);
+      }, 1000);
     } catch (error: any) {
       showError("Erreur lors de la création de la commande: " + error.message);
       setIsProcessing(false);
@@ -131,12 +122,12 @@ const Checkout = () => {
           <Button asChild variant="outline" size="icon" className="rounded-full">
             <Link to="/"><Home className="h-4 w-4 text-green-700" /></Link>
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900">Finaliser la commande</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Commander</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-none shadow-sm rounded-2xl">
+            <Card className="border-none shadow-sm">
               <CardHeader>
                 <CardTitle className="text-xl">Informations de livraison</CardTitle>
               </CardHeader>
@@ -147,7 +138,7 @@ const Checkout = () => {
                     id="name" 
                     name="name"
                     placeholder="Votre nom" 
-                    className="rounded-xl h-12" 
+                    className="rounded-xl" 
                     value={formData.name}
                     onChange={handleInputChange}
                     required
@@ -159,7 +150,7 @@ const Checkout = () => {
                     id="phone" 
                     name="phone"
                     placeholder="78 123 45 67" 
-                    className="rounded-xl h-12" 
+                    className="rounded-xl" 
                     value={formData.phone}
                     onChange={handleInputChange}
                     required
@@ -171,7 +162,7 @@ const Checkout = () => {
                     id="address" 
                     name="address"
                     placeholder="Votre adresse complète" 
-                    className="rounded-xl h-12" 
+                    className="rounded-xl" 
                     value={formData.address}
                     onChange={handleInputChange}
                     required
@@ -180,9 +171,9 @@ const Checkout = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-sm rounded-2xl">
+            <Card className="border-none shadow-sm">
               <CardHeader>
-                <CardTitle className="text-xl">Récapitulatif</CardTitle>
+                <CardTitle className="text-xl">Votre commande</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -191,10 +182,11 @@ const Checkout = () => {
                       <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-lg" />
                       <div className="flex-1">
                         <h3 className="font-bold text-gray-900">{item.name}</h3>
-                        <p className="text-sm text-gray-500">{item.quantity} x {item.unit}</p>
+                        <p className="text-sm text-gray-500">{item.unit}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-green-700">{(item.price * item.quantity).toLocaleString()} FCFA</p>
+                        <p className="text-xs text-gray-400">{item.quantity} x {item.price.toLocaleString()}</p>
                       </div>
                     </div>
                   ))}
@@ -204,17 +196,17 @@ const Checkout = () => {
           </div>
 
           <div className="space-y-6">
-            <Card className="border-none shadow-lg bg-white rounded-3xl overflow-hidden">
-              <CardHeader className="bg-green-900 text-white">
-                <CardTitle className="text-xl">Total à payer</CardTitle>
+            <Card className="border-none shadow-lg bg-white">
+              <CardHeader>
+                <CardTitle className="text-xl">Résumé de la commande</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 pt-6">
+              <CardContent className="space-y-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Sous-total</span>
                   <span className="font-bold">{totalPrice.toLocaleString()} FCFA</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Frais de livraison</span>
+                  <span className="text-gray-500">Livraison</span>
                   <span className="font-bold">2 000 FCFA</span>
                 </div>
                 <div className="border-t pt-4 flex justify-between items-end">
@@ -224,69 +216,41 @@ const Checkout = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col gap-6 pb-8">
-                <div className="space-y-4 w-full">
-                  <Label className="text-sm font-black uppercase tracking-widest text-gray-400">Moyen de paiement</Label>
-                  <div className="grid grid-cols-1 gap-3">
-                    <button
+              <CardFooter className="flex flex-col gap-4">
+                <div className="space-y-3 w-full">
+                  <Label className="text-sm font-bold">Moyen de paiement</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
                       type="button"
+                      variant={paymentMethod === 'wave' ? 'default' : 'outline'}
+                      className={`h-12 ${paymentMethod === 'wave' ? 'bg-blue-600 hover:bg-blue-700' : 'border-blue-200 text-blue-700'}`}
                       onClick={() => setPaymentMethod('wave')}
-                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
-                        paymentMethod === 'wave' 
-                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
-                        : 'border-stone-100 bg-white hover:border-blue-200'
-                      }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-black text-xl">W</div>
-                        <div className="text-left">
-                          <p className="font-black text-blue-900">WAVE</p>
-                          <p className="text-[10px] text-blue-600 font-bold">Paiement instantané</p>
-                        </div>
-                      </div>
-                      {paymentMethod === 'wave' && <CheckCircle2 className="h-6 w-6 text-blue-600" />}
-                    </button>
-
-                    <button
+                      <ExternalLink className="mr-2 h-4 w-4" /> Wave
+                    </Button>
+                    <Button
                       type="button"
+                      variant={paymentMethod === 'orange' ? 'default' : 'outline'}
+                      className={`h-12 ${paymentMethod === 'orange' ? 'bg-orange-600 hover:bg-orange-700' : 'border-orange-200 text-orange-700'}`}
                       onClick={() => setPaymentMethod('orange')}
-                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
-                        paymentMethod === 'orange' 
-                        ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200' 
-                        : 'border-stone-100 bg-white hover:border-orange-200'
-                      }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white font-black text-xl">O</div>
-                        <div className="text-left">
-                          <p className="font-black text-orange-900">ORANGE MONEY</p>
-                          <p className="text-[10px] text-orange-600 font-bold">Validation via WhatsApp</p>
-                        </div>
-                      </div>
-                      {paymentMethod === 'orange' && <CheckCircle2 className="h-6 w-6 text-orange-600" />}
-                    </button>
+                      Orange Money
+                    </Button>
                   </div>
+                  {paymentMethod === 'orange' && (
+                    <div className="bg-orange-50 p-3 rounded-lg text-sm text-orange-700">
+                      Contactez-nous au <strong>782254548</strong> pour finaliser votre paiement Orange Money.
+                    </div>
+                  )}
                 </div>
-
                 <Button 
                   onClick={handleCommander} 
                   disabled={isProcessing}
-                  className={`w-full h-16 text-lg font-black shadow-xl rounded-2xl transition-all transform active:scale-95 ${
-                    paymentMethod === 'wave' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-500 hover:bg-orange-600'
-                  }`}
+                  className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold shadow-lg"
                 >
-                  {isProcessing ? (
-                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                  ) : (
-                    <>
-                      {paymentMethod === 'wave' ? <ExternalLink className="mr-2 h-6 w-6" /> : <MessageCircle className="mr-2 h-6 w-6" />}
-                      PAYER {(totalPrice + 2000).toLocaleString()} FCFA
-                    </>
-                  )}
+                  {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <MessageCircle className="mr-2 h-5 w-5" />}
+                  Commander & Payer
                 </Button>
-                <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-tighter">
-                  En cliquant, vous serez redirigé vers la plateforme de paiement sécurisée.
-                </p>
               </CardFooter>
             </Card>
           </div>
