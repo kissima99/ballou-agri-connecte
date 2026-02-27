@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, Home, Loader2, ExternalLink, MessageCircle, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, Home, Loader2, ExternalLink, MessageCircle, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { supabase } from "@/integrations/supabase/client";
@@ -24,8 +24,7 @@ const Checkout = () => {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [paymentMethod, setPaymentMethod] = useState<'wave' | 'orange'>('wave');
-
-  const WAVE_LINK = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
+  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     const getUser = async () => {
@@ -50,6 +49,7 @@ const Checkout = () => {
     try {
       const orderId = `BAC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
       const totalAmount = totalPrice + 2000;
+      setLastOrderId(orderId);
       
       const pendingOrder = {
         id: orderId,
@@ -78,17 +78,24 @@ const Checkout = () => {
 
       showSuccess("Commande enregistrée !");
       setIsRedirecting(true);
-      clearCart();
 
       // Redirection vers le paiement
       if (paymentMethod === 'wave') {
-        // Redirection immédiate vers le lien Wave fourni
-        window.location.href = WAVE_LINK;
+        // Utilisation du lien exact fourni par l'utilisateur
+        const wavePaymentUrl = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
+        
+        clearCart();
+        
+        // Redirection immédiate
+        window.location.href = wavePaymentUrl;
       } else {
         // Orange Money - redirection vers WhatsApp
         const phoneNumber = "782254548";
         const message = encodeURIComponent(`Bonjour, je souhaite payer ma commande ${orderId} d'un montant de ${totalAmount.toLocaleString()} FCFA via Orange Money.`);
-        window.location.href = `https://wa.me/${phoneNumber}?text=${message}`;
+        const orangeMoneyUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+        
+        clearCart();
+        window.location.href = orangeMoneyUrl;
       }
 
     } catch (error: any) {
@@ -122,13 +129,20 @@ const Checkout = () => {
           <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
           </div>
-          <h2 className="text-2xl font-black text-gray-900 mb-4">Redirection...</h2>
-          <p className="text-gray-500 mb-8">Nous vous redirigeons vers la plateforme de paiement.</p>
-          <Button asChild className="w-full h-14 font-bold rounded-2xl shadow-lg bg-blue-600 hover:bg-blue-700">
-            <a href={paymentMethod === 'wave' ? WAVE_LINK : "#"}>
-              CLIQUEZ ICI SI LA PAGE NE S'OUVRE PAS
-            </a>
-          </Button>
+          <h2 className="text-2xl font-black text-gray-900 mb-4">Redirection en cours...</h2>
+          <p className="text-gray-500 mb-8">Nous vous redirigeons vers la plateforme de paiement sécurisée.</p>
+          
+          <div className="space-y-4">
+            <p className="text-sm font-medium text-gray-400">Si la page ne s'ouvre pas automatiquement :</p>
+            <Button 
+              asChild
+              className={`w-full h-14 font-bold rounded-2xl shadow-lg ${paymentMethod === 'wave' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-500 hover:bg-orange-600'}`}
+            >
+              <a href={paymentMethod === 'wave' ? "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/" : `https://wa.me/782254548?text=${encodeURIComponent(`Paiement commande ${lastOrderId}`)}`}>
+                CLIQUEZ ICI POUR PAYER
+              </a>
+            </Button>
+          </div>
         </Card>
       </div>
     );
@@ -295,6 +309,9 @@ const Checkout = () => {
                     </>
                   )}
                 </Button>
+                <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-tighter">
+                  En cliquant, vous serez redirigé vers la plateforme de paiement sécurisée.
+                </p>
               </CardFooter>
             </Card>
           </div>
