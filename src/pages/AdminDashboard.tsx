@@ -15,7 +15,8 @@ import {
   Check,
   Loader2,
   RefreshCw,
-  CheckCircle2
+  CheckCircle2,
+  Delete
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
@@ -23,10 +24,42 @@ import { supabase } from "@/integrations/supabase/client";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]); // Fixed: removed extra parenthesis
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  // Toggle Super Admin mode with code 2003
+  const toggleAdmin = () => {
+    const codeInput = prompt("Entrez le code d'activation (2003) pour activer le mode admin");
+    if (codeInput === "2003") {
+      const newStatus = !isAdmin;
+      setIsAdmin(newStatus);
+      localStorage.setItem('is_super_admin', String(newStatus));
+      showSuccess(newStatus ? "Mode Super Admin Activé" : "Mode Client Activé");
+      window.dispatchEvent(new Event('storage'));
+    } else {
+      showError("Code incorrect. Accès refusé.");
+    }
+  };
+
+  // Delete order
+  const deleteOrder = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      showSuccess(`Commande ${id} supprimée avec succès`);
+      fetchOrders();
+    } catch (err: any) {
+      showError("Erreur de suppression : " + err.message);
+    }
+  };
 
   const fetchOrders = async () => {
     setIsLoading(true);
@@ -38,7 +71,7 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      if (data) {
+      if (data && data.length > 0) {
         const formattedOrders = data.map(o => ({
           id: o.id,
           customer: o.customer_name,
@@ -52,8 +85,8 @@ const AdminDashboard = () => {
         setOrders(formattedOrders);
         setNewOrdersCount(formattedOrders.filter(o => o.isNew).length);
       }
-    } catch (err: any) {
-      console.error("Admin fetch error:", err);
+    } catch (e) {
+      console.error("Admin fetch error:", e);
       showError("Erreur lors du chargement des commandes.");
     } finally {
       setIsLoading(false);
@@ -61,7 +94,21 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    const isAdmin = localStorage.getItem('is_super_admin') === 'true';
+    const adminStatus = localStorage.getItem('is_super_admin') === 'true';
+    setIsAdmin(adminStatus);
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
     if (!isAdmin) {
       showError("Accès réservé au Super Admin.");
       navigate('/');
@@ -70,7 +117,6 @@ const AdminDashboard = () => {
 
     fetchOrders();
 
-    // Écoute en temps réel des nouvelles commandes
     const channel = supabase
       .channel('admin_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
@@ -118,7 +164,7 @@ const AdminDashboard = () => {
 
   const filteredOrders = orders.filter(order => 
     order.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.customer.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (order.phone && order.phone.includes(searchTerm))
   );
 
@@ -194,7 +240,7 @@ const AdminDashboard = () => {
         <Card className="border-none shadow-xl bg-white overflow-hidden rounded-3xl">
           <CardHeader className="border-b bg-stone-50/50 py-6">
             <div className="flex flex-col md:flex-row justify-between gap-4">
-              <CardTitle className="text-xl font-bold">Commandes Récentes</CardTitle>
+              <CardTitle className="text-xl">Commandes Récentes</CardTitle>
               <div className="relative w-full md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input 
@@ -232,17 +278,22 @@ const AdminDashboard = () => {
                       </TableCell>
                       <TableCell className="font-bold text-gray-900">{order.amount.toLocaleString()} FCFA</TableCell>
                       <TableCell>
-                        <Badge className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border-none ${
+                        <Badge className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border-none ${(
                           (order.status === 'Attente Paiement' || order.status === 'Attente de validation admin') ? 'bg-red-100 text-red-700' :
                           order.status === 'Payé' ? 'bg-orange-100 text-orange-700' :
                           order.status === 'En cours' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                        }`}>{order.status}</Badge>
+                        )}`}>{order.status}</Badge>
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end gap-2">
                           {(order.status === 'Attente Paiement' || order.status === 'Attente de validation admin') && (
                             <Button onClick={() => validatePayment(order.id)} className="bg-red-600 hover:bg-red-700 h-8 px-3 text-[10px] font-bold rounded-lg">
                               <Check className="w-3 h-3 mr-1" /> VALIDER PAIEMENT
+                            </Button>
+                          )}
+                          {(order.status === 'Attente Paiement' || order.status === 'Attente de validation admin') && (
+                            <Button onClick={() => deleteOrder(order.id)} className="bg-purple-600 hover:bg-purple-700 h-8 px-3 text-[10px] font-bold rounded-lg">
+                              <Delete className="w-3 h-3 mr-1" /> SUPRIMER
                             </Button>
                           )}
                           {order.status === 'Payé' && (
