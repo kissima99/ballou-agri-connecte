@@ -10,6 +10,8 @@ import { useCart } from '@/context/CartContext';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
 
+const WAVE_MERCHANT_URL = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
+
 const Checkout = () => {
   const navigate = useNavigate();
   const { cart, totalPrice, clearCart } = useCart();
@@ -70,26 +72,32 @@ const Checkout = () => {
 
       if (error) throw error;
 
-      // Open payment link based on selected method
+      // Save for easy access to receipt after returning from payment
+      localStorage.setItem('last_order_id', orderId);
+      window.dispatchEvent(new Event('storage'));
+
+      clearCart();
+
       if (paymentMethod === 'wave') {
-        // Corrected Wave payment link
-        const wavePaymentUrl = `https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/?amount=${(totalPrice + 2000).toLocaleString().replace(/ /g, '')}&description=Commande%20Ballou%20Agri%20Connect%20${orderId}`;
-        window.open(wavePaymentUrl, '_blank');
-      } else {
-        // Orange Money - open WhatsApp with pre-filled message
-        const phoneNumber = "782254548";
-        const message = encodeURIComponent(`Bonjour, je souhaite payer ma commande ${orderId} d'un montant de ${(totalPrice + 2000).toLocaleString()} FCFA via Orange Money.`);
-        const orangeMoneyUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-        window.open(orangeMoneyUrl, '_blank');
+        showSuccess("Commande créée. Redirection vers Wave...");
+        setTimeout(() => {
+          window.location.href = WAVE_MERCHANT_URL;
+        }, 600);
+        return;
       }
 
-      showSuccess("Commande créée ! Redirection vers le reçu...");
-      clearCart();
-      
-      // Redirect to receipt page after a short delay
+      // Orange Money - open WhatsApp with pre-filled message
+      const phoneNumber = "782254548";
+      const message = encodeURIComponent(
+        `Bonjour, je souhaite payer ma commande ${orderId} d'un montant de ${(totalPrice + 2000).toLocaleString()} FCFA via Orange Money.`
+      );
+      const orangeMoneyUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+
+      showSuccess("Commande créée. Redirection vers WhatsApp...");
       setTimeout(() => {
+        window.open(orangeMoneyUrl, '_blank');
         navigate(`/receipt/${orderId}`);
-      }, 1000);
+      }, 600);
     } catch (error: any) {
       showError("Erreur lors de la création de la commande: " + error.message);
       setIsProcessing(false);
@@ -240,6 +248,11 @@ const Checkout = () => {
                   {paymentMethod === 'orange' && (
                     <div className="bg-orange-50 p-3 rounded-lg text-sm text-orange-700">
                       Contactez-nous au <strong>782254548</strong> pour finaliser votre paiement Orange Money.
+                    </div>
+                  )}
+                  {paymentMethod === 'wave' && (
+                    <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
+                      Vous serez redirigé vers la page de paiement Wave.
                     </div>
                   )}
                 </div>

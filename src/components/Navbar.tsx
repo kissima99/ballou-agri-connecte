@@ -6,7 +6,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
 
 // Lucide icons
-import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, Unlock, Lock, ShoppingCart, LogOut, ChevronDown, Truck, User } from 'lucide-react';
+import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, Unlock, Lock, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText } from 'lucide-react';
 
 // Shadcn UI components
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -31,9 +31,13 @@ const Navbar = () => {
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [adminCode, setAdminCode] = useState("");
 
+  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
+
   useEffect(() => {
     const adminStatus = localStorage.getItem('is_super_admin') === 'true';
     setIsAdmin(adminStatus);
+
+    setLastOrderId(localStorage.getItem('last_order_id'));
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
@@ -43,7 +47,17 @@ const Navbar = () => {
       setUser(session?.user || null);
     });
 
-    return () => subscription.unsubscribe();
+    const syncFromStorage = () => {
+      setIsAdmin(localStorage.getItem('is_super_admin') === 'true');
+      setLastOrderId(localStorage.getItem('last_order_id'));
+    };
+
+    window.addEventListener('storage', syncFromStorage);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('storage', syncFromStorage);
+    };
   }, []);
 
   const enableAdminWithCode = () => {
@@ -84,6 +98,13 @@ const Navbar = () => {
       showSuccess("Déconnexion réussie.");
       navigate('/');
     }
+  };
+
+  const goToLastReceipt = () => {
+    if (!lastOrderId) return;
+    navigate(`/receipt/${lastOrderId}`);
+    localStorage.removeItem('last_order_id');
+    window.dispatchEvent(new Event('storage'));
   };
 
   return (
@@ -141,7 +162,19 @@ const Navbar = () => {
             )}
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {lastOrderId && (
+              <Button
+                variant="outline"
+                onClick={goToLastReceipt}
+                className="rounded-2xl border-stone-200 bg-white px-3 text-xs font-bold text-gray-700 hover:bg-stone-50"
+                title="Voir votre reçu"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Reçu
+              </Button>
+            )}
+
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
