@@ -12,70 +12,67 @@ import { supabase } from "@/integrations/supabase/client";
 const Tracking = () => {
   const [orderId, setOrderId] = useState("");
   const [trackingData, setTrackingData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = async () => {
-    if (!orderId.trim()) {
+    if (!orderId) {
       showError("Veuillez entrer un numéro de commande.");
       return;
     }
 
-    setIsLoading(true);
+    setIsSearching(true);
     try {
       const { data: order, error } = await supabase
         .from('orders')
         .select('*')
-        .eq('id', orderId.trim())
+        .eq('id', orderId)
         .single();
 
       if (error || !order) {
-        showError("Commande introuvable. Vérifiez votre numéro (ex: BAC-XXXXX).");
+        showError("Commande introuvable. Vérifiez votre numéro (ex: BAC-XXXXXX).");
         setTrackingData(null);
         return;
       }
 
-      // Déterminer la direction (par défaut Dakar -> Ballou si non spécifié)
-      const direction = order.zone === "Ballou" ? "Ballou -> Dakar" : "Dakar -> Ballou";
-      const status = order.status;
+      // Déterminer la direction basée sur les items ou par défaut
+      // On regarde si un item contient "local" dans son ID (stocké dans le JSON items)
+      const hasLocalItems = order.items?.some((item: any) => String(item.id).includes('local'));
+      const direction = hasLocalItems ? "Ballou -> Dakar" : "Dakar -> Ballou";
       
-      // Mapping des statuts vers les étapes
-      // 0: Réceptionné, 1: Payé/Validé, 2: En Transit, 3: Livré
-      const getStepIndex = (status: string) => {
-        if (status === "Livré") return 3;
-        if (status === "En cours") return 2;
-        if (status === "Payé") return 1;
-        return 0; // Attente validation / Attente paiement
+      const status = order.status || "En attente";
+      
+      // Logique de complétion des étapes
+      const getCompletion = (stepIndex: number) => {
+        if (status === "Livré") return true;
+        if (status === "En cours") return stepIndex <= 2;
+        if (status === "Payé" || status.includes("validation")) return stepIndex <= 0;
+        return false;
       };
 
-      const currentStepIndex = getStepIndex(status);
-
-      // Étapes basées sur la direction
       const steps = direction === "Dakar -> Ballou" 
         ? [
-            { location: "Dakar - Hub", status: "Commande enregistrée", time: "Étape 1", completed: currentStepIndex >= 0 },
-            { location: "Dakar - Entrepôt", status: "Paiement validé & Préparation", time: "Étape 2", completed: currentStepIndex >= 1 },
-            { location: "En Route", status: "Transit vers Ballou", time: "Étape 3", completed: currentStepIndex >= 2 },
-            { location: "Ballou", status: "Livraison effectuée", time: "Étape 4", completed: currentStepIndex >= 3 },
+            { location: "Dakar - Entrepôt", status: "Colis Réceptionné", time: "Départ Programmé", completed: getCompletion(0) },
+            { location: "Tambacounda", status: "En Transit", time: "En cours", completed: getCompletion(1) },
+            { location: "Bakel", status: "Vérification Poste", time: "Bientôt", completed: getCompletion(2) },
+            { location: "Ballou", status: "Livraison Finale", time: "Arrivée sous 24h", completed: getCompletion(3) },
           ]
         : [
-            { location: "Ballou - Poste", status: "Colis déposé", time: "Étape 1", completed: currentStepIndex >= 0 },
-            { location: "Bakel / Tamba", status: "Paiement validé & Transit", time: "Étape 2", completed: currentStepIndex >= 1 },
-            { location: "En Route", status: "Transit vers Dakar", time: "Étape 3", completed: currentStepIndex >= 2 },
-            { location: "Dakar", status: "Livraison effectuée", time: "Étape 4", completed: currentStepIndex >= 3 },
+            { location: "Ballou - Poste Locale", status: "Colis Réceptionné", time: "Expédié", completed: getCompletion(0) },
+            { location: "Bakel", status: "Transit Régional", time: "Passage en cours", completed: getCompletion(1) },
+            { location: "Tambacounda", status: "Transit National", time: "Bientôt", completed: getCompletion(2) },
+            { location: "Dakar - Hub Central", status: "Livraison Finale", time: "Arrivée sous 24h", completed: getCompletion(3) },
           ];
 
       setTrackingData({
         id: order.id,
         status: status,
         direction: direction,
-        steps: steps,
-        customer: order.customer_name,
-        date: new Date(order.created_at).toLocaleDateString('fr-FR')
+        steps: steps
       });
     } catch (err) {
       showError("Une erreur est survenue lors de la recherche.");
     } finally {
-      setIsLoading(false);
+      setIsSearching(false);
     }
   };
 
@@ -85,10 +82,9 @@ const Tracking = () => {
       <div className="container px-4 py-12 mx-auto max-w-4xl">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Suivi de votre Colis</h1>
-          <p className="text-gray-600">Entrez votre numéro de commande (ex: BAC-A1B2C3) pour voir l'état réel de votre livraison.</p>
+          <p className="text-gray-600">Entrez votre numéro de commande BAC-XXXXX pour voir l'état réel.</p>
         </div>
 
-        {/* Schedule Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
           <Card className="border-l-4 border-l-blue-600 shadow-sm bg-white">
             <CardHeader className="pb-2">
@@ -101,7 +97,7 @@ const Tracking = () => {
                 <CalendarDays className="h-4 w-4 text-blue-500" />
                 Mardi - Jeudi - Samedi
               </div>
-              <p className="text-[11px] text-gray-500 mt-1 uppercase">Départs réguliers de la capitale.</p>
+              <p className="text-[11px] text-gray-500 mt-1 uppercase">Réception garantie sous 24h après expédition.</p>
             </CardContent>
           </Card>
 
@@ -116,7 +112,7 @@ const Tracking = () => {
                 <CalendarDays className="h-4 w-4 text-green-500" />
                 Lundi - Jeudi
               </div>
-              <p className="text-[11px] text-gray-500 mt-1 uppercase">Collecte des produits locaux.</p>
+              <p className="text-[11px] text-gray-500 mt-1 uppercase">Réception garantie sous 24h après expédition.</p>
             </CardContent>
           </Card>
         </div>
@@ -129,9 +125,9 @@ const Tracking = () => {
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             className="bg-white border-green-200 focus-visible:ring-green-500 h-12 font-bold"
           />
-          <Button onClick={handleSearch} disabled={isLoading} className="bg-green-600 hover:bg-green-700 h-12 px-8 font-bold shadow-lg">
-            {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />} 
-            SUIVRE
+          <Button onClick={handleSearch} disabled={isSearching} className="bg-green-600 hover:bg-green-700 h-12 px-8 font-bold shadow-lg">
+            {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
+            RECHERCHER
           </Button>
         </div>
 
@@ -145,12 +141,9 @@ const Tracking = () => {
                     <ArrowRightLeft className="mr-2 h-4 w-4" /> {trackingData.direction}
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="bg-white/20 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border border-white/30 backdrop-blur-sm">
-                    {trackingData.status}
-                  </span>
-                  <p className="text-[10px] mt-2 text-green-200">Client: {trackingData.customer}</p>
-                </div>
+                <span className="bg-white/20 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border border-white/30 backdrop-blur-sm">
+                  {trackingData.status}
+                </span>
               </div>
             </CardHeader>
             <CardContent className="pt-10 pb-10 bg-white">
@@ -164,7 +157,7 @@ const Tracking = () => {
                       <div className="flex justify-between items-center mb-1">
                         <h4 className={`font-bold text-base ${step.completed ? 'text-gray-900' : 'text-gray-400'}`}>{step.location}</h4>
                         <span className={`text-[10px] font-bold px-2 py-1 rounded-full border uppercase ${step.completed ? 'text-green-600 bg-white border-green-100' : 'text-gray-400 bg-white border-gray-100'}`}>
-                          <Clock className="mr-1 h-3 w-3 inline" /> {step.completed ? 'Validé' : 'En attente'}
+                          <Clock className="mr-1 h-3 w-3 inline" /> {step.completed ? 'Validé' : step.time}
                         </span>
                       </div>
                       <p className={`text-sm ${step.completed ? 'text-green-700 font-medium' : 'text-gray-400'}`}>{step.status}</p>
