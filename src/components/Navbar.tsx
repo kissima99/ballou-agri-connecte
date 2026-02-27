@@ -69,13 +69,13 @@ const Navbar = () => {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-      <div className="container flex items-center justify-between px-4">
+      <div className="container flex items-center justify-between px-4 h-16">
         <Link to="/" className="flex items-center space-x-2">
           <Leaf className="h-6 w-6 text-green-600" />
-          <span className="text-2xl font-bold tracking-tight text-green-800">BALLOU AGRI <span className="text-orange-500">CONNECT</span></span>
+          <span className="text-xl md:text-2xl font-bold tracking-tight text-green-800">BALLOU AGRI <span className="text-orange-500">CONNECT</span></span>
         </Link>
 
-        <div className="hidden md:flex items-center space-x-6">
+        <div className="hidden lg:flex items-center space-x-6">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center space-x-1 text-green-700 hover:text-green-900 font-bold">
@@ -110,10 +110,6 @@ const Navbar = () => {
             <MessageSquare className="mr-1 h-4 w-4" /> Avis
           </Link>
 
-          <Link to="/purchase-history" className="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center transition-colors">
-            <History className="mr-1 h-4 w-4" /> Mes Achats
-          </Link>
-
           {isAdmin && (
             <Link to="/admin" className="text-sm font-bold text-orange-600 hover:text-orange-700 flex items-center transition-colors bg-orange-50 px-3 py-1.5 rounded-full">
               <ShieldAlert className="mr-1 h-4 w-4" /> Admin
@@ -121,15 +117,15 @@ const Navbar = () => {
           )}
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 md:space-x-4">
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 text-gray-700 font-bold">
+                <Button variant="ghost" className="flex items-center gap-2 text-gray-700 font-bold px-2">
                   <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700">
                     <User className="h-4 w-4" />
                   </div>
-                  <span className="hidden sm:inline text-xs truncate max-w-[100px]">{user.email?.split('@')[0]}</span>
+                  <span className="hidden sm:inline text-xs truncate max-w-[80px]">{user.email?.split('@')[0]}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg">
@@ -139,7 +135,7 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button asChild variant="ghost" className="text-gray-700 font-bold">
+            <Button asChild variant="ghost" className="text-gray-700 font-bold px-2 text-xs md:text-sm">
               <Link to="/login">Connexion</Link>
             </Button>
           )}
@@ -148,10 +144,22 @@ const Navbar = () => {
             variant="ghost" 
             size="icon" 
             onClick={toggleAdmin}
-            className={`rounded-full ${isAdmin ? 'text-orange-600 bg-orange-50' : 'text-gray-400'}`}
+            className={`rounded-full h-9 w-9 ${isAdmin ? 'text-orange-600 bg-orange-50' : 'text-gray-400'}`}
             title={isAdmin ? "Déconnexion Admin" : "Connexion Super Admin"}
           >
             {isAdmin ? <Unlock className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+          </Button>
+
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            asChild
+            className="rounded-full h-9 w-9 text-blue-600 hover:bg-blue-50"
+            title="Mes Achats"
+          >
+            <Link to="/purchase-history">
+              <History className="h-5 w-5" />
+            </Link>
           </Button>
 
           <div className="relative">
@@ -159,11 +167,11 @@ const Navbar = () => {
               variant="ghost" 
               size="icon" 
               onClick={() => navigate('/cart')}
-              className={`rounded-2xl ${totalItems > 0 ? 'bg-green-100' : 'bg-gray-100'} hover:bg-gray-200 transition-all duration-300`}
+              className={`rounded-full h-9 w-9 ${totalItems > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'} hover:bg-gray-200 transition-all duration-300`}
             >
               <ShoppingCart className="h-5 w-5" />
               {totalItems > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center rounded-full bg-orange-500 p-0 text-[10px] text-white font-black border-2 border-white">
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center rounded-full bg-orange-500 p-0 text-[10px] text-white font-black border-2 border-white">
                   {totalItems}
                 </Badge>
               )}

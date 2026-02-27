@@ -44,13 +44,14 @@ const Checkout = () => {
     setIsProcessing(true);
     try {
       const orderId = `BAC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const totalAmount = totalPrice + 2000;
       
       const pendingOrder = {
         id: orderId,
         customer_name: formData.name,
         phone: formData.phone,
         address: formData.address,
-        amount: totalPrice + 2000,
+        amount: totalAmount,
         status: "Attente de validation admin",
         items: cart.map(i => ({ 
           id: i.id, 
@@ -70,15 +71,21 @@ const Checkout = () => {
 
       if (error) throw error;
 
-      // Open payment link based on selected method
+      // Logique de paiement
       if (paymentMethod === 'wave') {
-        // Corrected Wave payment link
-        const wavePaymentUrl = `https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/?amount=${(totalPrice + 2000).toLocaleString().replace(/ /g, '')}&description=Commande%20Ballou%20Agri%20Connect%20${orderId}`;
-        window.open(wavePaymentUrl, '_blank');
+        // Lien Wave optimisé pour mobile
+        const wavePaymentUrl = `https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/?amount=${totalAmount}&description=Commande%20Ballou%20Agri%20Connect%20${orderId}`;
+        
+        // Sur mobile, window.location.href est souvent plus fiable que window.open
+        if (/Android|iPhone/i.test(navigator.userAgent)) {
+          window.location.href = wavePaymentUrl;
+        } else {
+          window.open(wavePaymentUrl, '_blank');
+        }
       } else {
-        // Orange Money - open WhatsApp with pre-filled message
+        // Orange Money - WhatsApp
         const phoneNumber = "782254548";
-        const message = encodeURIComponent(`Bonjour, je souhaite payer ma commande ${orderId} d'un montant de ${(totalPrice + 2000).toLocaleString()} FCFA via Orange Money.`);
+        const message = encodeURIComponent(`Bonjour, je souhaite payer ma commande ${orderId} d'un montant de ${totalAmount.toLocaleString()} FCFA via Orange Money.`);
         const orangeMoneyUrl = `https://wa.me/${phoneNumber}?text=${message}`;
         window.open(orangeMoneyUrl, '_blank');
       }
@@ -86,10 +93,10 @@ const Checkout = () => {
       showSuccess("Commande créée ! Redirection vers le reçu...");
       clearCart();
       
-      // Redirect to receipt page after a short delay
+      // Redirection vers le reçu après un court délai
       setTimeout(() => {
         navigate(`/receipt/${orderId}`);
-      }, 1000);
+      }, 1500);
     } catch (error: any) {
       showError("Erreur lors de la création de la commande: " + error.message);
       setIsProcessing(false);
