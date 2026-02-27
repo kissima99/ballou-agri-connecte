@@ -35,11 +35,26 @@ const Navbar = () => {
   }, []);
 
   const toggleAdmin = () => {
-    const newStatus = !isAdmin;
-    setIsAdmin(newStatus);
-    localStorage.setItem('is_super_admin', String(newStatus));
-    showSuccess(newStatus ? "Mode Super Admin Activé" : "Mode Client Activé");
-    window.dispatchEvent(new Event('storage'));
+    if (isAdmin) {
+      setIsAdmin(false);
+      localStorage.setItem('is_super_admin', 'false');
+      showSuccess("Mode Admin Désactivé");
+      window.dispatchEvent(new Event('storage'));
+      if (window.location.pathname === '/admin') {
+        navigate('/');
+      }
+      return;
+    }
+
+    const code = window.prompt("Entrez le code d'accès Super Admin :");
+    if (code === "2003") {
+      setIsAdmin(true);
+      localStorage.setItem('is_super_admin', 'true');
+      showSuccess("Mode Super Admin Activé");
+      window.dispatchEvent(new Event('storage'));
+    } else if (code !== null) {
+      showError("Code incorrect.");
+    }
   };
 
   const handleLogout = async () => {
