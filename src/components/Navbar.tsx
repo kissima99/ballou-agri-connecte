@@ -12,12 +12,24 @@ import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, Unlock, 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { totalItems } = useCart();
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<any>(null);
+
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [adminCode, setAdminCode] = useState("");
 
   useEffect(() => {
     const adminStatus = localStorage.getItem('is_super_admin') === 'true';
@@ -34,12 +46,34 @@ const Navbar = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const toggleAdmin = () => {
-    const newStatus = !isAdmin;
-    setIsAdmin(newStatus);
-    localStorage.setItem('is_super_admin', String(newStatus));
-    showSuccess(newStatus ? "Mode Super Admin Activé" : "Mode Client Activé");
+  const enableAdminWithCode = () => {
+    if (adminCode.trim() !== "2003") {
+      showError("Code Super Admin incorrect.");
+      return;
+    }
+
+    setIsAdmin(true);
+    localStorage.setItem('is_super_admin', 'true');
+    showSuccess("Mode Super Admin Activé");
+    setAdminDialogOpen(false);
+    setAdminCode("");
     window.dispatchEvent(new Event('storage'));
+  };
+
+  const disableAdmin = () => {
+    setIsAdmin(false);
+    localStorage.setItem('is_super_admin', 'false');
+    showSuccess("Mode Client Activé");
+    window.dispatchEvent(new Event('storage'));
+  };
+
+  const handleAdminButtonClick = () => {
+    if (isAdmin) {
+      disableAdmin();
+      return;
+    }
+
+    setAdminDialogOpen(true);
   };
 
   const handleLogout = async () => {
@@ -53,110 +87,157 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-      <div className="container flex items-center justify-between px-4">
-        <Link to="/" className="flex items-center space-x-2">
-          <Leaf className="h-6 w-6 text-green-600" />
-          <span className="text-2xl font-bold tracking-tight text-green-800">BALLOU AGRI <span className="text-orange-500">CONNECT</span></span>
-        </Link>
-
-        <div className="hidden md:flex items-center space-x-6">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center space-x-1 text-green-700 hover:text-green-900 font-bold">
-                <span>Nos Services</span>
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl border-stone-100">
-              <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
-                <Link to="/local-products" className="flex items-center py-2">
-                  <Leaf className="mr-2 h-4 w-4 text-green-600" /> Produits Locaux
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
-                <Link to="/imported-products" className="flex items-center py-2">
-                  <Package className="mr-2 h-4 w-4 text-blue-600" /> Produits de Dakar
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
-                <Link to="/tracking" className="flex items-center py-2">
-                  <Truck className="mr-2 h-4 w-4 text-orange-600" /> Suivi Colis
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <Link to="/insights" className="text-sm font-bold text-gray-600 hover:text-green-600 flex items-center transition-colors">
-            <BarChart3 className="mr-1 h-4 w-4" /> Insights
+    <>
+      <nav className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <div className="container flex items-center justify-between px-4">
+          <Link to="/" className="flex items-center space-x-2">
+            <Leaf className="h-6 w-6 text-green-600" />
+            <span className="text-2xl font-bold tracking-tight text-green-800">BALLOU AGRI <span className="text-orange-500">CONNECT</span></span>
           </Link>
 
-          <Link to="/feedback" className="text-sm font-bold text-gray-600 hover:text-orange-600 flex items-center transition-colors">
-            <MessageSquare className="mr-1 h-4 w-4" /> Avis
-          </Link>
-
-          <Link to="/purchase-history" className="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center transition-colors">
-            <History className="mr-1 h-4 w-4" /> Mes Achats
-          </Link>
-
-          {isAdmin && (
-            <Link to="/admin" className="text-sm font-bold text-orange-600 hover:text-orange-700 flex items-center transition-colors bg-orange-50 px-3 py-1.5 rounded-full">
-              <ShieldAlert className="mr-1 h-4 w-4" /> Admin
-            </Link>
-          )}
-        </div>
-
-        <div className="flex items-center space-x-4">
-          {user ? (
+          <div className="hidden md:flex items-center space-x-6">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 text-gray-700 font-bold">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700">
-                    <User className="h-4 w-4" />
-                  </div>
-                  <span className="hidden sm:inline text-xs truncate max-w-[100px]">{user.email?.split('@')[0]}</span>
+                <Button variant="ghost" className="flex items-center space-x-1 text-green-700 hover:text-green-900 font-bold">
+                  <span>Nos Services</span>
+                  <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg">
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
-                  <LogOut className="mr-2 h-4 w-4" /> Déconnexion
+              <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl border-stone-100">
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
+                  <Link to="/local-products" className="flex items-center py-2">
+                    <Leaf className="mr-2 h-4 w-4 text-green-600" /> Produits Locaux
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
+                  <Link to="/imported-products" className="flex items-center py-2">
+                    <Package className="mr-2 h-4 w-4 text-blue-600" /> Produits de Dakar
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
+                  <Link to="/tracking" className="flex items-center py-2">
+                    <Truck className="mr-2 h-4 w-4 text-orange-600" /> Suivi Colis
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            <Button asChild variant="ghost" className="text-gray-700 font-bold">
-              <Link to="/login">Connexion</Link>
-            </Button>
-          )}
+            
+            <Link to="/insights" className="text-sm font-bold text-gray-600 hover:text-green-600 flex items-center transition-colors">
+              <BarChart3 className="mr-1 h-4 w-4" /> Insights
+            </Link>
 
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggleAdmin}
-            className={`rounded-full ${isAdmin ? 'text-orange-600 bg-orange-50' : 'text-gray-400'}`}
-            title={isAdmin ? "Déconnexion Admin" : "Connexion Super Admin"}
-          >
-            {isAdmin ? <Unlock className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
-          </Button>
+            <Link to="/feedback" className="text-sm font-bold text-gray-600 hover:text-orange-600 flex items-center transition-colors">
+              <MessageSquare className="mr-1 h-4 w-4" /> Avis
+            </Link>
 
-          <div className="relative">
+            <Link to="/purchase-history" className="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center transition-colors">
+              <History className="mr-1 h-4 w-4" /> Mes Achats
+            </Link>
+
+            {isAdmin && (
+              <Link to="/admin" className="text-sm font-bold text-orange-600 hover:text-orange-700 flex items-center transition-colors bg-orange-50 px-3 py-1.5 rounded-full">
+                <ShieldAlert className="mr-1 h-4 w-4" /> Admin
+              </Link>
+            )}
+          </div>
+
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 text-gray-700 font-bold">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700">
+                      <User className="h-4 w-4" />
+                    </div>
+                    <span className="hidden sm:inline text-xs truncate max-w-[100px]">{user.email?.split('@')[0]}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg">
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" /> Déconnexion
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button asChild variant="ghost" className="text-gray-700 font-bold">
+                <Link to="/login">Connexion</Link>
+              </Button>
+            )}
+
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => navigate('/cart')}
-              className={`rounded-2xl ${totalItems > 0 ? 'bg-green-100' : 'bg-gray-100'} hover:bg-gray-200 transition-all duration-300`}
+              onClick={handleAdminButtonClick}
+              className={`rounded-full ${isAdmin ? 'text-orange-600 bg-orange-50' : 'text-gray-400'}`}
+              title={isAdmin ? "Déconnexion Admin" : "Connexion Super Admin"}
             >
-              <ShoppingCart className="h-5 w-5" />
-              {totalItems > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center rounded-full bg-orange-500 p-0 text-[10px] text-white font-black border-2 border-white">
-                  {totalItems}
-                </Badge>
-              )}
+              {isAdmin ? <Unlock className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
             </Button>
+
+            <div className="relative">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate('/cart')}
+                className={`rounded-2xl ${totalItems > 0 ? 'bg-green-100' : 'bg-gray-100'} hover:bg-gray-200 transition-all duration-300`}
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center rounded-full bg-orange-500 p-0 text-[10px] text-white font-black border-2 border-white">
+                    {totalItems}
+                  </Badge>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      <Dialog
+        open={adminDialogOpen}
+        onOpenChange={(open) => {
+          setAdminDialogOpen(open);
+          if (!open) setAdminCode("");
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Accès Super Admin</DialogTitle>
+            <DialogDescription>
+              Entrez le code <span className="font-semibold">2003</span> pour activer l'accès.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <Input
+              value={adminCode}
+              onChange={(e) => setAdminCode(e.target.value)}
+              placeholder="Code Super Admin"
+              type="password"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") enableAdminWithCode();
+              }}
+            />
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAdminDialogOpen(false);
+                setAdminCode("");
+              }}
+            >
+              Annuler
+            </Button>
+            <Button onClick={enableAdminWithCode} className="bg-orange-500 hover:bg-orange-600">
+              Activer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
