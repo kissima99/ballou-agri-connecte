@@ -5,55 +5,75 @@ import Navbar from '@/components/Navbar';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Truck, MapPin, CheckCircle2, Clock, CalendarDays, ArrowRightLeft } from 'lucide-react';
+import { Search, Truck, MapPin, CheckCircle2, Clock, CalendarDays, ArrowRightLeft, Loader2 } from 'lucide-react';
 import { showError } from '@/utils/toast';
+import { supabase } from "@/integrations/supabase/client";
 
 const Tracking = () => {
   const [orderId, setOrderId] = useState("");
   const [trackingData, setTrackingData] = useState<any>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const handleSearch = () => {
-    const history = JSON.parse(localStorage.getItem('purchase_history') || '[]');
-    const order = history.find((o: any) => o.id === orderId);
-
-    if (orderId && !order) {
-      showError("Commande introuvable. Vérifiez votre numéro.");
+  const handleSearch = async () => {
+    if (!orderId) {
+      showError("Veuillez entrer un numéro de commande.");
       return;
     }
 
-    const direction = order?.direction || (order?.id?.startsWith('local') ? "Ballou -> Dakar" : "Dakar -> Ballou");
-    const status = order?.status || "En attente";
-    
-    // Logic to determine which steps are completed based on status
-    // Statuses: "Payé", "En cours", "Livré"
-    const getCompletion = (stepIndex: number) => {
-      if (status === "Livré") return true;
-      if (status === "En cours") return stepIndex <= 2; // First 3 steps completed
-      if (status === "Payé") return stepIndex <= 0; // Only first step completed
-      return false;
-    };
+    setIsSearching(true);
+    try {
+      const { data: order, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
 
-    // Steps based on direction
-    const steps = direction === "Dakar -> Ballou" 
-      ? [
-          { location: "Dakar - Entrepôt", status: "Colis Réceptionné", time: "Départ Programmé", completed: getCompletion(0) },
-          { location: "Tambacounda", status: "En Transit", time: "En cours", completed: getCompletion(1) },
-          { location: "Bakel", status: "Vérification Poste", time: "Bientôt", completed: getCompletion(2) },
-          { location: "Ballou", status: "Livraison Finale", time: "Arrivée sous 24h", completed: getCompletion(3) },
-        ]
-      : [
-          { location: "Ballou - Poste Locale", status: "Colis Réceptionné", time: "Expédié", completed: getCompletion(0) },
-          { location: "Bakel", status: "Transit Régional", time: "Passage en cours", completed: getCompletion(1) },
-          { location: "Tambacounda", status: "Transit National", time: "Bientôt", completed: getCompletion(2) },
-          { location: "Dakar - Hub Central", status: "Livraison Finale", time: "Arrivée sous 24h", completed: getCompletion(3) },
-        ];
+      if (error || !order) {
+        showError("Commande introuvable. Vérifiez votre numéro (ex: BAC-XXXXXX).");
+        setTrackingData(null);
+        return;
+      }
 
-    setTrackingData({
-      id: orderId || "BAC-DEMO",
-      status: status === "Payé" ? "Traitement en cours" : status === "En cours" ? "En transit" : "Livré",
-      direction: direction,
-      steps: steps
-    });
+      // Déterminer la direction basée sur les items ou par défaut
+      // On regarde si un item contient "local" dans son ID (stocké dans le JSON items)
+      const hasLocalItems = order.items?.some((item: any) => String(item.id).includes('local'));
+      const direction = hasLocalItems ? "Ballou -> Dakar" : "Dakar -> Ballou";
+      
+      const status = order.status || "En attente";
+      
+      // Logique de complétion des étapes
+      const getCompletion = (stepIndex: number) => {
+        if (status === "Livré") return true;
+        if (status === "En cours") return stepIndex <= 2;
+        if (status === "Payé" || status.includes("validation")) return stepIndex <= 0;
+        return false;
+      };
+
+      const steps = direction === "Dakar -> Ballou" 
+        ? [
+            { location: "Dakar - Entrepôt", status: "Colis Réceptionné", time: "Départ Programmé", completed: getCompletion(0) },
+            { location: "Tambacounda", status: "En Transit", time: "En cours", completed: getCompletion(1) },
+            { location: "Bakel", status: "Vérification Poste", time: "Bientôt", completed: getCompletion(2) },
+            { location: "Ballou", status: "Livraison Finale", time: "Arrivée sous 24h", completed: getCompletion(3) },
+          ]
+        : [
+            { location: "Ballou - Poste Locale", status: "Colis Réceptionné", time: "Expédié", completed: getCompletion(0) },
+            { location: "Bakel", status: "Transit Régional", time: "Passage en cours", completed: getCompletion(1) },
+            { location: "Tambacounda", status: "Transit National", time: "Bientôt", completed: getCompletion(2) },
+            { location: "Dakar - Hub Central", status: "Livraison Finale", time: "Arrivée sous 24h", completed: getCompletion(3) },
+          ];
+
+      setTrackingData({
+        id: order.id,
+        status: status,
+        direction: direction,
+        steps: steps
+      });
+    } catch (err) {
+      showError("Une erreur est survenue lors de la recherche.");
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   return (
@@ -65,7 +85,6 @@ const Tracking = () => {
           <p className="text-gray-600">Entrez votre numéro de commande BAC-XXXXX pour voir l'état réel.</p>
         </div>
 
-        {/* Schedule Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
           <Card className="border-l-4 border-l-blue-600 shadow-sm bg-white">
             <CardHeader className="pb-2">
@@ -103,10 +122,12 @@ const Tracking = () => {
             placeholder="Ex: BAC-7F92A" 
             value={orderId}
             onChange={(e) => setOrderId(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             className="bg-white border-green-200 focus-visible:ring-green-500 h-12 font-bold"
           />
-          <Button onClick={handleSearch} className="bg-green-600 hover:bg-green-700 h-12 px-8 font-bold shadow-lg">
-            <Search className="mr-2 h-5 w-5" /> RECHERCHER
+          <Button onClick={handleSearch} disabled={isSearching} className="bg-green-600 hover:bg-green-700 h-12 px-8 font-bold shadow-lg">
+            {isSearching ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
+            RECHERCHER
           </Button>
         </div>
 
