@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShoppingCart, Home, Loader2, ExternalLink, MessageCircle, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ShoppingCart, Home, Loader2, ExternalLink, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { supabase } from "@/integrations/supabase/client";
@@ -21,10 +21,8 @@ const Checkout = () => {
     address: ""
   });
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [paymentMethod, setPaymentMethod] = useState<'wave' | 'orange'>('wave');
-  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     const getUser = async () => {
@@ -49,8 +47,7 @@ const Checkout = () => {
     try {
       const orderId = `BAC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
       const totalAmount = totalPrice + 2000;
-      setLastOrderId(orderId);
-      
+
       const pendingOrder = {
         id: orderId,
         customer_name: formData.name,
@@ -76,26 +73,30 @@ const Checkout = () => {
 
       if (error) throw error;
 
-      showSuccess("Commande enregistrée !");
-      setIsRedirecting(true);
+      showSuccess("Commande enregistrée ! Préparation du paiement...");
 
       // Redirection vers le paiement
       if (paymentMethod === 'wave') {
-        // Utilisation du lien exact fourni par l'utilisateur
-        const wavePaymentUrl = "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/";
-        
+        // Lien Wave officiel avec montant et description
+        const wavePaymentUrl = `https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/?amount=${totalAmount}&description=Commande%20${orderId}`;
+
+        // On vide le panier avant de partir
         clearCart();
-        
-        // Redirection immédiate
-        window.location.href = wavePaymentUrl;
+
+        // Redirection directe pour éviter les bloqueurs de popups
+        setTimeout(() => {
+          window.location.href = wavePaymentUrl;
+        }, 1000);
       } else {
         // Orange Money - redirection vers WhatsApp
         const phoneNumber = "782254548";
         const message = encodeURIComponent(`Bonjour, je souhaite payer ma commande ${orderId} d'un montant de ${totalAmount.toLocaleString()} FCFA via Orange Money.`);
         const orangeMoneyUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-        
+
         clearCart();
-        window.location.href = orangeMoneyUrl;
+        setTimeout(() => {
+          window.location.href = orangeMoneyUrl;
+        }, 1000);
       }
 
     } catch (error: any) {
@@ -104,7 +105,7 @@ const Checkout = () => {
     }
   };
 
-  if (cart.length === 0 && !isRedirecting) {
+  if (cart.length === 0) {
     return (
       <div className="min-h-screen bg-stone-50">
         <Navbar />
@@ -118,32 +119,6 @@ const Checkout = () => {
             </Button>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  if (isRedirecting) {
-    return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md border-none shadow-2xl rounded-[2.5rem] text-center p-10">
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-          </div>
-          <h2 className="text-2xl font-black text-gray-900 mb-4">Redirection en cours...</h2>
-          <p className="text-gray-500 mb-8">Nous vous redirigeons vers la plateforme de paiement sécurisée.</p>
-          
-          <div className="space-y-4">
-            <p className="text-sm font-medium text-gray-400">Si la page ne s'ouvre pas automatiquement :</p>
-            <Button 
-              asChild
-              className={`w-full h-14 font-bold rounded-2xl shadow-lg ${paymentMethod === 'wave' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-500 hover:bg-orange-600'}`}
-            >
-              <a href={paymentMethod === 'wave' ? "https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/" : `https://wa.me/782254548?text=${encodeURIComponent(`Paiement commande ${lastOrderId}`)}`}>
-                CLIQUEZ ICI POUR PAYER
-              </a>
-            </Button>
-          </div>
-        </Card>
       </div>
     );
   }
