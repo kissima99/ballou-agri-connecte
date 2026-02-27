@@ -1,101 +1,106 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ShoppingCart, Home, Loader2, ExternalLink, MessageCircle, CheckCircle2 } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { useNavigate } from 'react-router-dom';
-import { showSuccess, showError } from '@/utils/toast';
 import { supabase } from "@/integrations/supabase/client";
-import { ShoppingCart, User, Phone, MapPin, Mail, CreditCard, Truck, CheckCircle2, Loader2 } from 'lucide-react';
+import { showSuccess, showError } from '@/utils/toast';
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { cart, totalPrice, clearCart } = useCart();
   const [formData, setFormData] = useState({
-    customer_name: '',
-    phone: '',
-    address: '',
-    email: '',
-    zone: 'Ballou'
+    name: "",
+    phone: "",
+    address: ""
   });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'wave' | 'orange'>('wave');
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (cart.length === 0) {
-      showError("Votre panier est vide");
-      return;
-    }
-
-    if (!formData.customer_name || !formData.phone || !formData.address) {
-      showError("Veuillez remplir tous les champs obligatoires");
+  const handleCommander = async () => {
+    if (!formData.name || !formData.phone || !formData.address) {
+      showError("Veuillez remplir tous les champs obligatoires.");
       return;
     }
 
     setIsProcessing(true);
-
     try {
-      // Generate order ID
-      const orderId = 'BAC-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+      const orderId = `BAC-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const totalAmount = totalPrice + 2000;
       
-      // Prepare order items
-      const orderItems = cart.map(item => ({
-        product_id: String(item.id),
-        product_name: item.name,
-        unit: item.unit,
-        quantity: item.quantity,
-        unit_price: item.price,
-        line_total: item.price * item.quantity
-      }));
+      const pendingOrder = {
+        id: orderId,
+        customer_name: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+        amount: totalAmount,
+        status: "Attente de validation admin",
+        items: cart.map(i => ({ 
+          id: i.id, 
+          name: i.name, 
+          quantity: i.quantity, 
+          price: i.price, 
+          unit: i.unit 
+        })),
+        user_id: user?.id || null,
+        zone: "Dakar",
+        is_new: true
+      };
 
-      // Insert order into Supabase
-      const { error: orderError } = await supabase
+      const { error } = await supabase
         .from('orders')
-        .insert([
-          {
-            id: orderId,
-            customer_name: formData.customer_name,
-            phone: formData.phone,
-            address: formData.address,
-            zone: formData.zone,
-            amount: totalPrice + 2000,
-            status: 'Attente Paiement',
-            items: orderItems,
-            email: formData.email || null,
-            user_id: (await supabase.auth.getUser()).data.user?.id || null
-          }
-        ]);
+        .insert([pendingOrder]);
 
-      if (orderError) throw orderError;
+      if (error) throw error;
 
-      // Show success and redirect to payment instructions
-      showSuccess(`Commande ${orderId} créée avec succès!`);
-      
-      // Store order info for receipt page
-      localStorage.setItem('last_order_id', orderId);
-      
-      // Clear cart
-      clearCart();
-      
-      // Navigate to receipt page
-      navigate(`/receipt/${orderId}`);
+      showSuccess("Commande enregistrée ! Préparation du paiement...");
+
+      // Redirection vers le paiement
+      if (paymentMethod === 'wave') {
+        // Lien Wave officiel
+        const wavePaymentUrl = `https://pay.wave.com/m/M_sn_4AZ6lkLNVqnh/c/sn/?amount=${totalAmount}&description=Commande%20${orderId}`;
+        
+        // On vide le panier avant de partir
+        clearCart();
+        
+        // Redirection directe pour éviter les bloqueurs de popups
+        setTimeout(() => {
+          window.location.href = wavePaymentUrl;
+        }, 1000);
+      } else {
+        // Orange Money - redirection vers WhatsApp
+        const phoneNumber = "782254548";
+        const message = encodeURIComponent(`Bonjour, je souhaite payer ma commande ${orderId} d'un montant de ${totalAmount.toLocaleString()} FCFA via Orange Money.`);
+        const orangeMoneyUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+        
+        clearCart();
+        setTimeout(() => {
+          window.location.href = orangeMoneyUrl;
+        }, 1000);
+      }
 
     } catch (error: any) {
-      console.error('Order creation error:', error);
       showError("Erreur lors de la création de la commande: " + error.message);
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -107,10 +112,10 @@ const Checkout = () => {
         <div className="container px-4 py-20 mx-auto text-center max-w-2xl">
           <div className="bg-white p-10 rounded-3xl shadow-xl border border-stone-100">
             <ShoppingCart className="w-20 h-20 text-stone-200 mx-auto mb-6" />
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Panier vide</h1>
-            <p className="text-gray-500 mb-8">Ajoutez des produits avant de procéder au paiement.</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Votre panier est vide</h1>
+            <p className="text-gray-500 mb-8">Commencez vos achats pour voir vos produits ici.</p>
             <Button asChild className="bg-green-600 hover:bg-green-700 font-bold">
-              <a href="/local-products">Voir les produits</a>
+              <Link to="/local-products">Voir les produits</Link>
             </Button>
           </div>
         </div>
@@ -124,174 +129,163 @@ const Checkout = () => {
       <div className="container px-4 py-12 mx-auto max-w-4xl">
         <div className="flex items-center gap-4 mb-8">
           <Button asChild variant="outline" size="icon" className="rounded-full">
-            <a href="/cart"><ShoppingCart className="h-4 w-4 text-green-700" /></a>
+            <Link to="/"><Home className="h-4 w-4 text-green-700" /></Link>
           </Button>
           <h1 className="text-3xl font-bold text-gray-900">Finaliser la commande</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-none shadow-lg bg-white rounded-2xl">
+            <Card className="border-none shadow-sm rounded-2xl">
               <CardHeader>
-                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                  <User className="h-5 w-5 text-green-600" /> Informations Client
-                </CardTitle>
+                <CardTitle className="text-xl">Informations de livraison</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="customer_name">Nom complet *</Label>
+                  <Label htmlFor="name">Nom complet *</Label>
                   <Input 
-                    id="customer_name"
-                    name="customer_name"
-                    placeholder="Votre nom et prénom"
-                    value={formData.customer_name}
+                    id="name" 
+                    name="name"
+                    placeholder="Votre nom" 
+                    className="rounded-xl h-12" 
+                    value={formData.name}
                     onChange={handleInputChange}
-                    className="rounded-xl"
                     required
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Téléphone *</Label>
                   <Input 
-                    id="phone"
+                    id="phone" 
                     name="phone"
-                    placeholder="78 123 45 67"
+                    placeholder="78 123 45 67" 
+                    className="rounded-xl h-12" 
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="rounded-xl"
                     required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email (optionnel)</Label>
-                  <Input 
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="votre@email.com"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="rounded-xl"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="address">Adresse de livraison *</Label>
                   <Input 
-                    id="address"
+                    id="address" 
                     name="address"
-                    placeholder="Quartier, Rue, Numéro..."
+                    placeholder="Votre adresse complète" 
+                    className="rounded-xl h-12" 
                     value={formData.address}
                     onChange={handleInputChange}
-                    className="rounded-xl"
                     required
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="zone">Zone de livraison *</Label>
-                  <select 
-                    id="zone"
-                    name="zone"
-                    value={formData.zone}
-                    onChange={(e) => setFormData({...formData, zone: e.target.value})}
-                    className="w-full p-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="Ballou">Ballou</option>
-                    <option value="Dakar">Dakar</option>
-                  </select>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-lg bg-white rounded-2xl">
+            <Card className="border-none shadow-sm rounded-2xl">
               <CardHeader>
-                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                  <CreditCard className="h-5 w-5 text-orange-600" /> Mode de paiement
-                </CardTitle>
+                <CardTitle className="text-xl">Récapitulatif</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-4 border-2 border-green-200 rounded-xl bg-green-50">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">W</div>
-                      <div>
-                        <h4 className="font-bold text-green-800">Wave</h4>
-                        <p className="text-xs text-green-600">Paiement mobile instantané</p>
+                  {cart.map((item) => (
+                    <div key={`${item.id}-${item.direction}`} className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl">
+                      <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-lg" />
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-900">{item.name}</h3>
+                        <p className="text-sm text-gray-500">{item.quantity} x {item.unit}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-green-700">{(item.price * item.quantity).toLocaleString()} FCFA</p>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600">Numéro: 78 225 45 48</p>
-                  </div>
-                  
-                  <div className="p-4 border-2 border-orange-200 rounded-xl bg-orange-50">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold">OM</div>
-                      <div>
-                        <h4 className="font-bold text-orange-800">Orange Money</h4>
-                        <p className="text-xs text-orange-600">Paiement mobile sécurisé</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-600">Numéro: 78 225 45 48</p>
-                  </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           </div>
 
           <div className="space-y-6">
-            <Card className="border-none shadow-xl bg-white rounded-2xl sticky top-24">
-              <CardHeader>
-                <CardTitle className="text-xl font-bold">Récapitulatif</CardTitle>
+            <Card className="border-none shadow-lg bg-white rounded-3xl overflow-hidden">
+              <CardHeader className="bg-green-900 text-white">
+                <CardTitle className="text-xl">Total à payer</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  {cart.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center text-sm">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 truncate">{item.name}</p>
-                        <p className="text-xs text-gray-500">{item.quantity} x {item.price.toLocaleString()} FCFA</p>
-                      </div>
-                      <span className="font-bold text-gray-900">{(item.price * item.quantity).toLocaleString()} FCFA</span>
-                    </div>
-                  ))}
+              <CardContent className="space-y-4 pt-6">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Sous-total</span>
+                  <span className="font-bold">{totalPrice.toLocaleString()} FCFA</span>
                 </div>
-                
-                <div className="border-t pt-4 space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Sous-total</span>
-                    <span className="font-bold">{totalPrice.toLocaleString()} FCFA</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Livraison</span>
-                    <span className="font-bold">2 000 FCFA</span>
-                  </div>
-                  <div className="border-t pt-3 flex justify-between items-end">
-                    <span className="font-bold text-gray-900">TOTAL</span>
-                    <div className="text-right">
-                      <p className="text-2xl font-black text-green-700">{(totalPrice + 2000).toLocaleString()} FCFA</p>
-                    </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Frais de livraison</span>
+                  <span className="font-bold">2 000 FCFA</span>
+                </div>
+                <div className="border-t pt-4 flex justify-between items-end">
+                  <span className="font-bold text-gray-900">TOTAL</span>
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-green-700">{(totalPrice + 2000).toLocaleString()} FCFA</p>
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex flex-col gap-3">
+              <CardFooter className="flex flex-col gap-6 pb-8">
+                <div className="space-y-4 w-full">
+                  <Label className="text-sm font-black uppercase tracking-widest text-gray-400">Moyen de paiement</Label>
+                  <div className="grid grid-cols-1 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('wave')}
+                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                        paymentMethod === 'wave' 
+                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
+                        : 'border-stone-100 bg-white hover:border-blue-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-black text-xl">W</div>
+                        <div className="text-left">
+                          <p className="font-black text-blue-900">WAVE</p>
+                          <p className="text-[10px] text-blue-600 font-bold">Paiement instantané</p>
+                        </div>
+                      </div>
+                      {paymentMethod === 'wave' && <CheckCircle2 className="h-6 w-6 text-blue-600" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('orange')}
+                      className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                        paymentMethod === 'orange' 
+                        ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200' 
+                        : 'border-stone-100 bg-white hover:border-orange-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white font-black text-xl">O</div>
+                        <div className="text-left">
+                          <p className="font-black text-orange-900">ORANGE MONEY</p>
+                          <p className="text-[10px] text-orange-600 font-bold">Validation via WhatsApp</p>
+                        </div>
+                      </div>
+                      {paymentMethod === 'orange' && <CheckCircle2 className="h-6 w-6 text-orange-600" />}
+                    </button>
+                  </div>
+                </div>
+
                 <Button 
-                  onClick={handleSubmit}
+                  onClick={handleCommander} 
                   disabled={isProcessing}
-                  className="w-full bg-orange-500 hover:bg-orange-600 h-14 text-lg font-bold shadow-lg"
+                  className={`w-full h-16 text-lg font-black shadow-xl rounded-2xl transition-all transform active:scale-95 ${
+                    paymentMethod === 'wave' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-500 hover:bg-orange-600'
+                  }`}
                 >
                   {isProcessing ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      TRAITEMENT...
-                    </>
+                    <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                   ) : (
                     <>
-                      <Truck className="mr-2 h-5 w-5" />
-                      COMMANDER
+                      {paymentMethod === 'wave' ? <ExternalLink className="mr-2 h-6 w-6" /> : <MessageCircle className="mr-2 h-6 w-6" />}
+                      PAYER {(totalPrice + 2000).toLocaleString()} FCFA
                     </>
                   )}
                 </Button>
-                <p className="text-[10px] text-center text-gray-400 font-medium uppercase tracking-widest">
-                  Paiement sécurisé via Wave ou Orange Money
+                <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-tighter">
+                  En cliquant, vous serez redirigé vers la plateforme de paiement sécurisée.
                 </p>
               </CardFooter>
             </Card>
