@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { showError, showSuccess } from "@/utils/toast";
 
+const CANONICAL_SITE_URL = "https://www.ballouagriconnect.com";
+
 const Login = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<any>(null);
@@ -21,22 +23,46 @@ const Login = () => {
   const [sendingLink, setSendingLink] = useState(false);
 
   const redirectTo = useMemo(() => {
-    // Use the current origin so the email link doesn't point to an old deployment.
-    return `${window.location.origin}/login`;
+    const origin = window.location.origin;
+
+    // Avoid ephemeral Vercel preview deployment URLs in emails (they can disappear => 404 DEPLOYMENT_NOT_FOUND).
+    const hostname = window.location.hostname;
+    const isEphemeralVercelDeployment =
+      hostname.endsWith('.vercel.app') && hostname.split('.').length === 3 && hostname.includes('-');
+
+    const base = isEphemeralVercelDeployment ? CANONICAL_SITE_URL : origin;
+    return `${base}/login`;
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const boot = async () => {
+      // Support PKCE-style magic links that arrive with ?code=...
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('code')) {
+        const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+        if (error) {
+          showError("Lien de connexion invalide ou expiré.");
+        }
+        url.searchParams.delete('code');
+        window.history.replaceState({}, '', url.toString());
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       if (session) navigate('/');
-    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) navigate('/');
-    });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session);
+        if (session) navigate('/');
+      });
 
-    return () => subscription.unsubscribe();
+      return () => subscription.unsubscribe();
+    };
+
+    const cleanupPromise = boot();
+    return () => {
+      void cleanupPromise;
+    };
   }, [navigate]);
 
   const sendMagicLink = async () => {
