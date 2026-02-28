@@ -128,7 +128,8 @@ const Index = () => {
                   <div className="bg-green-100 p-4 rounded-2xl text-green-600"><PhoneCall className="h-8 w-8" /></div>
                   <div>
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Appelez-nous</p>
-                    <p className="text-2xl font-black text-gray-900">78 225 45 48</p>
+                    <p className="text-2xl font-black text-gray-900 leading-tight">77 459 76 41</p>
+                    <p className="text-2xl font-black text-gray-900 leading-tight">78 325 52 47</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 bg-stone-50 p-6 rounded-[2rem] border border-stone-100 flex-1">

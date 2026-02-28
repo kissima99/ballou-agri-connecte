@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, MapPin, Home, Upload, PlusCircle, Scale, Loader2, RefreshCw, Save, Minus, Plus } from 'lucide-react';
+import { ShoppingCart, MapPin, Home, Upload, PlusCircle, Scale, Loader2, RefreshCw, Save, Minus, Plus, Pencil } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
@@ -29,7 +29,8 @@ const LocalProducts = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [savingProductId, setSavingProductId] = useState<string | number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const initialProducts: LocalProduct[] = [
@@ -58,6 +59,8 @@ const LocalProducts = () => {
   ];
 
   const [products, setProducts] = useState<LocalProduct[]>(initialProducts);
+
+  const canEdit = isAdmin && editMode;
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -93,7 +96,7 @@ const LocalProducts = () => {
   }, []);
 
   const toggleKg = (id: string | number) => {
-    if (!isAdmin) return;
+    if (!canEdit) return;
     setProducts(products.map(p => {
       if (p.id === id) {
         const newIsKg = !p.isKg;
@@ -115,7 +118,7 @@ const LocalProducts = () => {
   };
 
   const updatePrice = (id: string | number, newPrice: string) => {
-    if (!isAdmin) return;
+    if (!canEdit) return;
     const price = parseInt(newPrice) || 0;
     setProducts(products.map(p => 
       p.id === id ? { ...p, price: price } : p
@@ -123,7 +126,7 @@ const LocalProducts = () => {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, productId: string | number) => {
-    if (!isAdmin) return;
+    if (!canEdit) return;
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -139,35 +142,32 @@ const LocalProducts = () => {
     }
   };
 
-  const handleSave = async () => {
-    if (!isAdmin) {
-      showError("Accès non autorisé");
-      return;
-    }
-    setIsSaving(true);
+  const saveProduct = async (product: LocalProduct) => {
+    if (!canEdit) return;
+
+    setSavingProductId(product.id);
     try {
-      const payload = products.map(p => ({
-        id: String(p.id),
-        name: p.name,
-        price: p.price,
-        image: p.image,
-        unit: p.unit,
-        origin: p.origin,
+      const payload = {
+        id: String(product.id),
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        unit: product.unit,
+        origin: product.origin,
         category: 'local',
-        updated_at: new Date().toISOString()
-      }));
+        updated_at: new Date().toISOString(),
+      };
 
       const { error } = await supabase
         .from('products')
-        .upsert(payload, { onConflict: 'id' });
+        .upsert([payload], { onConflict: 'id' });
 
       if (error) throw error;
-
-      showSuccess("Catalogue enregistré avec succès !");
+      showSuccess(`${product.name} enregistré !`);
     } catch (err: any) {
       showError("Erreur lors de l'enregistrement : " + err.message);
     } finally {
-      setIsSaving(false);
+      setSavingProductId(null);
     }
   };
 
@@ -205,14 +205,15 @@ const LocalProducts = () => {
           </div>
 
           {isAdmin && (
-            <div className="flex items-center gap-4 z-50">
-              <Button 
-                onClick={handleSave} 
-                disabled={isSaving}
-                className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black"
+            <div className="flex items-center gap-3 z-50">
+              <Button
+                type="button"
+                variant={editMode ? "default" : "outline"}
+                onClick={() => setEditMode((v) => !v)}
+                className={editMode ? "bg-orange-600 hover:bg-orange-700 text-white h-11 px-6 text-sm font-black" : "h-11 px-6 text-sm font-black"}
               >
-                {isSaving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} 
-                ENREGISTRER
+                <Pencil className="w-4 h-4 mr-2" />
+                {editMode ? "Mode édition : ON" : "Mode édition"}
               </Button>
             </div>
           )}
@@ -233,7 +234,7 @@ const LocalProducts = () => {
                     <Badge className="bg-white/90 text-green-800 backdrop-blur text-[10px] h-5 px-2 font-bold shadow-sm">
                       <MapPin className="h-3 w-3 mr-1" /> {product.origin}
                     </Badge>
-                    {(product.id === "1" || product.id === "18") && isAdmin && (
+                    {(product.id === "1" || product.id === "18") && canEdit && (
                       <Button 
                         size="sm" 
                         variant="secondary" 
@@ -244,7 +245,7 @@ const LocalProducts = () => {
                       </Button>
                     )}
                   </div>
-                  {isAdmin && (
+                  {canEdit && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
                       <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl transform hover:scale-105 active:scale-95 transition-all">
                         <Upload className="w-4 h-4 mr-2" /> CHANGER L'IMAGE
@@ -257,7 +258,7 @@ const LocalProducts = () => {
                   <h3 className="font-bold text-base text-gray-900 truncate mb-1">{product.name}</h3>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex-1">
-                      {isAdmin ? (
+                      {canEdit ? (
                         <div className="flex items-center gap-1.5 bg-orange-50 p-1 rounded-lg border border-orange-100">
                           <Input 
                             type="number" 
@@ -296,6 +297,17 @@ const LocalProducts = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="pb-4 pt-0 px-5 flex flex-col gap-2">
+                  {canEdit && (
+                    <Button
+                      type="button"
+                      onClick={() => saveProduct(product)}
+                      disabled={savingProductId === product.id}
+                      className="w-full bg-orange-600 hover:bg-orange-700 h-10 text-[10px] font-black shadow-md"
+                    >
+                      {savingProductId === product.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                      ENREGISTRER
+                    </Button>
+                  )}
                   <Button 
                     size="lg" 
                     variant="outline" 

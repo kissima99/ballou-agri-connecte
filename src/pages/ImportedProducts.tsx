@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Upload, PlusCircle, Scale, Loader2, Tv, Monitor, Zap, Save } from 'lucide-react';
+import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Upload, PlusCircle, Scale, Loader2, Zap, Save, Pencil } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
@@ -32,7 +32,10 @@ const ImportedProducts = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+
+  const canEdit = isAdmin && editMode;
 
   const categoryIcons: Record<string, React.ReactNode> = {
     importes: <Package className="w-3.5 h-3.5 mr-1.5" />,
@@ -84,7 +87,6 @@ const ImportedProducts = () => {
         { id: 203, name: "Fruit mixte", price: 4000, unit: "panier", image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 204, name: "Citron", price: 1000, unit: "kg", image: "https://images.unsplash.com/photo-1585059895524-72359e06133a?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 205, name: "Feuille de menthe", price: 200, unit: "botte", image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&q=80", quantity: 1 },
-        // NEW PRODUCTS ADDED HERE
         { id: 301, name: "Jus Casamançaise BOUYE", price: 2500, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 302, name: "Jus Casamançaise DITAX", price: 2500, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 303, name: "Jus Casamançaise NECTAR ORANGE", price: 2500, unit: "bouteille", image: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?auto=format&fit=crop&q=80", quantity: 1 },
@@ -163,7 +165,7 @@ const ImportedProducts = () => {
   }, []);
 
   const toggleKg = (catId: string, prodId: number) => {
-    if (!isAdmin) return;
+    if (!canEdit) return;
     setCategories(prev => prev.map(cat => {
       if (cat.id !== catId) return cat;
       return {
@@ -184,38 +186,6 @@ const ImportedProducts = () => {
     }));
   };
 
-  const handleSave = async () => {
-    if (!isAdmin) {
-      showError("Accès non autorisé");
-      return;
-    }
-    setIsSaving(true);
-    try {
-      const payload = categories.flatMap(cat => 
-        cat.products.map(p => ({
-          id: String(p.id),
-          name: p.name,
-          price: p.price,
-          image: p.image,
-          unit: p.unit,
-          category: cat.id,
-          updated_at: new Date().toISOString()
-        }))
-      );
-
-      const { error } = await supabase
-        .from('products')
-        .upsert(payload, { onConflict: 'id' });
-
-      if (error) throw error;
-      showSuccess("Catalogue enregistré avec succès !");
-    } catch (err: any) {
-      showError("Erreur lors de l'enregistrement : " + err.message);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const updateQuantity = (catId: string, prodId: number, delta: number) => {
     setCategories(prev => prev.map(cat => {
       if (cat.id !== catId) return cat;
@@ -229,7 +199,7 @@ const ImportedProducts = () => {
   };
 
   const updatePrice = (catId: string, prodId: number, newPrice: string) => {
-    if (!isAdmin) return;
+    if (!canEdit) return;
     const price = parseInt(newPrice) || 0;
     setCategories(prev => prev.map(cat => {
       if (cat.id !== catId) return cat;
@@ -243,7 +213,7 @@ const ImportedProducts = () => {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, catId: string, productId: number) => {
-    if (!isAdmin) return;
+    if (!canEdit) return;
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -262,6 +232,35 @@ const ImportedProducts = () => {
         showSuccess("Image prête pour enregistrement !");
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const saveProduct = async (cat: Category, product: ImportedProduct) => {
+    if (!canEdit) return;
+
+    const key = `${cat.id}-${product.id}`;
+    setSavingKey(key);
+    try {
+      const payload = {
+        id: String(product.id),
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        unit: product.unit,
+        category: cat.id,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('products')
+        .upsert([payload], { onConflict: 'id' });
+
+      if (error) throw error;
+      showSuccess(`${product.name} enregistré !`);
+    } catch (err: any) {
+      showError("Erreur lors de l'enregistrement : " + err.message);
+    } finally {
+      setSavingKey(null);
     }
   };
 
@@ -299,15 +298,15 @@ const ImportedProducts = () => {
           </div>
           
           {isAdmin && (
-            <div className="flex items-center gap-4 z-50">
-              <Button 
+            <div className="flex items-center gap-3 z-50">
+              <Button
                 type="button"
-                onClick={handleSave} 
-                disabled={isSaving}
-                className="bg-orange-600 hover:bg-orange-700 text-white shadow-2xl h-11 px-8 text-sm font-black"
+                variant={editMode ? "default" : "outline"}
+                onClick={() => setEditMode((v) => !v)}
+                className={editMode ? "bg-orange-600 hover:bg-orange-700 text-white h-11 px-6 text-sm font-black" : "h-11 px-6 text-sm font-black"}
               >
-                {isSaving ? <Loader2 className="w-5 w-5 mr-2 animate-spin" /> : <Save className="w-5 w-5 mr-2" />} 
-                ENREGISTRER
+                <Pencil className="w-4 h-4 mr-2" />
+                {editMode ? "Mode édition : ON" : "Mode édition"}
               </Button>
             </div>
           )}
@@ -334,7 +333,7 @@ const ImportedProducts = () => {
                     <div className="relative h-40 overflow-hidden">
                       <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       <div className="absolute top-2 left-2 flex flex-col gap-1">
-                        {(product.id === 111 || product.id === 107) && isAdmin && (
+                        {(product.id === 111 || product.id === 107) && canEdit && (
                           <Button 
                             size="sm" 
                             variant="secondary" 
@@ -345,7 +344,7 @@ const ImportedProducts = () => {
                           </Button>
                         )}
                       </div>
-                      {isAdmin && (
+                      {canEdit && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
                           <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl transform hover:scale-105 active:scale-95 transition-all">
                             <Upload className="w-4 w-4 mr-2" /> CHANGER L'IMAGE
@@ -358,7 +357,7 @@ const ImportedProducts = () => {
                       <h3 className="font-bold text-base text-gray-900 truncate mb-1">{product.name}</h3>
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex-1">
-                          {isAdmin ? (
+                          {canEdit ? (
                             <div className="flex items-center gap-1.5 bg-orange-50 p-1 rounded-lg border border-orange-100">
                               <Input 
                                 type="number" 
@@ -397,9 +396,20 @@ const ImportedProducts = () => {
                       </div>
                     </CardContent>
                     <CardFooter className="pb-4 pt-0 px-5 flex flex-col gap-2">
+                      {canEdit && (
+                        <Button
+                          type="button"
+                          onClick={() => saveProduct(cat, product)}
+                          disabled={savingKey === `${cat.id}-${product.id}`}
+                          className="w-full bg-orange-600 hover:bg-orange-700 h-10 text-[10px] font-black shadow-md"
+                        >
+                          {savingKey === `${cat.id}-${product.id}` ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                          ENREGISTRER
+                        </Button>
+                      )}
                       <Button 
                         size="lg" 
-                        variant="outline"
+                        variant="outline" 
                         className="w-full border-blue-600 text-blue-700 hover:bg-blue-50 h-10 text-[10px] font-black shadow-sm" 
                         onClick={() => handleAddToCart(product)}
                       >
