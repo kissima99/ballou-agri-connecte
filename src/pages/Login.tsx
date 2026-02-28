@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Auth as SupabaseAuth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from "@/integrations/supabase/client";
@@ -8,11 +8,22 @@ import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, Loader2 } from 'lucide-react';
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { showError, showSuccess } from "@/utils/toast";
 
 const Login = () => {
   const navigate = useNavigate();
   const [session, setSession] = useState<any>(null);
+
+  const [email, setEmail] = useState("");
+  const [sendingLink, setSendingLink] = useState(false);
+
+  const redirectTo = useMemo(() => {
+    // Use the current origin so the email link doesn't point to an old deployment.
+    return `${window.location.origin}/login`;
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -27,6 +38,32 @@ const Login = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const sendMagicLink = async () => {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      showError("Veuillez saisir votre email.");
+      return;
+    }
+
+    setSendingLink(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: trimmed,
+        options: {
+          emailRedirectTo: redirectTo,
+        },
+      });
+
+      if (error) throw error;
+
+      showSuccess("Lien magique envoyé. Vérifiez votre boîte mail.");
+    } catch (err: any) {
+      showError(err?.message ?? "Impossible d'envoyer le lien magique.");
+    } finally {
+      setSendingLink(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -52,40 +89,37 @@ const Login = () => {
                 <div className="mb-6 text-center">
                   <p className="text-sm text-gray-500">Saisissez votre email pour recevoir un lien de connexion instantané.</p>
                 </div>
-                <SupabaseAuth 
-                  supabaseClient={supabase}
-                  view="magic_link"
-                  appearance={{ 
-                    theme: ThemeSupa,
-                    variables: {
-                      default: {
-                        colors: {
-                          brand: '#16a34a',
-                          brandAccent: '#15803d',
-                        }
-                      }
-                    }
-                  }}
-                  providers={[]}
-                  localization={{
-                    variables: {
-                      magic_link: {
-                        email_input_label: 'Adresse Email',
-                        email_input_placeholder: 'votre@email.com',
-                        button_label: 'Envoyer le lien magique',
-                        link_text: 'Vous n\'avez pas reçu le lien ? Renvoyer',
-                        confirmation_text: 'Vérifiez votre boîte mail pour le lien de connexion !'
-                      }
-                    }
-                  }}
-                />
+
+                <div className="space-y-3">
+                  <Input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="votre@email.com"
+                    type="email"
+                    autoComplete="email"
+                    className="h-12 rounded-xl"
+                  />
+                  <Button
+                    type="button"
+                    onClick={sendMagicLink}
+                    disabled={sendingLink}
+                    className="w-full h-12 rounded-xl bg-green-700 hover:bg-green-800 font-black"
+                  >
+                    {sendingLink ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Mail className="mr-2 h-5 w-5" />}
+                    Envoyer le lien magique
+                  </Button>
+
+                  <p className="text-[11px] text-gray-400 leading-relaxed">
+                    Le lien doit vous renvoyer vers : <span className="font-mono">{redirectTo}</span>
+                  </p>
+                </div>
               </TabsContent>
 
               <TabsContent value="password" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <SupabaseAuth 
+                <SupabaseAuth
                   supabaseClient={supabase}
                   view="sign_in"
-                  appearance={{ 
+                  appearance={{
                     theme: ThemeSupa,
                     variables: {
                       default: {
