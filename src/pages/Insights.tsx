@@ -86,7 +86,8 @@ const Insights = () => {
                     <Badge className="bg-green-50 text-green-700 border-none text-[10px] font-bold">+12.5%</Badge>
                   </div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Chiffre d'Affaires</p>
-                  <h3 className="text-2xl font-black text-gray-900">4,210,000 FCFA</h3>
+                  <h3 className="text-2xl font-black text-gray-900">0 FCFA</h3>
+
                 </CardContent>
               </Card>
               {/* ... autres stats ... */}
