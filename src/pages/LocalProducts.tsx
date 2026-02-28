@@ -42,6 +42,8 @@ const LocalProducts = () => {
     { id: "16", name: "Poivron vert", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1563565312-8335ff593d93?auto=format&fit=crop&q=80", quantity: 1 },
     { id: "17", name: "Poivron Rouge", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1589483232748-515c025575bc?auto=format&fit=crop&q=80", quantity: 1 },
     { id: "18", name: "Sucre Local", price: 25000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 25000, pricePerKg: 600 },
+    { id: "24", name: "SUCRE 5KG", price: 4000, unit: "5kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1 },
+    { id: "23", name: "Grosses THE", price: 1500, unit: "paquet", origin: "Ballou", image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80", quantity: 1 },
     { id: "6", name: "Choux", price: 500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&q=80", quantity: 1 },
     { id: "7", name: "Aubergine africaine", price: 1200, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&q=80", quantity: 1 },
     { id: "8", name: "Gombo", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1464454709131-ffd692591ee5?auto=format&fit=crop&q=80", quantity: 1 },

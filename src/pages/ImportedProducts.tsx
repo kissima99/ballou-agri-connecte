@@ -55,6 +55,8 @@ const ImportedProducts = () => {
         { id: 119, name: "Couscous", price: 1000, unit: "unité", image: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 120, name: "Spaghetti", price: 500, unit: "unité", image: "https://images.unsplash.com/photo-1551462147-ff29053bfc14?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 127, name: "Vermicelles 500g", price: 500, unit: "paquet", image: "https://images.unsplash.com/photo-1526318472351-c75fcf070305?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 129, name: "QUAKER 500g", price: 2500, unit: "boite", image: "https://images.unsplash.com/photo-1452195100486-9cc805987862?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 130, name: "Huile d'Olive 1L", price: 6500, unit: "bouteille 1L", image: "https://images.unsplash.com/photo-1514996937319-344454492b37?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 128, name: "Ketchup", price: 1500, unit: "bouteille", image: "https://images.unsplash.com/photo-1604909053197-8e4753c3a2a6?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 110, name: "Oeufs", price: 25000, unit: "carton", image: "https://images.unsplash.com/photo-1506976785307-8732e854ad03?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 111, name: "Sucre importé", price: 28000, unit: "sac", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 28000, pricePerKg: 700 },
