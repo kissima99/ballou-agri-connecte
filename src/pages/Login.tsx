@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { showError, showSuccess } from "@/utils/toast";
 
-const CANONICAL_SITE_URL = "https://www.ballouagriconnect.com";
+const CANONICAL_SITE_URL = "https://ecommerceballou.vercel.app";
 
 const Login = () => {
   const navigate = useNavigate();
