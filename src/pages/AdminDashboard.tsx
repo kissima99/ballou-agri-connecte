@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
-import { supabase, isCurrentUserAdmin } from "@/integrations/supabase/client";
+import { supabase, isCurrentUserSuperAdmin } from "@/integrations/supabase/client";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -61,9 +61,9 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const boot = async () => {
-      const isAdmin = await isCurrentUserAdmin();
-      if (!isAdmin) {
-        showError("Accès réservé aux administrateurs.");
+      const isSuperAdmin = await isCurrentUserSuperAdmin();
+      if (!isSuperAdmin) {
+        showError("Accès réservé au Super Admin.");
         navigate('/');
         return;
       }
@@ -143,7 +143,7 @@ const AdminDashboard = () => {
           <div>
             <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
               <LayoutDashboard className="h-8 w-8 text-orange-600" />
-              Admin
+              Super Admin
             </h1>
             <p className="text-gray-500 font-medium">Gestion des commandes</p>
           </div>
@@ -246,36 +246,10 @@ const AdminDashboard = () => {
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, 'Payé')}
-                            className="rounded-xl"
-                          >
-                            Payé
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, 'En cours')}
-                            className="rounded-xl"
-                          >
-                            En cours
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, 'Livré')}
-                            className="rounded-xl"
-                          >
-                            Livré
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => deleteOrder(order.id)}
-                            className="rounded-xl"
-                          >
+                          <Button variant="outline" size="sm" onClick={() => updateOrderStatus(order.id, 'Payé')} className="rounded-xl">Payé</Button>
+                          <Button variant="outline" size="sm" onClick={() => updateOrderStatus(order.id, 'En cours')} className="rounded-xl">En cours</Button>
+                          <Button variant="outline" size="sm" onClick={() => updateOrderStatus(order.id, 'Livré')} className="rounded-xl">Livré</Button>
+                          <Button variant="destructive" size="sm" onClick={() => deleteOrder(order.id)} className="rounded-xl">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

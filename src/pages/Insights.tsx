@@ -18,18 +18,18 @@ import {
   YAxis,
 } from 'recharts';
 import { TrendingUp, BarChart3, Star, Calendar } from 'lucide-react';
-import { supabase, isCurrentUserAdmin } from "@/integrations/supabase/client";
+import { supabase, isCurrentUserSuperAdmin } from "@/integrations/supabase/client";
 
 const Insights = () => {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
     const boot = async () => {
-      const admin = await isCurrentUserAdmin();
-      setIsAdmin(admin);
+      const superAdmin = await isCurrentUserSuperAdmin();
+      setIsSuperAdmin(superAdmin);
 
-      if (admin) {
+      if (superAdmin) {
         const { data, error } = await supabase
           .from('feedbacks')
           .select('*')
@@ -76,7 +76,7 @@ const Insights = () => {
         <Tabs defaultValue="stats" className="w-full">
           <TabsList className="mb-8 bg-white p-1 rounded-xl shadow-sm border">
             <TabsTrigger value="stats" className="font-bold">Statistiques</TabsTrigger>
-            {isAdmin && <TabsTrigger value="feedbacks" className="font-bold">Avis Clients ({feedbacks.length})</TabsTrigger>}
+            {isSuperAdmin && <TabsTrigger value="feedbacks" className="font-bold">Avis Clients ({feedbacks.length})</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="stats">
@@ -127,7 +127,7 @@ const Insights = () => {
             </div>
           </TabsContent>
 
-          {isAdmin && (
+          {isSuperAdmin && (
             <TabsContent value="feedbacks" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {feedbacks.length === 0 ? (

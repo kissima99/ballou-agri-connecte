@@ -8,7 +8,7 @@ import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Upload, PlusCi
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { supabase, isCurrentUserAdmin } from "@/integrations/supabase/client";
+import { supabase, isCurrentUserSuperAdmin } from "@/integrations/supabase/client";
 
 interface ImportedProduct {
   id: number;
@@ -31,11 +31,11 @@ interface Category {
 const ImportedProducts = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
-  const canEdit = isAdmin && editMode;
+  const canEdit = isSuperAdmin && editMode;
 
   const categoryIcons: Record<string, React.ReactNode> = {
     importes: <Package className="w-3.5 h-3.5 mr-1.5" />,
@@ -138,7 +138,7 @@ const ImportedProducts = () => {
 
   useEffect(() => {
     const boot = async () => {
-      setIsAdmin(await isCurrentUserAdmin());
+      setIsSuperAdmin(await isCurrentUserSuperAdmin());
     };
     void boot();
   }, []);
@@ -304,7 +304,7 @@ const ImportedProducts = () => {
             </div>
           </div>
 
-          {isAdmin && (
+          {isSuperAdmin && (
             <div className="flex items-center gap-3 z-50">
               <Button
                 type="button"
@@ -322,11 +322,7 @@ const ImportedProducts = () => {
         <Tabs defaultValue="frais" className="w-full">
           <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-8 h-auto p-1.5 bg-blue-100/50 rounded-2xl gap-2">
             {categories.map(cat => (
-              <TabsTrigger
-                key={cat.id}
-                value={cat.id}
-                className="py-3 text-xs md:text-sm font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-xl transition-all"
-              >
+              <TabsTrigger key={cat.id} value={cat.id} className="py-3 text-xs md:text-sm font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-xl transition-all">
                 {categoryIcons[cat.id]} {cat.name}
               </TabsTrigger>
             ))}
@@ -341,12 +337,7 @@ const ImportedProducts = () => {
                       <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       <div className="absolute top-2 left-2 flex flex-col gap-1">
                         {(product.id === 111 || product.id === 107) && canEdit && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className={`h-6 px-2 text-[10px] font-black shadow-lg ${product.isKg ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white/90 text-orange-700 hover:bg-white'}`}
-                            onClick={() => toggleKg(cat.id, product.id)}
-                          >
+                          <Button size="sm" variant="secondary" className={`h-6 px-2 text-[10px] font-black shadow-lg ${product.isKg ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white/90 text-orange-700 hover:bg-white'}`} onClick={() => toggleKg(cat.id, product.id)}>
                             <Scale className="h-3 w-3 mr-1.5" /> {product.isKg ? 'MODE SAC' : 'MODE KG'}
                           </Button>
                         )}
@@ -366,12 +357,7 @@ const ImportedProducts = () => {
                         <div className="flex-1">
                           {canEdit ? (
                             <div className="flex items-center gap-1.5 bg-orange-50 p-1 rounded-lg border border-orange-100">
-                              <Input
-                                type="number"
-                                value={product.price}
-                                onChange={(e) => updatePrice(cat.id, product.id, e.target.value)}
-                                className="h-8 w-full text-sm font-black px-2 border-none bg-transparent focus-visible:ring-0"
-                              />
+                              <Input type="number" value={product.price} onChange={(e) => updatePrice(cat.id, product.id, e.target.value)} className="h-8 w-full text-sm font-black px-2 border-none bg-transparent focus-visible:ring-0" />
                               <span className="text-[10px] font-black text-orange-700 pr-1">FCFA</span>
                             </div>
                           ) : (
@@ -382,21 +368,11 @@ const ImportedProducts = () => {
                           <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{product.unit}</p>
                         </div>
                         <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm"
-                            onClick={() => updateQuantity(cat.id, product.id, -1)}
-                          >
+                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" onClick={() => updateQuantity(cat.id, product.id, -1)}>
                             <Minus className="h-3 w-3" />
                           </Button>
                           <span className="font-black text-sm min-w-[20px] text-center">{product.quantity}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm"
-                            onClick={() => updateQuantity(cat.id, product.id, 1)}
-                          >
+                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" onClick={() => updateQuantity(cat.id, product.id, 1)}>
                             <Plus className="h-3 w-3" />
                           </Button>
                         </div>
@@ -404,29 +380,15 @@ const ImportedProducts = () => {
                     </CardContent>
                     <CardFooter className="pb-4 pt-0 px-5 flex flex-col gap-2">
                       {canEdit && (
-                        <Button
-                          type="button"
-                          onClick={() => saveProduct(cat, product)}
-                          disabled={savingKey === `${cat.id}-${product.id}`}
-                          className="w-full bg-orange-600 hover:bg-orange-700 h-10 text-[10px] font-black shadow-md"
-                        >
+                        <Button type="button" onClick={() => saveProduct(cat, product)} disabled={savingKey === `${cat.id}-${product.id}`} className="w-full bg-orange-600 hover:bg-orange-700 h-10 text-[10px] font-black shadow-md">
                           {savingKey === `${cat.id}-${product.id}` ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                           ENREGISTRER
                         </Button>
                       )}
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="w-full border-blue-600 text-blue-700 hover:bg-blue-50 h-10 text-[10px] font-black shadow-sm"
-                        onClick={() => handleAddToCart(product)}
-                      >
+                      <Button size="lg" variant="outline" className="w-full border-blue-600 text-blue-700 hover:bg-blue-50 h-10 text-[10px] font-black shadow-sm" onClick={() => handleAddToCart(product)}>
                         <PlusCircle className="mr-2 h-4 w-4" /> AJOUTER AU PANIER
                       </Button>
-                      <Button
-                        size="lg"
-                        className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-[10px] font-black shadow-md"
-                        onClick={() => handleBuyNow(product)}
-                      >
+                      <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-[10px] font-black shadow-md" onClick={() => handleBuyNow(product)}>
                         <ShoppingCart className="mr-2 h-4 w-4" /> ACHETER MAINTENANT
                       </Button>
                     </CardFooter>

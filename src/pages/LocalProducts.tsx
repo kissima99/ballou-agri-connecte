@@ -10,7 +10,7 @@ import { ShoppingCart, MapPin, Home, Upload, PlusCircle, Scale, Loader2, Save, M
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { supabase, isCurrentUserAdmin } from "@/integrations/supabase/client";
+import { supabase, isCurrentUserSuperAdmin } from "@/integrations/supabase/client";
 
 interface LocalProduct {
   id: string | number;
@@ -28,7 +28,7 @@ interface LocalProduct {
 const LocalProducts = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [savingProductId, setSavingProductId] = useState<string | number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,7 +62,7 @@ const LocalProducts = () => {
 
   const [products, setProducts] = useState<LocalProduct[]>(initialProducts);
 
-  const canEdit = isAdmin && editMode;
+  const canEdit = isSuperAdmin && editMode;
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -90,7 +90,7 @@ const LocalProducts = () => {
 
   useEffect(() => {
     const boot = async () => {
-      setIsAdmin(await isCurrentUserAdmin());
+      setIsSuperAdmin(await isCurrentUserSuperAdmin());
     };
     void boot();
   }, []);
@@ -208,7 +208,7 @@ const LocalProducts = () => {
             </div>
           </div>
 
-          {isAdmin && (
+          {isSuperAdmin && (
             <div className="flex items-center gap-3 z-50">
               <Button
                 type="button"
@@ -280,21 +280,11 @@ const LocalProducts = () => {
                       <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{product.unit}</p>
                     </div>
                     <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm"
-                        onClick={() => updateQuantity(product.id, -1)}
-                      >
+                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" onClick={() => updateQuantity(product.id, -1)}>
                         <Minus className="h-3 w-3" />
                       </Button>
                       <span className="font-black text-sm min-w-[20px] text-center">{product.quantity}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm"
-                        onClick={() => updateQuantity(product.id, 1)}
-                      >
+                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" onClick={() => updateQuantity(product.id, 1)}>
                         <Plus className="h-3 w-3" />
                       </Button>
                     </div>
@@ -302,29 +292,15 @@ const LocalProducts = () => {
                 </CardContent>
                 <CardFooter className="pb-4 pt-0 px-5 flex flex-col gap-2">
                   {canEdit && (
-                    <Button
-                      type="button"
-                      onClick={() => saveProduct(product)}
-                      disabled={savingProductId === product.id}
-                      className="w-full bg-orange-600 hover:bg-orange-700 h-10 text-[10px] font-black shadow-md"
-                    >
+                    <Button type="button" onClick={() => saveProduct(product)} disabled={savingProductId === product.id} className="w-full bg-orange-600 hover:bg-orange-700 h-10 text-[10px] font-black shadow-md">
                       {savingProductId === product.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                       ENREGISTRER
                     </Button>
                   )}
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full border-green-600 text-green-700 hover:bg-green-50 h-10 text-[10px] font-black shadow-sm"
-                    onClick={() => handleAddToCart(product)}
-                  >
+                  <Button size="lg" variant="outline" className="w-full border-green-600 text-green-700 hover:bg-green-50 h-10 text-[10px] font-black shadow-sm" onClick={() => handleAddToCart(product)}>
                     <PlusCircle className="mr-2 h-4 w-4" /> AJOUTER AU PANIER
                   </Button>
-                  <Button
-                    size="lg"
-                    className="w-full bg-green-600 hover:bg-green-700 h-10 text-[10px] font-black shadow-md"
-                    onClick={() => handleBuyNow(product)}
-                  >
+                  <Button size="lg" className="w-full bg-green-600 hover:bg-green-700 h-10 text-[10px] font-black shadow-md" onClick={() => handleBuyNow(product)}>
                     <ShoppingCart className="mr-2 h-4 w-4" /> ACHETER MAINTENANT
                   </Button>
                 </CardFooter>
