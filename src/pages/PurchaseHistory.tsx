@@ -6,7 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Download } from 'lucide-react';
 import { ShoppingCart, Clock } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from '@/utils/toast';
+import { showError } from '@/utils/toast';
+
+const escapeHtml = (value: unknown) => {
+  const s = String(value ?? "");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+};
 
 const PurchaseHistory = () => {
   const navigate = useNavigate();
@@ -16,9 +26,16 @@ const PurchaseHistory = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          navigate('/login');
+          return;
+        }
+
         const { data, error } = await supabase
           .from('orders')
           .select('*')
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -31,7 +48,7 @@ const PurchaseHistory = () => {
     };
 
     fetchOrders();
-  }, []);
+  }, [navigate]);
 
   const generatePDF = async (order: any) => {
     try {
@@ -39,7 +56,7 @@ const PurchaseHistory = () => {
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Reçu - ${order.id}</title>
+            <title>Reçu - ${escapeHtml(order.id)}</title>
             <style>
               body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
               .header { text-align: center; border-bottom: 2px solid #16a34a; padding-bottom: 20px; margin-bottom: 20px; }
@@ -58,17 +75,17 @@ const PurchaseHistory = () => {
             <div class="header">
               <div class="logo">BALLOU AGRI CONNECT</div>
               <div class="title">REÇU DE COMMANDE</div>
-              <div>Commande #${order.id}</div>
-              <div>Date: ${new Date(order.created_at).toLocaleDateString('fr-FR')}</div>
+              <div>Commande #${escapeHtml(order.id)}</div>
+              <div>Date: ${escapeHtml(new Date(order.created_at).toLocaleDateString('fr-FR'))}</div>
             </div>
-            
+
             <div class="info">
-              <p><strong>Client:</strong> ${order.customer_name}</p>
-              <p><strong>Téléphone:</strong> ${order.phone}</p>
-              <p><strong>Adresse:</strong> ${order.address}</p>
-              <p><strong>Statut:</strong> ${order.status}</p>
+              <p><strong>Client:</strong> ${escapeHtml(order.customer_name)}</p>
+              <p><strong>Téléphone:</strong> ${escapeHtml(order.phone)}</p>
+              <p><strong>Adresse:</strong> ${escapeHtml(order.address)}</p>
+              <p><strong>Statut:</strong> ${escapeHtml(order.status)}</p>
             </div>
-            
+
             <table>
               <thead>
                 <tr>
@@ -81,19 +98,19 @@ const PurchaseHistory = () => {
               <tbody>
                 ${order.items ? order.items.map((item: any) => `
                   <tr>
-                    <td>${item.name}</td>
-                    <td>${item.quantity}</td>
-                    <td>${item.price.toLocaleString()} FCFA</td>
-                    <td>${(item.price * item.quantity).toLocaleString()} FCFA</td>
+                    <td>${escapeHtml(item.name)}</td>
+                    <td>${escapeHtml(item.quantity)}</td>
+                    <td>${escapeHtml(item.price?.toLocaleString?.() ?? item.price)} FCFA</td>
+                    <td>${escapeHtml(((item.price || 0) * (item.quantity || 0)).toLocaleString())} FCFA</td>
                   </tr>
                 `).join('') : ''}
               </tbody>
             </table>
-            
+
             <div class="total">
-              TOTAL: ${order.amount.toLocaleString()} FCFA
+              TOTAL: ${escapeHtml(order.amount?.toLocaleString?.() ?? order.amount)} FCFA
             </div>
-            
+
             <div class="footer">
               <p>Merci pour votre commande !</p>
               <p>Ballou Agri Connect - Votre partenaire agricole de confiance</p>
@@ -103,7 +120,7 @@ const PurchaseHistory = () => {
         </html>
       `;
 
-      const newWindow = window.open('', '_blank');
+      const newWindow = window.open('', '_blank', 'noopener,noreferrer');
       if (newWindow) {
         newWindow.document.write(receiptContent);
         newWindow.document.close();
@@ -129,7 +146,7 @@ const PurchaseHistory = () => {
     <div className="min-h-screen bg-stone-50">
       <div className="container px-4 py-12 mx-auto">
         <h1 className="text-3xl font-bold text-green-900 mb-8">Mes Achats</h1>
-        
+
         {orders.length === 0 ? (
           <div className="text-center py-20">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -143,7 +160,7 @@ const PurchaseHistory = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {orders.map((order: any, index: number) => (
+            {orders.map((order: any) => (
               <Card key={order.id} className="border-none shadow-xl">
                 <CardHeader className="bg-green-700 text-white">
                   <CardTitle className="text-xl">Commande #{order.id}</CardTitle>

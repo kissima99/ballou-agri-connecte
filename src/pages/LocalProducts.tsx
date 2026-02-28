@@ -6,11 +6,11 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, MapPin, Home, Upload, PlusCircle, Scale, Loader2, RefreshCw, Save, Minus, Plus, Pencil } from 'lucide-react';
+import { ShoppingCart, MapPin, Home, Upload, PlusCircle, Scale, Loader2, Save, Minus, Plus, Pencil } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, isCurrentUserAdmin } from "@/integrations/supabase/client";
 
 interface LocalProduct {
   id: string | number;
@@ -89,8 +89,10 @@ const LocalProducts = () => {
   };
 
   useEffect(() => {
-    const adminStatus = localStorage.getItem('is_super_admin') === 'true';
-    setIsAdmin(adminStatus);
+    const boot = async () => {
+      setIsAdmin(await isCurrentUserAdmin());
+    };
+    void boot();
   }, []);
 
   useEffect(() => {
@@ -114,7 +116,7 @@ const LocalProducts = () => {
   };
 
   const updateQuantity = (id: string | number, delta: number) => {
-    setProducts(products.map(p => 
+    setProducts(products.map(p =>
       p.id === id ? { ...p, quantity: Math.max(1, p.quantity + delta) } : p
     ));
   };
@@ -122,7 +124,7 @@ const LocalProducts = () => {
   const updatePrice = (id: string | number, newPrice: string) => {
     if (!canEdit) return;
     const price = parseInt(newPrice) || 0;
-    setProducts(products.map(p => 
+    setProducts(products.map(p =>
       p.id === id ? { ...p, price: price } : p
     ));
   };
@@ -134,7 +136,7 @@ const LocalProducts = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64Image = reader.result as string;
-        const newProducts = products.map(p => 
+        const newProducts = products.map(p =>
           p.id === productId ? { ...p, image: base64Image } : p
         );
         setProducts(newProducts);
@@ -167,7 +169,7 @@ const LocalProducts = () => {
       if (error) throw error;
       showSuccess(`${product.name} enregistré !`);
     } catch (err: any) {
-      showError("Erreur lors de l'enregistrement : " + err.message);
+      showError("Enregistrement refusé (droits insuffisants) : " + err.message);
     } finally {
       setSavingProductId(null);
     }
@@ -237,9 +239,9 @@ const LocalProducts = () => {
                       <MapPin className="h-3 w-3 mr-1" /> {product.origin}
                     </Badge>
                     {(product.id === "1" || product.id === "18") && canEdit && (
-                      <Button 
-                        size="sm" 
-                        variant="secondary" 
+                      <Button
+                        size="sm"
+                        variant="secondary"
                         className={`h-6 px-2 text-[10px] font-black shadow-lg ${product.isKg ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white/90 text-orange-700 hover:bg-white'}`}
                         onClick={() => toggleKg(product.id)}
                       >
@@ -262,9 +264,9 @@ const LocalProducts = () => {
                     <div className="flex-1">
                       {canEdit ? (
                         <div className="flex items-center gap-1.5 bg-orange-50 p-1 rounded-lg border border-orange-100">
-                          <Input 
-                            type="number" 
-                            value={product.price} 
+                          <Input
+                            type="number"
+                            value={product.price}
                             onChange={(e) => updatePrice(product.id, e.target.value)}
                             className="h-8 w-full text-sm font-black px-2 border-none bg-transparent focus-visible:ring-0"
                           />
@@ -278,19 +280,19 @@ const LocalProducts = () => {
                       <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{product.unit}</p>
                     </div>
                     <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm"
                         onClick={() => updateQuantity(product.id, -1)}
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
                       <span className="font-black text-sm min-w-[20px] text-center">{product.quantity}</span>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm"
                         onClick={() => updateQuantity(product.id, 1)}
                       >
                         <Plus className="h-3 w-3" />
@@ -310,17 +312,17 @@ const LocalProducts = () => {
                       ENREGISTRER
                     </Button>
                   )}
-                  <Button 
-                    size="lg" 
-                    variant="outline" 
-                    className="w-full border-green-600 text-green-700 hover:bg-green-50 h-10 text-[10px] font-black shadow-sm" 
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full border-green-600 text-green-700 hover:bg-green-50 h-10 text-[10px] font-black shadow-sm"
                     onClick={() => handleAddToCart(product)}
                   >
                     <PlusCircle className="mr-2 h-4 w-4" /> AJOUTER AU PANIER
                   </Button>
-                  <Button 
-                    size="lg" 
-                    className="w-full bg-green-600 hover:bg-green-700 h-10 text-[10px] font-black shadow-md" 
+                  <Button
+                    size="lg"
+                    className="w-full bg-green-600 hover:bg-green-700 h-10 text-[10px] font-black shadow-md"
                     onClick={() => handleBuyNow(product)}
                   >
                     <ShoppingCart className="mr-2 h-4 w-4" /> ACHETER MAINTENANT

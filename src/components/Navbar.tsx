@@ -3,16 +3,15 @@ import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { showSuccess, showError } from '@/utils/toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, isCurrentUserAdmin } from '@/integrations/supabase/client';
 
 // Lucide icons
-import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, Unlock, Lock, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText } from 'lucide-react';
+import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText } from 'lucide-react';
 
 // Shadcn UI components
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -29,26 +28,26 @@ const Navbar = () => {
   const [user, setUser] = useState<any>(null);
 
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
-  const [adminCode, setAdminCode] = useState("");
 
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
   useEffect(() => {
-    const adminStatus = localStorage.getItem('is_super_admin') === 'true';
-    setIsAdmin(adminStatus);
-
     setLastOrderId(localStorage.getItem('last_order_id'));
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const syncAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
-    });
+      setIsAdmin(await isCurrentUserAdmin());
+    };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    syncAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user || null);
+      setIsAdmin(await isCurrentUserAdmin());
     });
 
     const syncFromStorage = () => {
-      setIsAdmin(localStorage.getItem('is_super_admin') === 'true');
       setLastOrderId(localStorage.getItem('last_order_id'));
     };
 
@@ -59,36 +58,6 @@ const Navbar = () => {
       window.removeEventListener('storage', syncFromStorage);
     };
   }, []);
-
-  const enableAdminWithCode = () => {
-    if (adminCode.trim() !== "2003") {
-      showError("Code Super Admin incorrect.");
-      return;
-    }
-
-    setIsAdmin(true);
-    localStorage.setItem('is_super_admin', 'true');
-    showSuccess("Mode Super Admin Activé");
-    setAdminDialogOpen(false);
-    setAdminCode("");
-    window.dispatchEvent(new Event('storage'));
-  };
-
-  const disableAdmin = () => {
-    setIsAdmin(false);
-    localStorage.setItem('is_super_admin', 'false');
-    showSuccess("Mode Client Activé");
-    window.dispatchEvent(new Event('storage'));
-  };
-
-  const handleAdminButtonClick = () => {
-    if (isAdmin) {
-      disableAdmin();
-      return;
-    }
-
-    setAdminDialogOpen(true);
-  };
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -197,16 +166,6 @@ const Navbar = () => {
               </Button>
             )}
 
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleAdminButtonClick}
-              className={`rounded-full ${isAdmin ? 'text-orange-600 bg-orange-50' : 'text-gray-400'}`}
-              title={isAdmin ? "Déconnexion Admin" : "Connexion Super Admin"}
-            >
-              {isAdmin ? <Unlock className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
-            </Button>
-
             <div className="relative">
               <Button 
                 variant="ghost" 
@@ -226,46 +185,21 @@ const Navbar = () => {
         </div>
       </nav>
 
-      <Dialog
-        open={adminDialogOpen}
-        onOpenChange={(open) => {
-          setAdminDialogOpen(open);
-          if (!open) setAdminCode("");
-        }}
-      >
+      <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Accès Super Admin</DialogTitle>
+            <DialogTitle>Accès Admin</DialogTitle>
             <DialogDescription>
-              Entrez le code Super Admin pour activer l'accès.
+              La gestion admin est réservée aux comptes autorisés. Connectez-vous avec un compte admin.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-2">
-            <Input
-              value={adminCode}
-              onChange={(e) => setAdminCode(e.target.value)}
-              placeholder="Code Super Admin"
-              type="password"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") enableAdminWithCode();
-              }}
-            />
-          </div>
-
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setAdminDialogOpen(false);
-                setAdminCode("");
-              }}
-            >
-              Annuler
+            <Button variant="outline" onClick={() => setAdminDialogOpen(false)}>
+              Fermer
             </Button>
-            <Button onClick={enableAdminWithCode} className="bg-orange-500 hover:bg-orange-600">
-              Activer
+            <Button onClick={() => navigate('/login')} className="bg-green-700 hover:bg-green-800">
+              Se connecter
             </Button>
           </DialogFooter>
         </DialogContent>

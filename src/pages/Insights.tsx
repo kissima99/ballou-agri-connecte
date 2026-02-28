@@ -5,42 +5,41 @@ import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
   AreaChart,
-  Area
+  Area,
+  XAxis,
+  YAxis,
 } from 'recharts';
-import { TrendingUp, Users, ShoppingBag, Truck, ArrowUpRight, MessageSquare, Star, Calendar } from 'lucide-react';
-import { supabase } from "@/integrations/supabase/client";
+import { TrendingUp, BarChart3, Star, Calendar } from 'lucide-react';
+import { supabase, isCurrentUserAdmin } from "@/integrations/supabase/client";
 
 const Insights = () => {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const adminStatus = localStorage.getItem('is_super_admin') === 'true';
-    setIsAdmin(adminStatus);
+    const boot = async () => {
+      const admin = await isCurrentUserAdmin();
+      setIsAdmin(admin);
 
-    if (adminStatus) {
-      const fetchFeedbacks = async () => {
+      if (admin) {
         const { data, error } = await supabase
           .from('feedbacks')
           .select('*')
           .order('created_at', { ascending: false });
-        
-        if (!error) setFeedbacks(data);
-      };
-      fetchFeedbacks();
-    }
+
+        if (!error) setFeedbacks(data || []);
+      }
+    };
+
+    void boot();
   }, []);
 
   const salesData = [
@@ -66,11 +65,14 @@ const Insights = () => {
       <div className="container px-4 py-12 mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
           <div>
-            <h1 className="text-3xl font-black text-gray-900">Analyses & Performances</h1>
+            <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
+              <BarChart3 className="h-7 w-7 text-green-700" />
+              Analyses & Performances
+            </h1>
             <p className="text-gray-500 font-medium">Suivi en temps réel de l'économie de Ballou</p>
           </div>
         </div>
-        
+
         <Tabs defaultValue="stats" className="w-full">
           <TabsList className="mb-8 bg-white p-1 rounded-xl shadow-sm border">
             <TabsTrigger value="stats" className="font-bold">Statistiques</TabsTrigger>
@@ -87,10 +89,8 @@ const Insights = () => {
                   </div>
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Chiffre d'Affaires</p>
                   <h3 className="text-2xl font-black text-gray-900">0 FCFA</h3>
-
                 </CardContent>
               </Card>
-              {/* ... autres stats ... */}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -108,7 +108,22 @@ const Insights = () => {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-              {/* ... pie chart ... */}
+
+              <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden">
+                <CardHeader><CardTitle className="text-lg font-bold">Répartition</CardTitle></CardHeader>
+                <CardContent className="h-[350px] pt-6">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={categoryData} dataKey="value" nameKey="name" outerRadius={110}>
+                        {categoryData.map((_, index) => (
+                          <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 

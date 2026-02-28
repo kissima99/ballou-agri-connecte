@@ -6,6 +6,16 @@ import { Printer, ArrowLeft } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from '@/utils/toast';
 
+const escapeHtml = (value: unknown) => {
+  const s = String(value ?? "");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+};
+
 const Receipt = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
@@ -15,8 +25,14 @@ const Receipt = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       if (!orderId) return;
-      
+
       try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          navigate('/login');
+          return;
+        }
+
         const { data, error } = await supabase
           .from('orders')
           .select('*')
@@ -43,7 +59,7 @@ const Receipt = () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Reçu - ${order.id}</title>
+          <title>Reçu - ${escapeHtml(order.id)}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
             .header { text-align: center; border-bottom: 2px solid #16a34a; padding-bottom: 20px; margin-bottom: 20px; }
@@ -62,17 +78,17 @@ const Receipt = () => {
           <div class="header">
             <div class="logo">BALLOU AGRI CONNECT</div>
             <div class="title">REÇU DE COMMANDE</div>
-            <div>Commande #${order.id}</div>
-            <div>Date: ${new Date(order.created_at).toLocaleDateString('fr-FR')}</div>
+            <div>Commande #${escapeHtml(order.id)}</div>
+            <div>Date: ${escapeHtml(new Date(order.created_at).toLocaleDateString('fr-FR'))}</div>
           </div>
-          
+
           <div class="info">
-            <p><strong>Client:</strong> ${order.customer_name}</p>
-            <p><strong>Téléphone:</strong> ${order.phone}</p>
-            <p><strong>Adresse:</strong> ${order.address}</p>
-            <p><strong>Statut:</strong> ${order.status}</p>
+            <p><strong>Client:</strong> ${escapeHtml(order.customer_name)}</p>
+            <p><strong>Téléphone:</strong> ${escapeHtml(order.phone)}</p>
+            <p><strong>Adresse:</strong> ${escapeHtml(order.address)}</p>
+            <p><strong>Statut:</strong> ${escapeHtml(order.status)}</p>
           </div>
-          
+
           <table>
             <thead>
               <tr>
@@ -85,19 +101,19 @@ const Receipt = () => {
             <tbody>
               ${order.items ? order.items.map((item: any) => `
                 <tr>
-                  <td>${item.name}</td>
-                  <td>${item.quantity}</td>
-                  <td>${item.price.toLocaleString()} FCFA</td>
-                  <td>${(item.price * item.quantity).toLocaleString()} FCFA</td>
+                  <td>${escapeHtml(item.name)}</td>
+                  <td>${escapeHtml(item.quantity)}</td>
+                  <td>${escapeHtml(item.price?.toLocaleString?.() ?? item.price)} FCFA</td>
+                  <td>${escapeHtml(((item.price || 0) * (item.quantity || 0)).toLocaleString())} FCFA</td>
                 </tr>
               `).join('') : ''}
             </tbody>
           </table>
-          
+
           <div class="total">
-            TOTAL: ${order.amount.toLocaleString()} FCFA
+            TOTAL: ${escapeHtml(order.amount?.toLocaleString?.() ?? order.amount)} FCFA
           </div>
-          
+
           <div class="footer">
             <p>Merci pour votre commande !</p>
             <p>Ballou Agri Connect - Votre partenaire agricole de confiance</p>
@@ -107,7 +123,7 @@ const Receipt = () => {
       </html>
     `;
 
-    const newWindow = window.open('', '_blank');
+    const newWindow = window.open('', '_blank', 'noopener,noreferrer');
     if (newWindow) {
       newWindow.document.write(receiptContent);
       newWindow.document.close();
@@ -141,7 +157,8 @@ const Receipt = () => {
     <div className="min-h-screen bg-stone-50">
       <div className="container px-4 py-12 mx-auto max-w-3xl">
         <div className="flex items-center gap-4 mb-8">
-          <Button variant="outline" size="icon" onClick={() => navigate('/')}>
+          <Button variant="outline" size="icon" onClick={() => navigate('/')}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-3xl font-bold text-gray-900">Reçu de Commande</h1>
@@ -201,7 +218,8 @@ const Receipt = () => {
             </div>
           </CardContent>
           <CardFooter className="flex justify-between bg-stone-50 border-t">
-            <Button variant="outline" onClick={() => navigate('/')}>
+            <Button variant="outline" onClick={() => navigate('/')}
+            >
               <ArrowLeft className="mr-2 h-4 w-4" /> Retour
             </Button>
             <Button onClick={generatePDF} className="bg-green-600 hover:bg-green-700">

@@ -38,6 +38,12 @@ const Checkout = () => {
   };
 
   const handleCommander = async () => {
+    if (!user) {
+      showError("Veuillez vous connecter avant de passer commande.");
+      navigate('/login');
+      return;
+    }
+
     if (!formData.name || !formData.phone || !formData.address) {
       showError("Veuillez remplir tous les champs obligatoires.");
       return;
@@ -61,9 +67,10 @@ const Checkout = () => {
           price: i.price, 
           unit: i.unit 
         })),
-        user_id: user?.id || null,
+        user_id: user.id,
         zone: "Dakar",
-        is_new: true
+        is_new: true,
+        email: user.email ?? null,
       };
 
       const { error } = await supabase

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Upload, PlusCi
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, isCurrentUserAdmin } from "@/integrations/supabase/client";
 
 interface ImportedProduct {
   id: number;
@@ -113,7 +113,7 @@ const ImportedProducts = () => {
         { id: 401, name: "Semence Oignon", price: 5000, unit: "sachet", image: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 402, name: "Semence Salade", price: 2500, unit: "sachet", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 403, name: "Semence Choux", price: 3000, unit: "sachet", image: "https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&q=80", quantity: 1 },
-        { id: 404, name: "Semence Gombo", price: 3500, unit: "sachet", image: "https://images.unsplash.com/photo-1592419044706-39796d40f98c?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 404, name: "Semence Gombo", price: 3500, unit: "sachet", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 405, name: "Semence Carotte", price: 4000, unit: "sachet", image: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 406, name: "Semence pastéque", price: 4500, unit: "sachet", image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 407, name: "Semence piment", price: 3500, unit: "sachet", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80", quantity: 1 },
@@ -137,8 +137,10 @@ const ImportedProducts = () => {
   const [categories, setCategories] = useState<Category[]>(initialCategories);
 
   useEffect(() => {
-    const adminStatus = localStorage.getItem('is_super_admin') === 'true';
-    setIsAdmin(adminStatus);
+    const boot = async () => {
+      setIsAdmin(await isCurrentUserAdmin());
+    };
+    void boot();
   }, []);
 
   useEffect(() => {
@@ -196,7 +198,7 @@ const ImportedProducts = () => {
       if (cat.id !== catId) return cat;
       return {
         ...cat,
-        products: cat.products.map(p => 
+        products: cat.products.map(p =>
           p.id === prodId ? { ...p, quantity: Math.max(1, p.quantity + delta) } : p
         )
       };
@@ -210,7 +212,7 @@ const ImportedProducts = () => {
       if (cat.id !== catId) return cat;
       return {
         ...cat,
-        products: cat.products.map(p => 
+        products: cat.products.map(p =>
           p.id === prodId ? { ...p, price: price } : p
         )
       };
@@ -228,7 +230,7 @@ const ImportedProducts = () => {
           if (cat.id !== catId) return cat;
           return {
             ...cat,
-            products: cat.products.map(p => 
+            products: cat.products.map(p =>
               p.id === productId ? { ...p, image: base64Image } : p
             )
           };
@@ -263,7 +265,7 @@ const ImportedProducts = () => {
       if (error) throw error;
       showSuccess(`${product.name} enregistré !`);
     } catch (err: any) {
-      showError("Erreur lors de l'enregistrement : " + err.message);
+      showError("Enregistrement refusé (droits insuffisants) : " + err.message);
     } finally {
       setSavingKey(null);
     }
@@ -301,7 +303,7 @@ const ImportedProducts = () => {
               <p className="text-gray-600">Direction : <span className="font-bold text-orange-600">Dakar vers Ballou</span></p>
             </div>
           </div>
-          
+
           {isAdmin && (
             <div className="flex items-center gap-3 z-50">
               <Button
@@ -320,9 +322,9 @@ const ImportedProducts = () => {
         <Tabs defaultValue="frais" className="w-full">
           <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-8 h-auto p-1.5 bg-blue-100/50 rounded-2xl gap-2">
             {categories.map(cat => (
-              <TabsTrigger 
-                key={cat.id} 
-                value={cat.id} 
+              <TabsTrigger
+                key={cat.id}
+                value={cat.id}
                 className="py-3 text-xs md:text-sm font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-xl transition-all"
               >
                 {categoryIcons[cat.id]} {cat.name}
@@ -339,9 +341,9 @@ const ImportedProducts = () => {
                       <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       <div className="absolute top-2 left-2 flex flex-col gap-1">
                         {(product.id === 111 || product.id === 107) && canEdit && (
-                          <Button 
-                            size="sm" 
-                            variant="secondary" 
+                          <Button
+                            size="sm"
+                            variant="secondary"
                             className={`h-6 px-2 text-[10px] font-black shadow-lg ${product.isKg ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white/90 text-orange-700 hover:bg-white'}`}
                             onClick={() => toggleKg(cat.id, product.id)}
                           >
@@ -364,9 +366,9 @@ const ImportedProducts = () => {
                         <div className="flex-1">
                           {canEdit ? (
                             <div className="flex items-center gap-1.5 bg-orange-50 p-1 rounded-lg border border-orange-100">
-                              <Input 
-                                type="number" 
-                                value={product.price} 
+                              <Input
+                                type="number"
+                                value={product.price}
                                 onChange={(e) => updatePrice(cat.id, product.id, e.target.value)}
                                 className="h-8 w-full text-sm font-black px-2 border-none bg-transparent focus-visible:ring-0"
                               />
@@ -380,19 +382,19 @@ const ImportedProducts = () => {
                           <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{product.unit}</p>
                         </div>
                         <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm"
                             onClick={() => updateQuantity(cat.id, product.id, -1)}
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
                           <span className="font-black text-sm min-w-[20px] text-center">{product.quantity}</span>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm"
                             onClick={() => updateQuantity(cat.id, product.id, 1)}
                           >
                             <Plus className="h-3 w-3" />
@@ -412,17 +414,17 @@ const ImportedProducts = () => {
                           ENREGISTRER
                         </Button>
                       )}
-                      <Button 
-                        size="lg" 
-                        variant="outline" 
-                        className="w-full border-blue-600 text-blue-700 hover:bg-blue-50 h-10 text-[10px] font-black shadow-sm" 
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="w-full border-blue-600 text-blue-700 hover:bg-blue-50 h-10 text-[10px] font-black shadow-sm"
                         onClick={() => handleAddToCart(product)}
                       >
                         <PlusCircle className="mr-2 h-4 w-4" /> AJOUTER AU PANIER
                       </Button>
-                      <Button 
-                        size="lg" 
-                        className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-[10px] font-black shadow-md" 
+                      <Button
+                        size="lg"
+                        className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-[10px] font-black shadow-md"
                         onClick={() => handleBuyNow(product)}
                       >
                         <ShoppingCart className="mr-2 h-4 w-4" /> ACHETER MAINTENANT

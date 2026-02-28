@@ -7,20 +7,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  LayoutDashboard, 
-  Search, 
+import {
+  LayoutDashboard,
+  Search,
   Bell,
-  Truck,
-  Check,
   Loader2,
   RefreshCw,
-  CheckCircle2,
   Trash2
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, isCurrentUserAdmin } from "@/integrations/supabase/client";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -40,7 +37,7 @@ const AdminDashboard = () => {
       if (error) throw error;
 
       if (data) {
-        const formattedOrders = data.map(o => ({
+        const formattedOrders = data.map((o: any) => ({
           id: o.id,
           customer: o.customer_name,
           phone: o.phone,
@@ -51,37 +48,43 @@ const AdminDashboard = () => {
           created_at: o.created_at
         }));
         setOrders(formattedOrders);
-        setNewOrdersCount(formattedOrders.filter(o => o.isNew).length);
+        setNewOrdersCount(formattedOrders.filter((o: any) => o.isNew).length);
       }
     } catch (err: any) {
       console.error("Admin fetch error:", err);
-      showError("Erreur lors du chargement des commandes.");
+      showError("Accès refusé ou erreur lors du chargement des commandes.");
+      navigate('/');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    const isAdmin = localStorage.getItem('is_super_admin') === 'true';
-    if (!isAdmin) {
-      showError("Accès réservé au Super Admin.");
-      navigate('/');
-      return;
-    }
+    const boot = async () => {
+      const isAdmin = await isCurrentUserAdmin();
+      if (!isAdmin) {
+        showError("Accès réservé aux administrateurs.");
+        navigate('/');
+        return;
+      }
 
-    fetchOrders();
+      await fetchOrders();
 
-    // Écoute en temps réel des nouvelles commandes
-    const channel = supabase
-      .channel('admin_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-        console.log("Realtime update received:", payload);
-        fetchOrders();
-      })
-      .subscribe();
+      const channel = supabase
+        .channel('admin_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+          fetchOrders();
+        })
+        .subscribe();
 
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    };
+
+    const cleanupPromise = boot();
     return () => {
-      supabase.removeChannel(channel);
+      void cleanupPromise;
     };
   }, [navigate]);
 
@@ -93,7 +96,7 @@ const AdminDashboard = () => {
         .eq('id', id);
 
       if (error) throw error;
-      
+
       showSuccess(`Commande ${id} mise à jour.`);
       fetchOrders();
     } catch (err: any) {
@@ -101,25 +104,9 @@ const AdminDashboard = () => {
     }
   };
 
-  const validatePayment = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: 'Payé', is_new: false })
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      showSuccess(`Paiement validé pour ${id}`);
-      fetchOrders();
-    } catch (err: any) {
-      showError("Erreur de validation.");
-    }
-  };
-
   const deleteOrder = async (id: string) => {
     if (!window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement la commande ${id} ?`)) return;
-    
+
     try {
       const { error } = await supabase
         .from('orders')
@@ -127,7 +114,7 @@ const AdminDashboard = () => {
         .eq('id', id);
 
       if (error) throw error;
-      
+
       showSuccess(`Commande ${id} supprimée avec succès.`);
       fetchOrders();
     } catch (err: any) {
@@ -135,8 +122,8 @@ const AdminDashboard = () => {
     }
   };
 
-  const filteredOrders = orders.filter(order => 
-    order.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredOrders = orders.filter(order =>
+    order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (order.phone && order.phone.includes(searchTerm))
   );
@@ -155,15 +142,15 @@ const AdminDashboard = () => {
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
           <div>
             <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
-              <LayoutDashboard className="h-8 w-8 text-orange-600" /> 
-              Super Admin
+              <LayoutDashboard className="h-8 w-8 text-orange-600" />
+              Admin
             </h1>
-            <p className="text-gray-500 font-medium">Gestion des flux en temps réel</p>
+            <p className="text-gray-500 font-medium">Gestion des commandes</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              onClick={fetchOrders} 
+            <Button
+              variant="outline"
+              onClick={fetchOrders}
               className="rounded-xl border-stone-200 bg-white h-12 px-6 font-bold"
               disabled={isLoading}
             >
@@ -216,8 +203,8 @@ const AdminDashboard = () => {
               <CardTitle className="text-xl font-bold">Commandes Récentes</CardTitle>
               <div className="relative w-full md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input 
-                  placeholder="Rechercher..." 
+                <Input
+                  placeholder="Rechercher..."
                   className="pl-10 h-10 rounded-xl border-stone-200"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -259,27 +246,37 @@ const AdminDashboard = () => {
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end gap-2">
-                          {(order.status === 'Attente Paiement' || order.status === 'Attente de validation admin') && (
-                            <Button onClick={() => validatePayment(order.id)} className="bg-red-600 hover:bg-red-700 h-8 px-3 text-[10px] font-bold rounded-lg">
-                              <Check className="w-3 h-3 mr-1" /> VALIDER PAIEMENT
-                            </Button>
-                          )}
-                          {order.status === 'Payé' && (
-                            <Button onClick={() => updateOrderStatus(order.id, 'En cours')} className="bg-blue-600 hover:bg-blue-700 h-8 px-3 text-[10px] font-bold rounded-lg">
-                              <Truck className="w-3 h-3 mr-1" /> EXPÉDIER
-                            </Button>
-                          )}
-                          {order.status === 'En cours' && (
-                            <Button onClick={() => updateOrderStatus(order.id, 'Livré')} className="bg-green-600 hover:bg-green-700 h-8 px-3 text-[10px] font-bold rounded-lg">
-                              <CheckCircle2 className="w-3 h-3 mr-1" /> LIVRER
-                            </Button>
-                          )}
-                          <Button 
-                            onClick={() => deleteOrder(order.id)} 
-                            variant="destructive"
-                            className="bg-red-500 hover:bg-red-600 h-8 px-3 text-[10px] font-bold rounded-lg"
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateOrderStatus(order.id, 'Payé')}
+                            className="rounded-xl"
                           >
-                            <Trash2 className="w-3 h-3 mr-1" /> SUPPRIMER
+                            Payé
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateOrderStatus(order.id, 'En cours')}
+                            className="rounded-xl"
+                          >
+                            En cours
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateOrderStatus(order.id, 'Livré')}
+                            className="rounded-xl"
+                          >
+                            Livré
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteOrder(order.id)}
+                            className="rounded-xl"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>

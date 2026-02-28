@@ -92,6 +92,12 @@ const Tracking = () => {
     setTrackingData(null);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        showError("Veuillez vous connecter pour suivre votre colis.");
+        return;
+      }
+
       const { data, error } = await supabase
         .from('orders')
         .select('id,status,zone,created_at')
