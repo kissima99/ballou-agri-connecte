@@ -51,6 +51,11 @@ const ImportedProducts = () => {
       products: [
         { id: 101, name: "Pomme de terre", price: 12000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 102, name: "Oignon Importé", price: 10000, unit: "sac 25kg", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 131, name: "CHIPS PRINGLES", price: 2500, unit: "boite", image: "https://images.unsplash.com/photo-1566478431373-7821e93ee6b2?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 132, name: "CHIPS BARBECUE", price: 1500, unit: "paquet", image: "https://images.unsplash.com/photo-1566478431373-7821e93ee6b2?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 133, name: "BEURRE JADIDA", price: 1800, unit: "pot", image: "https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 134, name: "CAFE MAXWELLE 25 STICKS", price: 3500, unit: "paquet", image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&q=80", quantity: 1 },
+        { id: 135, name: "SIROP ORANGE", price: 2500, unit: "bouteille", image: "https://images.unsplash.com/photo-1600271886399-0e752047959f?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 118, name: "Nescafe importé", price: 3500, unit: "unité", image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 119, name: "Couscous", price: 1000, unit: "unité", image: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&q=80", quantity: 1 },
         { id: 120, name: "Spaghetti", price: 500, unit: "unité", image: "https://images.unsplash.com/photo-1551462147-ff29053bfc14?auto=format&fit=crop&q=80", quantity: 1 },
@@ -319,7 +324,7 @@ const ImportedProducts = () => {
           )}
         </div>
 
-        <Tabs defaultValue="frais" className="w-full">
+        <Tabs defaultValue="importes" className="w-full">
           <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-8 h-auto p-1.5 bg-blue-100/50 rounded-2xl gap-2">
             {categories.map(cat => (
               <TabsTrigger key={cat.id} value={cat.id} className="py-3 text-xs md:text-sm font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-xl transition-all">
