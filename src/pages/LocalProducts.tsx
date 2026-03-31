@@ -13,7 +13,7 @@ import { useCart } from '@/context/CartContext';
 import { supabase, isCurrentUserSuperAdmin } from "@/integrations/supabase/client";
 
 interface LocalProduct {
-  id: string | number;
+  id: string;
   name: string;
   price: number;
   unit: string;
@@ -30,39 +30,9 @@ const LocalProducts = () => {
   const { addToCart } = useCart();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [savingProductId, setSavingProductId] = useState<string | number | null>(null);
+  const [savingProductId, setSavingProductId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const initialProducts: LocalProduct[] = [
-    { id: "1", name: "Riz de la vallée", price: 17500, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 17500, pricePerKg: 400 },
-    { id: "2", name: "Oignon Local", price: 12000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "3", name: "Maïs", price: 500, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "4", name: "Piment rouge", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "5", name: "Piment vert", price: 1800, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "16", name: "Poivron vert", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1563565312-8335ff593d93?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "17", name: "Poivron Rouge", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1589483232748-515c025575bc?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "18", name: "Sucre Local", price: 25000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1, isKg: false, basePriceSac: 25000, pricePerKg: 600 },
-    { id: "24", name: "SUCRE 5KG", price: 4000, unit: "5kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "23", name: "Grosses THE", price: 1500, unit: "paquet", origin: "Ballou", image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "6", name: "Choux", price: 500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "7", name: "Aubergine africaine", price: 1200, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "8", name: "Gombo", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1464454709131-ffd692591ee5?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "9", name: "Tomate", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "10", name: "Concombre", price: 1000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1449339854873-750e6df51301?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "11", name: "Salade", price: 300, unit: "unité", origin: "Ballou", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "12", name: "Patate douce", price: 10000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "13", name: "Sorgho", price: 15000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1623064037721-304163048228?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "14", name: "Citron", price: 1000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1585059895524-72359e06133a?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "22", name: "NANA", price: 1000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "15", name: "Arachide", price: 8000, unit: "sac", origin: "Ballou", image: "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "19", name: "Bissap Rouge", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "20", name: "Bissap Blanc", price: 1500, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1550583724-125581f77833?auto=format&fit=crop&q=80", quantity: 1 },
-    { id: "21", name: "Pain de singe", price: 2000, unit: "kg", origin: "Ballou", image: "https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80", quantity: 1 },
-  ];
-
-  const [products, setProducts] = useState<LocalProduct[]>(initialProducts);
-
-  const canEdit = isSuperAdmin && editMode;
+  const [products, setProducts] = useState<LocalProduct[]>([]);
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -70,19 +40,23 @@ const LocalProducts = () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('category', 'local');
+        .eq('category', 'local')
+        .order('name');
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const merged = initialProducts.map(p => {
-          const dbP = data.find((dp: any) => dp.id === String(p.id));
-          return dbP ? { ...p, ...dbP, price: Number(dbP.price), quantity: 1 } : p;
-        });
-        setProducts(merged);
+      if (data) {
+        const formatted = data.map((p: any) => ({
+          ...p,
+          id: String(p.id),
+          price: Number(p.price),
+          quantity: 1,
+          image: p.image || "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80"
+        }));
+        setProducts(formatted);
       }
     } catch (err: any) {
-      console.error("Erreur lors du chargement des produits:", err.message);
+      showError("Erreur lors du chargement : " + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -91,16 +65,13 @@ const LocalProducts = () => {
   useEffect(() => {
     const boot = async () => {
       setIsSuperAdmin(await isCurrentUserSuperAdmin());
+      await fetchProducts();
     };
-    void boot();
+    boot();
   }, []);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const toggleKg = (id: string | number) => {
-    if (!canEdit) return;
+  const toggleKg = (id: string) => {
+    if (!isSuperAdmin || !editMode) return;
     setProducts(products.map(p => {
       if (p.id === id) {
         const newIsKg = !p.isKg;
@@ -115,61 +86,57 @@ const LocalProducts = () => {
     }));
   };
 
-  const updateQuantity = (id: string | number, delta: number) => {
+  const updateQuantity = (id: string, delta: number) => {
     setProducts(products.map(p =>
       p.id === id ? { ...p, quantity: Math.max(1, p.quantity + delta) } : p
     ));
   };
 
-  const updatePrice = (id: string | number, newPrice: string) => {
-    if (!canEdit) return;
+  const updatePrice = (id: string, newPrice: string) => {
+    if (!isSuperAdmin || !editMode) return;
     const price = parseInt(newPrice) || 0;
     setProducts(products.map(p =>
       p.id === id ? { ...p, price: price } : p
     ));
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, productId: string | number) => {
-    if (!canEdit) return;
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, productId: string) => {
+    if (!isSuperAdmin || !editMode) return;
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64Image = reader.result as string;
-        const newProducts = products.map(p =>
+        setProducts(products.map(p =>
           p.id === productId ? { ...p, image: base64Image } : p
-        );
-        setProducts(newProducts);
-        showSuccess("Image prête pour enregistrement !");
+        ));
+        showSuccess("Image prête !");
       };
       reader.readAsDataURL(file);
     }
   };
 
   const saveProduct = async (product: LocalProduct) => {
-    if (!canEdit) return;
-
+    if (!isSuperAdmin || !editMode) return;
     setSavingProductId(product.id);
     try {
-      const payload = {
-        id: String(product.id),
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        unit: product.unit,
-        origin: product.origin,
-        category: 'local',
-        updated_at: new Date().toISOString(),
-      };
-
       const { error } = await supabase
         .from('products')
-        .upsert([payload], { onConflict: 'id' });
+        .upsert([{
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          unit: product.unit,
+          origin: product.origin,
+          category: 'local',
+          updated_at: new Date().toISOString(),
+        }]);
 
       if (error) throw error;
       showSuccess(`${product.name} enregistré !`);
     } catch (err: any) {
-      showError("Enregistrement refusé (droits insuffisants) : " + err.message);
+      showError("Erreur : " + err.message);
     } finally {
       setSavingProductId(null);
     }
@@ -177,7 +144,7 @@ const LocalProducts = () => {
 
   const handleAddToCart = (product: LocalProduct) => {
     addToCart({
-      id: `local-${product.id}-${product.unit}`,
+      id: `local-${product.id}`,
       name: product.name,
       price: product.price,
       quantity: product.quantity,
@@ -185,12 +152,7 @@ const LocalProducts = () => {
       direction: 'Ballou -> Dakar',
       unit: product.unit
     });
-    showSuccess(`${product.name} (${product.unit}) ajouté au panier !`);
-  };
-
-  const handleBuyNow = (product: LocalProduct) => {
-    handleAddToCart(product);
-    navigate('/cart');
+    showSuccess(`${product.name} ajouté !`);
   };
 
   return (
@@ -207,26 +169,21 @@ const LocalProducts = () => {
               <p className="text-gray-600">Direction : <span className="font-bold text-orange-600">Ballou vers Dakar</span></p>
             </div>
           </div>
-
           {isSuperAdmin && (
-            <div className="flex items-center gap-3 z-50">
-              <Button
-                type="button"
-                variant={editMode ? "default" : "outline"}
-                onClick={() => setEditMode((v) => !v)}
-                className={editMode ? "bg-orange-600 hover:bg-orange-700 text-white h-11 px-6 text-sm font-black" : "h-11 px-6 text-sm font-black"}
-              >
-                <Pencil className="w-4 h-4 mr-2" />
-                {editMode ? "Mode édition : ON" : "Mode édition"}
-              </Button>
-            </div>
+            <Button
+              variant={editMode ? "default" : "outline"}
+              onClick={() => setEditMode(!editMode)}
+              className={editMode ? "bg-orange-600 hover:bg-orange-700 text-white font-black" : "font-black"}
+            >
+              <Pencil className="w-4 h-4 mr-2" /> {editMode ? "Mode édition : ON" : "Mode édition"}
+            </Button>
           )}
         </div>
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="h-12 w-12 animate-spin text-green-600 mb-4" />
-            <p className="text-gray-500 font-medium">Chargement du catalogue...</p>
+            <p className="text-gray-500 font-medium">Chargement...</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -238,21 +195,11 @@ const LocalProducts = () => {
                     <Badge className="bg-white/90 text-green-800 backdrop-blur text-[10px] h-5 px-2 font-bold shadow-sm">
                       <MapPin className="h-3 w-3 mr-1" /> {product.origin}
                     </Badge>
-                    {(product.id === "1" || product.id === "18") && canEdit && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className={`h-6 px-2 text-[10px] font-black shadow-lg ${product.isKg ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white/90 text-orange-700 hover:bg-white'}`}
-                        onClick={() => toggleKg(product.id)}
-                      >
-                        <Scale className="h-3 w-3 mr-1.5" /> {product.isKg ? 'MODE SAC' : 'MODE KG'}
-                      </Button>
-                    )}
                   </div>
-                  {canEdit && (
+                  {isSuperAdmin && editMode && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
-                      <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl transform hover:scale-105 active:scale-95 transition-all">
-                        <Upload className="w-4 h-4 mr-2" /> CHANGER L'IMAGE
+                      <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl">
+                        <Upload className="w-4 h-4 mr-2" /> IMAGE
                         <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, product.id)} />
                       </label>
                     </div>
@@ -262,45 +209,35 @@ const LocalProducts = () => {
                   <h3 className="font-bold text-base text-gray-900 truncate mb-1">{product.name}</h3>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex-1">
-                      {canEdit ? (
-                        <div className="flex items-center gap-1.5 bg-orange-50 p-1 rounded-lg border border-orange-100">
-                          <Input
-                            type="number"
-                            value={product.price}
-                            onChange={(e) => updatePrice(product.id, e.target.value)}
-                            className="h-8 w-full text-sm font-black px-2 border-none bg-transparent focus-visible:ring-0"
-                          />
-                          <span className="text-[10px] font-black text-orange-700 pr-1">FCFA</span>
-                        </div>
+                      {isSuperAdmin && editMode ? (
+                        <Input
+                          type="number"
+                          value={product.price}
+                          onChange={(e) => updatePrice(product.id, e.target.value)}
+                          className="h-8 w-full text-sm font-black"
+                        />
                       ) : (
-                        <div>
-                          <p className="text-xl font-black text-green-700 leading-none">{product.price.toLocaleString()} FCFA</p>
-                        </div>
+                        <p className="text-xl font-black text-green-700">{product.price.toLocaleString()} FCFA</p>
                       )}
-                      <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{product.unit}</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">{product.unit}</p>
                     </div>
                     <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
-                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" onClick={() => updateQuantity(product.id, -1)}>
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="font-black text-sm min-w-[20px] text-center">{product.quantity}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-white hover:shadow-sm" onClick={() => updateQuantity(product.id, 1)}>
-                        <Plus className="h-3 w-3" />
-                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateQuantity(product.id, -1)}><Minus className="h-3 w-3" /></Button>
+                      <span className="font-black text-sm">{product.quantity}</span>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateQuantity(product.id, 1)}><Plus className="h-3 w-3" /></Button>
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter className="pb-4 pt-0 px-5 flex flex-col gap-2">
-                  {canEdit && (
-                    <Button type="button" onClick={() => saveProduct(product)} disabled={savingProductId === product.id} className="w-full bg-orange-600 hover:bg-orange-700 h-10 text-[10px] font-black shadow-md">
-                      {savingProductId === product.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                      ENREGISTRER
+                  {isSuperAdmin && editMode && (
+                    <Button onClick={() => saveProduct(product)} disabled={savingProductId === product.id} className="w-full bg-orange-600 hover:bg-orange-700 h-10 text-[10px] font-black">
+                      {savingProductId === product.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} ENREGISTRER
                     </Button>
                   )}
-                  <Button size="lg" variant="outline" className="w-full border-green-600 text-green-700 hover:bg-green-50 h-10 text-[10px] font-black shadow-sm" onClick={() => handleAddToCart(product)}>
+                  <Button variant="outline" className="w-full border-green-600 text-green-700 h-10 text-[10px] font-black" onClick={() => handleAddToCart(product)}>
                     <PlusCircle className="mr-2 h-4 w-4" /> AJOUTER AU PANIER
                   </Button>
-                  <Button size="lg" className="w-full bg-green-600 hover:bg-green-700 h-10 text-[10px] font-black shadow-md" onClick={() => handleBuyNow(product)}>
+                  <Button className="w-full bg-green-600 hover:bg-green-700 h-10 text-[10px] font-black" onClick={() => { handleAddToCart(product); navigate('/cart'); }}>
                     <ShoppingCart className="mr-2 h-4 w-4" /> ACHETER MAINTENANT
                   </Button>
                 </CardFooter>
