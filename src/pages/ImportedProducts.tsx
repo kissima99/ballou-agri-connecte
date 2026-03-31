@@ -6,7 +6,8 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Upload, PlusCircle, Loader2, Zap, Save, Pencil } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Upload, PlusCircle, Loader2, Zap, Save, Pencil, Sparkles } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
@@ -20,6 +21,7 @@ interface ImportedProduct {
   image: string;
   quantity: number;
   category: string;
+  created_at?: string;
 }
 
 const ImportedProducts = () => {
@@ -45,7 +47,7 @@ const ImportedProducts = () => {
         .from('products')
         .select('*')
         .in('category', ['importes', 'frais', 'semences', 'electroniques'])
-        .order('name');
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -73,6 +75,14 @@ const ImportedProducts = () => {
     };
     boot();
   }, []);
+
+  const isNewProduct = (createdAt?: string) => {
+    if (!createdAt) return false;
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+    const diffInDays = (now.getTime() - createdDate.getTime()) / (1000 * 3600 * 24);
+    return diffInDays < 7;
+  };
 
   const updateQuantity = (id: string, delta: number) => {
     setProducts(products.map(p =>
@@ -180,7 +190,12 @@ const ImportedProducts = () => {
             <TabsContent key={cat.id} value={cat.id} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {products.filter(p => p.category === cat.id).map(product => (
-                  <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-xl transition-all bg-white group rounded-2xl">
+                  <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-xl transition-all bg-white group rounded-2xl relative">
+                    {isNewProduct(product.created_at) && (
+                      <Badge className="absolute top-3 right-3 z-10 bg-orange-500 text-white border-none font-black animate-pulse">
+                        <Sparkles className="w-3 h-3 mr-1" /> NOUVEAU
+                      </Badge>
+                    )}
                     <div className="relative h-40 overflow-hidden">
                       <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       {isSuperAdmin && editMode && (
