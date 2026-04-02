@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,13 +8,12 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
+import { Mail, Loader2, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { showError, showSuccess } from "@/utils/toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const CANONICAL_SITE_URL = "https://ecommerceballou.vercel.app";
 const SUPER_ADMIN_EMAILS = ["ramatayaha003@gmail.com"];
 
 const Login = () => {
@@ -27,39 +26,28 @@ const Login = () => {
   const [adminEmail, setAdminEmail] = useState("");
   const [sendingAdminLink, setSendingAdminLink] = useState(false);
 
-  const redirectTo = useMemo(() => {
-    // On utilise l'origine actuelle pour la redirection
-    return typeof window !== "undefined" ? `${window.location.origin}/login` : `${CANONICAL_SITE_URL}/login`;
-  }, []);
-
   useEffect(() => {
-    const handleAuth = async () => {
-      try {
-        // 1. Vérifier si on a une session active
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
-        if (currentSession) {
-          navigate("/");
-          return;
-        }
-
-        // 2. Écouter les changements d'état (utile pour le retour du lien magique)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-          if (event === 'SIGNED_IN' && session) {
-            showSuccess("Connexion réussie !");
-            navigate("/");
-          }
-        });
-
-        setIsLoading(false);
-        return () => subscription.unsubscribe();
-      } catch (err) {
-        console.error("Auth error:", err);
-        setIsLoading(false);
+    // On écoute les changements d'état d'auth immédiatement
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        showSuccess("Connexion réussie !");
+        navigate("/");
       }
+    });
+
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/");
+      }
+      setIsLoading(false);
     };
 
-    handleAuth();
+    checkSession();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const sendMagicLink = async (email: string, type: 'client' | 'admin') => {
@@ -81,7 +69,8 @@ const Login = () => {
       const { error } = await supabase.auth.signInWithOtp({
         email: targetEmail,
         options: {
-          emailRedirectTo: redirectTo,
+          // On laisse Supabase gérer la redirection par défaut ou on utilise l'origine actuelle
+          emailRedirectTo: window.location.origin,
         },
       });
 
