@@ -6,7 +6,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { supabase, isCurrentUserSuperAdmin } from '@/integrations/supabase/client';
 
 // Lucide icons
-import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText, ShieldCheck } from 'lucide-react';
+import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText, ShieldCheck, LayoutDashboard } from 'lucide-react';
 
 // Shadcn UI components
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -26,15 +26,27 @@ const Navbar = () => {
 
     const syncAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-      setIsSuperAdmin(await isCurrentUserSuperAdmin());
+      const currentUser = session?.user || null;
+      setUser(currentUser);
+      
+      // Vérification immédiate par email pour plus de rapidité
+      if (currentUser?.email === "ramatayaha003@gmail.com") {
+        setIsSuperAdmin(true);
+      } else {
+        setIsSuperAdmin(await isCurrentUserSuperAdmin());
+      }
     };
 
     syncAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user || null);
-      setIsSuperAdmin(await isCurrentUserSuperAdmin());
+      const currentUser = session?.user || null;
+      setUser(currentUser);
+      if (currentUser?.email === "ramatayaha003@gmail.com") {
+        setIsSuperAdmin(true);
+      } else {
+        setIsSuperAdmin(await isCurrentUserSuperAdmin());
+      }
     });
 
     const syncFromStorage = () => {
@@ -109,9 +121,11 @@ const Navbar = () => {
             <MessageSquare className="mr-1 h-4 w-4" /> Avis
           </Link>
 
-          <Link to="/purchase-history" className="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center transition-colors">
-            <History className="mr-1 h-4 w-4" /> Mes Achats
-          </Link>
+          {isSuperAdmin && (
+            <Link to="/admin" className="text-sm font-black text-orange-600 hover:text-orange-700 flex items-center transition-colors bg-orange-50 px-3 py-1 rounded-full">
+              <LayoutDashboard className="mr-1 h-4 w-4" /> ADMIN
+            </Link>
+          )}
         </div>
 
         <div className="flex items-center space-x-2 sm:space-x-4">
@@ -130,15 +144,15 @@ const Navbar = () => {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 text-gray-700 font-bold px-2">
+                <Button variant="ghost" className="flex items-center gap-2 text-gray-700 font-bold px-2 h-10">
                   <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700 shrink-0">
                     <User className="h-4 w-4" />
                   </div>
                   <div className="flex flex-col items-start text-left">
                     <span className="hidden sm:inline text-xs truncate max-w-[100px]">{user.email?.split('@')[0]}</span>
                     {isSuperAdmin && (
-                      <Badge className="bg-orange-500 hover:bg-orange-600 text-[9px] h-4 px-1.5 font-black uppercase tracking-tighter border-none">
-                        Super Admin
+                      <Badge className="bg-orange-500 hover:bg-orange-600 text-[9px] h-4 px-1.5 font-black uppercase tracking-tighter border-none flex items-center gap-0.5">
+                        <ShieldCheck className="h-2.5 w-2.5" /> Super Admin
                       </Badge>
                     )}
                   </div>
