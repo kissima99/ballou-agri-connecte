@@ -27,7 +27,6 @@ const Login = () => {
   const [sendingAdminLink, setSendingAdminLink] = useState(false);
 
   useEffect(() => {
-    // On écoute les changements d'état d'auth immédiatement
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         showSuccess("Connexion réussie !");
@@ -63,13 +62,13 @@ const Login = () => {
       return;
     }
 
-    type === 'client' ? setSendingClientLink(true) : setSendingAdminLink(true);
+    if (type === 'client') setSendingClientLink(true);
+    else setSendingAdminLink(true);
 
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: targetEmail,
         options: {
-          // On laisse Supabase gérer la redirection par défaut ou on utilise l'origine actuelle
           emailRedirectTo: window.location.origin,
         },
       });
@@ -79,7 +78,8 @@ const Login = () => {
     } catch (err: any) {
       showError(err.message || "Erreur lors de l'envoi du lien.");
     } finally {
-      type === 'client' ? setSendingClientLink(false) : setSendingAdminLink(false);
+      if (type === 'client') setSendingClientLink(false);
+      else setSendingAdminLink(false);
     }
   };
 
@@ -95,7 +95,7 @@ const Login = () => {
     <div className="min-h-screen bg-stone-50">
       <Navbar />
       <div className="container flex items-center justify-center px-4 py-20 mx-auto">
-        <Card className="w-full max-w-md border-none shadow-2xl rounded-[2.5rem] overflow-hidden">
+        <Card className="w-full max-w-md border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white">
           <CardHeader className="bg-green-900 text-white text-center py-10">
             <CardTitle className="text-2xl font-black">Identification</CardTitle>
             <p className="text-green-100 opacity-80 text-sm mt-2">
@@ -116,27 +116,28 @@ const Login = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="magic_link" className="space-y-4 animate-in fade-in duration-300">
-                <div className="space-y-2">
-                  <Input
-                    value={clientEmail}
-                    onChange={(e) => setClientEmail(e.target.value)}
-                    placeholder="votre@email.com"
-                    type="email"
-                    className="h-12 rounded-xl"
-                  />
+              <TabsContent value="magic_link" className="space-y-4 outline-none">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Input
+                      value={clientEmail}
+                      onChange={(e) => setClientEmail(e.target.value)}
+                      placeholder="votre@email.com"
+                      type="email"
+                      className="h-12 rounded-xl border-stone-200"
+                    />
+                  </div>
                   <Button
                     onClick={() => sendMagicLink(clientEmail, 'client')}
                     disabled={sendingClientLink}
-                    className="w-full h-12 rounded-xl bg-green-700 hover:bg-green-800 font-black"
+                    className="w-full h-12 rounded-xl bg-green-700 hover:bg-green-800 font-black text-white cursor-pointer"
                   >
-                    {sendingClientLink ? <Loader2 className="animate-spin" /> : <Mail className="mr-2 h-5 w-5" />}
-                    Recevoir mon lien
+                    {sendingClientLink ? <Loader2 className="animate-spin h-5 w-5" /> : <><Mail className="mr-2 h-5 w-5" /> Recevoir mon lien</>}
                   </Button>
                 </div>
               </TabsContent>
 
-              <TabsContent value="password" className="animate-in fade-in duration-300">
+              <TabsContent value="password" className="outline-none">
                 <SupabaseAuth
                   supabaseClient={supabase}
                   providers={[]}
@@ -154,28 +155,33 @@ const Login = () => {
                 />
               </TabsContent>
 
-              <TabsContent value="super_admin" className="space-y-4 animate-in fade-in duration-300">
+              <TabsContent value="super_admin" className="space-y-4 outline-none">
                 <Alert className="bg-orange-50 border-orange-200 text-orange-800 rounded-xl">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription className="text-xs font-medium">
                     Accès réservé à l'administrateur principal.
                   </AlertDescription>
                 </Alert>
-                <div className="space-y-2">
-                  <Input
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
-                    placeholder="admin@ballouagriconnect.com"
-                    type="email"
-                    className="h-12 rounded-xl border-orange-200 focus-visible:ring-orange-500"
-                  />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Input
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                      placeholder="admin@ballouagriconnect.com"
+                      type="email"
+                      className="h-12 rounded-xl border-orange-200 focus-visible:ring-orange-500"
+                    />
+                  </div>
                   <Button
-                    onClick={() => sendMagicLink(adminEmail, 'admin')}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      sendMagicLink(adminEmail, 'admin');
+                    }}
                     disabled={sendingAdminLink}
-                    className="w-full h-12 rounded-xl bg-orange-600 hover:bg-orange-700 font-black"
+                    className="w-full h-12 rounded-xl bg-orange-600 hover:bg-orange-700 font-black text-white cursor-pointer relative z-10"
                   >
-                    {sendingAdminLink ? <Loader2 className="animate-spin" /> : <Mail className="mr-2 h-5 w-5" />}
-                    Lien Magique Admin
+                    {sendingAdminLink ? <Loader2 className="animate-spin h-5 w-5" /> : <><Mail className="mr-2 h-5 w-5" /> Lien Magique Admin</>}
                   </Button>
                 </div>
               </TabsContent>
