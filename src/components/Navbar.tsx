@@ -6,7 +6,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { supabase, isCurrentUserSuperAdmin } from '@/integrations/supabase/client';
 
 // Lucide icons
-import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText, ShieldCheck } from 'lucide-react';
+import { Leaf, Package, History, BarChart3, MessageSquare, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText, ShieldCheck } from 'lucide-react';
 
 // Shadcn UI components
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -18,23 +18,36 @@ const Navbar = () => {
   const { totalItems } = useCart();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [user, setUser] = useState<any>(null);
-
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     setLastOrderId(localStorage.getItem('last_order_id'));
 
-    const syncAuth = async () => {
+    const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-      setIsSuperAdmin(await isCurrentUserSuperAdmin());
+      const currentUser = session?.user || null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        const adminStatus = await isCurrentUserSuperAdmin();
+        setIsSuperAdmin(adminStatus);
+      } else {
+        setIsSuperAdmin(false);
+      }
     };
 
-    syncAuth();
+    checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user || null);
-      setIsSuperAdmin(await isCurrentUserSuperAdmin());
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const currentUser = session?.user || null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        const adminStatus = await isCurrentUserSuperAdmin();
+        setIsSuperAdmin(adminStatus);
+      } else {
+        setIsSuperAdmin(false);
+      }
     });
 
     const syncFromStorage = () => {
@@ -130,41 +143,47 @@ const Navbar = () => {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 text-gray-700 font-bold px-2">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700 shrink-0">
-                    <User className="h-4 w-4" />
+                <Button variant="ghost" className="flex items-center gap-2 text-gray-700 font-bold px-2 hover:bg-stone-50 rounded-xl">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isSuperAdmin ? 'bg-orange-100 text-orange-600 border border-orange-200' : 'bg-green-100 text-green-700'}`}>
+                    {isSuperAdmin ? <ShieldCheck className="h-5 w-5" /> : <User className="h-4 w-4" />}
                   </div>
                   <div className="flex flex-col items-start text-left">
                     <span className="hidden sm:inline text-xs truncate max-w-[100px]">{user.email?.split('@')[0]}</span>
                     {isSuperAdmin && (
-                      <Badge className="bg-orange-500 hover:bg-orange-600 text-[9px] h-4 px-1.5 font-black uppercase tracking-tighter border-none">
+                      <Badge className="bg-orange-500 hover:bg-orange-600 text-[9px] h-4 px-1.5 font-black uppercase tracking-tighter border-none flex items-center gap-0.5">
                         Super Admin
                       </Badge>
                     )}
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg p-2">
-                <div className="px-2 py-1.5 mb-1">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Connecté en tant que</p>
+              <DropdownMenuContent align="end" className="w-64 rounded-2xl shadow-2xl p-2 border-stone-100">
+                <div className="px-3 py-3 mb-1 bg-stone-50 rounded-xl">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Session active</p>
                   <p className="text-xs font-bold text-gray-900 truncate">{user.email}</p>
+                  {isSuperAdmin && (
+                    <div className="mt-2 flex items-center gap-1.5 text-orange-600">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      <span className="text-[10px] font-black uppercase">Accès Administrateur</span>
+                    </div>
+                  )}
                 </div>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="my-2" />
                 {isSuperAdmin && (
-                  <DropdownMenuItem asChild className="rounded-lg cursor-pointer bg-orange-50 text-orange-700 focus:bg-orange-100 focus:text-orange-800 mb-1">
-                    <Link to="/admin" className="flex items-center font-bold">
-                      <ShieldCheck className="mr-2 h-4 w-4" /> Gérer les Commandes
+                  <DropdownMenuItem asChild className="rounded-xl cursor-pointer bg-orange-600 text-white focus:bg-orange-700 focus:text-white mb-1 p-3">
+                    <Link to="/admin" className="flex items-center font-black w-full">
+                      <ShieldCheck className="mr-2 h-5 w-5" /> TABLEAU DE BORD ADMIN
                     </Link>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                  <Link to="/purchase-history" className="flex items-center">
-                    <History className="mr-2 h-4 w-4" /> Historique d'achats
+                <DropdownMenuItem asChild className="rounded-xl cursor-pointer p-3">
+                  <Link to="/purchase-history" className="flex items-center font-bold">
+                    <History className="mr-2 h-5 w-5 text-blue-600" /> Historique d'achats
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer rounded-lg focus:bg-red-50 focus:text-red-700">
-                  <LogOut className="mr-2 h-4 w-4" /> Déconnexion
+                <DropdownMenuSeparator className="my-2" />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer rounded-xl focus:bg-red-50 focus:text-red-700 p-3 font-bold">
+                  <LogOut className="mr-2 h-5 w-5" /> Déconnexion
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
