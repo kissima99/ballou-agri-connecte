@@ -15,7 +15,7 @@ export async function isCurrentUserAdmin() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
 
-  // Check email first for immediate access
+  // Strict check: only the specified email can be admin
   if (user.email && SUPER_ADMIN_EMAILS.includes(user.email)) return true;
 
   const { data, error } = await supabase
@@ -32,7 +32,7 @@ export async function isCurrentUserSuperAdmin() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
 
-  // Check email first for immediate access
+  // Strict check: only the specified email can be super_admin
   if (user.email && SUPER_ADMIN_EMAILS.includes(user.email)) return true;
 
   const { data, error } = await supabase
