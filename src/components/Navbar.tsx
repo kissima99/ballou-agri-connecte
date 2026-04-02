@@ -6,10 +6,10 @@ import { showSuccess, showError } from '@/utils/toast';
 import { supabase, isCurrentUserSuperAdmin } from '@/integrations/supabase/client';
 
 // Lucide icons
-import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText } from 'lucide-react';
+import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText, ShieldCheck } from 'lucide-react';
 
 // Shadcn UI components
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -68,13 +68,13 @@ const Navbar = () => {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-      <div className="container flex items-center justify-between px-4">
+      <div className="container flex items-center justify-between px-4 h-16">
         <Link to="/" className="flex items-center space-x-2">
           <Leaf className="h-6 w-6 text-green-600" />
-          <span className="text-2xl font-bold tracking-tight text-green-800">BALLOU AGRI <span className="text-orange-500">CONNECT</span></span>
+          <span className="text-xl md:text-2xl font-bold tracking-tight text-green-800">BALLOU AGRI <span className="text-orange-500">CONNECT</span></span>
         </Link>
 
-        <div className="hidden md:flex items-center space-x-6">
+        <div className="hidden lg:flex items-center space-x-6">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center space-x-1 text-green-700 hover:text-green-900 font-bold">
@@ -112,12 +112,6 @@ const Navbar = () => {
           <Link to="/purchase-history" className="text-sm font-bold text-blue-600 hover:text-blue-700 flex items-center transition-colors">
             <History className="mr-1 h-4 w-4" /> Mes Achats
           </Link>
-
-          {isSuperAdmin && (
-            <Link to="/admin" className="text-sm font-bold text-orange-600 hover:text-orange-700 flex items-center transition-colors bg-orange-50 px-3 py-1.5 rounded-full">
-              <ShieldAlert className="mr-1 h-4 w-4" /> Admin
-            </Link>
-          )}
         </div>
 
         <div className="flex items-center space-x-2 sm:space-x-4">
@@ -125,7 +119,7 @@ const Navbar = () => {
             <Button
               variant="outline"
               onClick={goToLastReceipt}
-              className="rounded-2xl border-stone-200 bg-white px-3 text-xs font-bold text-gray-700 hover:bg-stone-50"
+              className="rounded-2xl border-stone-200 bg-white px-3 text-xs font-bold text-gray-700 hover:bg-stone-50 hidden sm:flex"
               title="Voir votre reçu"
             >
               <FileText className="mr-2 h-4 w-4" />
@@ -136,15 +130,40 @@ const Navbar = () => {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 text-gray-700 font-bold">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700">
+                <Button variant="ghost" className="flex items-center gap-2 text-gray-700 font-bold px-2">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700 shrink-0">
                     <User className="h-4 w-4" />
                   </div>
-                  <span className="hidden sm:inline text-xs truncate max-w-[100px]">{user.email?.split('@')[0]}</span>
+                  <div className="flex flex-col items-start text-left">
+                    <span className="hidden sm:inline text-xs truncate max-w-[100px]">{user.email?.split('@')[0]}</span>
+                    {isSuperAdmin && (
+                      <Badge className="bg-orange-500 hover:bg-orange-600 text-[9px] h-4 px-1.5 font-black uppercase tracking-tighter border-none">
+                        Super Admin
+                      </Badge>
+                    )}
+                  </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg">
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+              <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg p-2">
+                <div className="px-2 py-1.5 mb-1">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Connecté en tant que</p>
+                  <p className="text-xs font-bold text-gray-900 truncate">{user.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                {isSuperAdmin && (
+                  <DropdownMenuItem asChild className="rounded-lg cursor-pointer bg-orange-50 text-orange-700 focus:bg-orange-100 focus:text-orange-800 mb-1">
+                    <Link to="/admin" className="flex items-center font-bold">
+                      <ShieldCheck className="mr-2 h-4 w-4" /> Gérer les Commandes
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                  <Link to="/purchase-history" className="flex items-center">
+                    <History className="mr-2 h-4 w-4" /> Historique d'achats
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer rounded-lg focus:bg-red-50 focus:text-red-700">
                   <LogOut className="mr-2 h-4 w-4" /> Déconnexion
                 </DropdownMenuItem>
               </DropdownMenuContent>

@@ -9,9 +9,14 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+const SUPER_ADMIN_EMAILS = ["ramatayaha003@gmail.com"];
+
 export async function isCurrentUserAdmin() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
+
+  // Strict check: only the specified email can be admin
+  if (user.email && SUPER_ADMIN_EMAILS.includes(user.email)) return true;
 
   const { data, error } = await supabase
     .from('profiles')
@@ -26,6 +31,9 @@ export async function isCurrentUserAdmin() {
 export async function isCurrentUserSuperAdmin() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
+
+  // Strict check: only the specified email can be super_admin
+  if (user.email && SUPER_ADMIN_EMAILS.includes(user.email)) return true;
 
   const { data, error } = await supabase
     .from('profiles')

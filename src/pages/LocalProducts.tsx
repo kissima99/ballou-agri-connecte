@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, MapPin, Home, Upload, PlusCircle, Scale, Loader2, Save, Minus, Plus, Pencil } from 'lucide-react';
+import { ShoppingCart, MapPin, Home, Upload, PlusCircle, Loader2, Save, Minus, Plus, Pencil, Sparkles } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
@@ -20,9 +20,7 @@ interface LocalProduct {
   origin: string;
   image: string;
   quantity: number;
-  isKg?: boolean;
-  basePriceSac?: number;
-  pricePerKg?: number;
+  created_at?: string;
 }
 
 const LocalProducts = () => {
@@ -41,7 +39,7 @@ const LocalProducts = () => {
         .from('products')
         .select('*')
         .eq('category', 'local')
-        .order('name');
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -70,20 +68,12 @@ const LocalProducts = () => {
     boot();
   }, []);
 
-  const toggleKg = (id: string) => {
-    if (!isSuperAdmin || !editMode) return;
-    setProducts(products.map(p => {
-      if (p.id === id) {
-        const newIsKg = !p.isKg;
-        return {
-          ...p,
-          isKg: newIsKg,
-          unit: newIsKg ? "kg" : "sac",
-          price: newIsKg ? (p.pricePerKg || 500) : (p.basePriceSac || 17500)
-        };
-      }
-      return p;
-    }));
+  const isNewProduct = (createdAt?: string) => {
+    if (!createdAt) return false;
+    const createdDate = new Date(createdAt);
+    const now = new Date();
+    const diffInDays = (now.getTime() - createdDate.getTime()) / (1000 * 3600 * 24);
+    return diffInDays < 7;
   };
 
   const updateQuantity = (id: string, delta: number) => {
@@ -188,7 +178,12 @@ const LocalProducts = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {products.map((product) => (
-              <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-xl transition-all group bg-white rounded-2xl">
+              <Card key={product.id} className="overflow-hidden border-none shadow-sm hover:shadow-xl transition-all group bg-white rounded-2xl relative">
+                {isNewProduct(product.created_at) && (
+                  <Badge className="absolute top-3 right-3 z-10 bg-orange-500 text-white border-none font-black animate-pulse">
+                    <Sparkles className="w-3 h-3 mr-1" /> NOUVEAU
+                  </Badge>
+                )}
                 <div className="relative h-40 overflow-hidden">
                   <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                   <div className="absolute top-2 left-2 flex flex-col gap-1">

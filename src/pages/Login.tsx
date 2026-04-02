@@ -8,18 +8,19 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mail, Lock, Loader2 } from "lucide-react";
+import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { showError, showSuccess } from "@/utils/toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const CANONICAL_SITE_URL = "https://ecommerceballou.vercel.app";
 const SUPER_ADMIN_EMAILS = ["ramatayaha003@gmail.com"];
 
 const Login = () => {
   const navigate = useNavigate();
-  const [session, setSession] = useState<any>(null);
-
+  const [isLoading, setIsLoading] = useState(true);
+  
   const [clientEmail, setClientEmail] = useState("");
   const [sendingClientLink, setSendingClientLink] = useState(false);
 
@@ -27,101 +28,79 @@ const Login = () => {
   const [sendingAdminLink, setSendingAdminLink] = useState(false);
 
   const redirectTo = useMemo(() => {
-    // Utilise l'URL actuelle (preview/dev/prod). Fallback sur le domaine canonique.
-    const origin = typeof window !== "undefined" ? window.location.origin : CANONICAL_SITE_URL;
-    return `${origin}/login`;
+    // On utilise l'origine actuelle pour la redirection
+    return typeof window !== "undefined" ? `${window.location.origin}/login` : `${CANONICAL_SITE_URL}/login`;
   }, []);
 
   useEffect(() => {
-    const boot = async () => {
-      // Support PKCE-style magic links that arrive with ?code=...
-      const url = new URL(window.location.href);
-      if (url.searchParams.get("code")) {
-        const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
-        if (error) {
-          showError("Lien de connexion invalide ou expiré.");
+    const handleAuth = async () => {
+      try {
+        // 1. Vérifier si on a une session active
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        if (currentSession) {
+          navigate("/");
+          return;
         }
-        url.searchParams.delete("code");
-        window.history.replaceState({}, "", url.toString());
+
+        // 2. Écouter les changements d'état (utile pour le retour du lien magique)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_IN' && session) {
+            showSuccess("Connexion réussie !");
+            navigate("/");
+          }
+        });
+
+        setIsLoading(false);
+        return () => subscription.unsubscribe();
+      } catch (err) {
+        console.error("Auth error:", err);
+        setIsLoading(false);
       }
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setSession(session);
-      if (session) navigate("/");
-
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
-        setSession(session);
-        if (session) navigate("/");
-      });
-
-      return () => subscription.unsubscribe();
     };
 
-    const cleanupPromise = boot();
-    return () => {
-      void cleanupPromise;
-    };
+    handleAuth();
   }, [navigate]);
 
-  const sendClientMagicLink = async () => {
-    const email = clientEmail.trim().toLowerCase();
-    if (!email) {
-      showError("Veuillez saisir votre adresse email.");
+  const sendMagicLink = async (email: string, type: 'client' | 'admin') => {
+    const targetEmail = email.trim().toLowerCase();
+    
+    if (!targetEmail) {
+      showError("Veuillez saisir une adresse email.");
       return;
     }
 
-    setSendingClientLink(true);
+    if (type === 'admin' && !SUPER_ADMIN_EMAILS.includes(targetEmail)) {
+      showError("Cet email n'est pas autorisé comme Super Admin.");
+      return;
+    }
+
+    type === 'client' ? setSendingClientLink(true) : setSendingAdminLink(true);
+
     try {
       const { error } = await supabase.auth.signInWithOtp({
-        email,
+        email: targetEmail,
         options: {
           emailRedirectTo: redirectTo,
         },
       });
 
       if (error) throw error;
-      showSuccess("Lien de connexion envoyé. Vérifiez votre boîte mail (et les spams).");
+      showSuccess("Lien envoyé ! Vérifiez votre boîte mail.");
     } catch (err: any) {
-      // Erreur fréquente si l'URL de redirection n'est pas autorisée côté Supabase
-      showError(err?.message ?? "Impossible d'envoyer le lien de connexion.");
+      showError(err.message || "Erreur lors de l'envoi du lien.");
     } finally {
-      setSendingClientLink(false);
+      type === 'client' ? setSendingClientLink(false) : setSendingAdminLink(false);
     }
   };
 
-  const sendSuperAdminMagicLink = async () => {
-    const email = adminEmail.trim().toLowerCase();
-    if (!email) {
-      showError("Veuillez saisir l'email Super Admin.");
-      return;
-    }
-
-    if (!SUPER_ADMIN_EMAILS.includes(email)) {
-      showError("Accès réservé au Super Admin.");
-      return;
-    }
-
-    setSendingAdminLink(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: redirectTo,
-        },
-      });
-
-      if (error) throw error;
-      showSuccess("Lien magique Super Admin envoyé. Vérifiez votre boîte mail.");
-    } catch (err: any) {
-      showError(err?.message ?? "Impossible d'envoyer le lien magique.");
-    } finally {
-      setSendingAdminLink(false);
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-green-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -131,132 +110,84 @@ const Login = () => {
           <CardHeader className="bg-green-900 text-white text-center py-10">
             <CardTitle className="text-2xl font-black">Identification</CardTitle>
             <p className="text-green-100 opacity-80 text-sm mt-2">
-              Client (lien magique ou mot de passe) / Super Admin (lien magique)
+              Accédez à votre espace sécurisé
             </p>
           </CardHeader>
           <CardContent className="p-8">
             <Tabs defaultValue="magic_link" className="w-full">
               <TabsList className="grid grid-cols-3 mb-8 bg-stone-100 p-1 rounded-xl">
-                <TabsTrigger
-                  value="magic_link"
-                  className="font-bold text-[11px] data-[state=active]:bg-white data-[state=active]:text-green-700"
-                >
-                  <Mail className="w-3.5 h-3.5 mr-2" /> Lien magique
+                <TabsTrigger value="magic_link" className="font-bold text-[11px]">
+                  Lien Client
                 </TabsTrigger>
-                <TabsTrigger
-                  value="password"
-                  className="font-bold text-[11px] data-[state=active]:bg-white data-[state=active]:text-green-700"
-                >
-                  <Lock className="w-3.5 h-3.5 mr-2" /> Mot de passe
+                <TabsTrigger value="password" className="font-bold text-[11px]">
+                  Mot de passe
                 </TabsTrigger>
-                <TabsTrigger
-                  value="super_admin"
-                  className="font-bold text-[11px] data-[state=active]:bg-white data-[state=active]:text-orange-700"
-                >
-                  <Mail className="w-3.5 h-3.5 mr-2" /> Super Admin
+                <TabsTrigger value="super_admin" className="font-bold text-[11px] data-[state=active]:text-orange-700">
+                  Super Admin
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="magic_link" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="mb-6 text-center">
-                  <p className="text-sm text-gray-500">Connexion client via lien envoyé par email.</p>
-                </div>
-
-                <div className="space-y-3">
+              <TabsContent value="magic_link" className="space-y-4 animate-in fade-in duration-300">
+                <div className="space-y-2">
                   <Input
                     value={clientEmail}
                     onChange={(e) => setClientEmail(e.target.value)}
-                    placeholder="Adresse Email"
+                    placeholder="votre@email.com"
                     type="email"
-                    autoComplete="email"
                     className="h-12 rounded-xl"
                   />
                   <Button
-                    type="button"
-                    onClick={sendClientMagicLink}
+                    onClick={() => sendMagicLink(clientEmail, 'client')}
                     disabled={sendingClientLink}
                     className="w-full h-12 rounded-xl bg-green-700 hover:bg-green-800 font-black"
                   >
-                    {sendingClientLink ? (
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    ) : (
-                      <Mail className="mr-2 h-5 w-5" />
-                    )}
-                    Envoyer le lien de connexion
+                    {sendingClientLink ? <Loader2 className="animate-spin" /> : <Mail className="mr-2 h-5 w-5" />}
+                    Recevoir mon lien
                   </Button>
-
-                  <p className="text-[11px] text-gray-400 leading-relaxed">
-                    Redirection: <span className="font-mono">{redirectTo}</span>
-                  </p>
                 </div>
               </TabsContent>
 
-              <TabsContent value="password" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <TabsContent value="password" className="animate-in fade-in duration-300">
                 <SupabaseAuth
                   supabaseClient={supabase}
                   providers={[]}
-                  redirectTo={redirectTo}
                   appearance={{
                     theme: ThemeSupa,
-                    variables: {
-                      default: {
-                        colors: {
-                          brand: "#16a34a",
-                          brandAccent: "#15803d",
-                        },
-                      },
-                    },
+                    variables: { default: { colors: { brand: "#16a34a", brandAccent: "#15803d" } } },
                   }}
                   theme="light"
-                  view="sign_in"
                   localization={{
                     variables: {
-                      sign_in: {
-                        email_label: "Adresse Email",
-                        password_label: "Mot de passe",
-                        button_label: "Se connecter",
-                      },
-                      sign_up: {
-                        email_label: "Adresse Email",
-                        password_label: "Mot de passe",
-                        button_label: "S'inscrire",
-                      },
-                    },
+                      sign_in: { email_label: "Email", password_label: "Mot de passe", button_label: "Se connecter" },
+                      sign_up: { email_label: "Email", password_label: "Mot de passe", button_label: "S'inscrire" },
+                    }
                   }}
                 />
               </TabsContent>
 
-              <TabsContent value="super_admin" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="mb-6 text-center">
-                  <p className="text-sm text-gray-500">Connexion réservée au Super Admin via lien magique.</p>
-                </div>
-
-                <div className="space-y-3">
+              <TabsContent value="super_admin" className="space-y-4 animate-in fade-in duration-300">
+                <Alert className="bg-orange-50 border-orange-200 text-orange-800 rounded-xl">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs font-medium">
+                    Accès réservé à l'administrateur principal.
+                  </AlertDescription>
+                </Alert>
+                <div className="space-y-2">
                   <Input
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
-                    placeholder="Email Super Admin"
+                    placeholder="admin@ballouagriconnect.com"
                     type="email"
-                    autoComplete="email"
-                    className="h-12 rounded-xl"
+                    className="h-12 rounded-xl border-orange-200 focus-visible:ring-orange-500"
                   />
                   <Button
-                    type="button"
-                    onClick={sendSuperAdminMagicLink}
+                    onClick={() => sendMagicLink(adminEmail, 'admin')}
                     disabled={sendingAdminLink}
                     className="w-full h-12 rounded-xl bg-orange-600 hover:bg-orange-700 font-black"
                   >
-                    {sendingAdminLink ? (
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    ) : (
-                      <Mail className="mr-2 h-5 w-5" />
-                    )}
-                    Envoyer le lien magique
+                    {sendingAdminLink ? <Loader2 className="animate-spin" /> : <Mail className="mr-2 h-5 w-5" />}
+                    Lien Magique Admin
                   </Button>
-
-                  <p className="text-[11px] text-gray-400 leading-relaxed">
-                    Redirection: <span className="font-mono">{redirectTo}</span>
-                  </p>
                 </div>
               </TabsContent>
             </Tabs>
