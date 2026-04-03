@@ -65,9 +65,8 @@ const AdminDashboard = () => {
 
   const updateOrderStatus = async (id: string, newStatus: string) => {
     setIsUpdating(id);
+    setDbError(null);
     try {
-      console.log(`[Admin] Tentative de mise à jour commande ${id} vers ${newStatus}`);
-      
       const { error, data } = await supabase
         .from('orders')
         .update({ 
@@ -77,23 +76,20 @@ const AdminDashboard = () => {
         .eq('id', id)
         .select();
 
-      if (error) {
-        console.error("[Admin] Erreur Supabase:", error);
-        throw new Error(error.message);
-      }
+      if (error) throw error;
 
       if (!data || data.length === 0) {
-        throw new Error("Aucune ligne mise à jour. Vérifiez vos permissions (RLS).");
+        throw new Error("La base de données a refusé la modification. Vérifiez vos droits RLS.");
       }
 
       showSuccess(`Statut mis à jour : ${newStatus}`);
       
-      // Mise à jour locale immédiate
+      // Mise à jour locale
       setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus, is_new: false } : o));
     } catch (err: any) {
-      console.error("[Admin] Erreur fatale:", err);
-      setDbError(`Erreur de permission : Votre compte n'a peut-être pas les droits d'écriture en base de données.`);
-      showError("Échec de la mise à jour. Vérifiez les logs.");
+      console.error("[Admin] Erreur:", err);
+      setDbError("Erreur de permission : Votre compte n'a pas les droits d'écriture.");
+      showError("Échec de la mise à jour.");
     } finally {
       setIsUpdating(null);
     }
@@ -137,9 +133,15 @@ const AdminDashboard = () => {
         </div>
 
         {dbError && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3 text-red-700 animate-pulse">
-            <AlertTriangle className="h-5 w-5 shrink-0" />
-            <p className="text-sm font-bold">{dbError}</p>
+          <div className="mb-6 p-6 bg-red-50 border-2 border-red-200 rounded-[2rem] flex flex-col gap-4 text-red-700">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-6 w-6 shrink-0" />
+              <p className="text-lg font-black">PROBLÈME DE PERMISSION DÉTECTÉ</p>
+            </div>
+            <p className="text-sm font-medium leading-relaxed">
+              Votre compte est reconnu comme Admin par l'interface, mais la base de données refuse les modifications. 
+              <br /><strong>Solution :</strong> Allez dans votre tableau de bord Supabase > SQL Editor et exécutez le script pour passer votre rôle en 'super_admin'.
+            </p>
           </div>
         )}
 
