@@ -140,7 +140,7 @@ const AdminDashboard = () => {
             </div>
             <p className="text-sm font-medium leading-relaxed">
               Votre compte est reconnu comme Admin par l'interface, mais la base de données refuse les modifications. 
-              <br /><strong>Solution :</strong> Allez dans votre tableau de bord Supabase > SQL Editor et exécutez le script pour passer votre rôle en 'super_admin'.
+              <br /><strong>Solution :</strong> Allez dans votre tableau de bord Supabase {" > "} SQL Editor et exécutez le script pour passer votre rôle en 'super_admin'.
             </p>
           </div>
         )}
