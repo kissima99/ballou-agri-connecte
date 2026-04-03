@@ -82,7 +82,7 @@ const Tracking = () => {
   };
 
   const handleSearch = async () => {
-    const trimmed = orderId.trim().toUpperCase();
+    const trimmed = orderId.trim();
     if (!trimmed) {
       showError("Veuillez entrer un numéro de commande.");
       return;
@@ -92,17 +92,12 @@ const Tracking = () => {
     setTrackingData(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        showError("Veuillez vous connecter pour suivre votre colis.");
-        return;
-      }
-
+      // Recherche insensible à la casse pour supporter tous les formats
       const { data, error } = await supabase
         .from('orders')
         .select('id,status,zone,created_at')
-        .eq('id', trimmed)
-        .single();
+        .ilike('id', trimmed)
+        .maybeSingle();
 
       if (error || !data) {
         showError("Commande introuvable. Vérifiez votre numéro.");
@@ -110,6 +105,8 @@ const Tracking = () => {
       }
 
       setTrackingData(buildSteps(data as OrderRow));
+    } catch (err) {
+      showError("Une erreur est survenue lors de la recherche.");
     } finally {
       setIsLoading(false);
     }
@@ -162,7 +159,7 @@ const Tracking = () => {
           <Input
             placeholder="Ex: BAC-7F92A"
             value={orderId}
-            onChange={(e) => setOrderId(e.target.value.toUpperCase())}
+            onChange={(e) => setOrderId(e.target.value)}
             className="bg-white border-green-200 focus-visible:ring-green-500 h-12 font-bold"
           />
           <Button
@@ -179,8 +176,8 @@ const Tracking = () => {
           <Card className="border-none shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-500">
             <CardHeader className="bg-green-700 text-white py-6">
               <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle className="text-xl">Commande {trackingData.id}</CardTitle>
+                <div className="max-w-[70%]">
+                  <CardTitle className="text-xl truncate">Commande {trackingData.id}</CardTitle>
                   <div className="flex items-center mt-1 text-green-100 text-sm font-medium">
                     <ArrowRightLeft className="mr-2 h-4 w-4" /> {trackingData.direction}
                     <span className="mx-2 opacity-60">•</span>
