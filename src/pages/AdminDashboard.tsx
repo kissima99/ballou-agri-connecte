@@ -16,7 +16,8 @@ import {
   CheckCircle,
   Truck,
   CreditCard,
-  Calendar
+  Calendar,
+  AlertTriangle
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
@@ -28,9 +29,11 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [dbError, setDbError] = useState<string | null>(null);
 
   const fetchOrders = async () => {
     setIsLoading(true);
+    setDbError(null);
     try {
       const { data, error } = await supabase
         .from('orders')
@@ -40,7 +43,8 @@ const AdminDashboard = () => {
       if (error) throw error;
       setOrders(data || []);
     } catch (err: any) {
-      showError("Erreur lors du chargement des commandes.");
+      console.error("[Admin] Erreur chargement:", err);
+      showError("Impossible de charger les commandes.");
     } finally {
       setIsLoading(false);
     }
@@ -62,46 +66,49 @@ const AdminDashboard = () => {
   const updateOrderStatus = async (id: string, newStatus: string) => {
     setIsUpdating(id);
     try {
-      // Mise à jour dans Supabase
-      const { error } = await supabase
+      console.log(`[Admin] Tentative de mise à jour commande ${id} vers ${newStatus}`);
+      
+      const { error, data } = await supabase
         .from('orders')
         .update({ 
           status: newStatus, 
-          is_new: false // On marque comme "lu/traité" dès qu'on change le statut
+          is_new: false 
         })
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("[Admin] Erreur Supabase:", error);
+        throw new Error(error.message);
+      }
 
-      showSuccess(`Commande ${id} : Statut mis à jour vers "${newStatus}"`);
+      if (!data || data.length === 0) {
+        throw new Error("Aucune ligne mise à jour. Vérifiez vos permissions (RLS).");
+      }
+
+      showSuccess(`Statut mis à jour : ${newStatus}`);
       
-      // Mise à jour immédiate de l'interface locale
-      setOrders(prevOrders => 
-        prevOrders.map(o => o.id === id ? { ...o, status: newStatus, is_new: false } : o)
-      );
+      // Mise à jour locale immédiate
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus, is_new: false } : o));
     } catch (err: any) {
-      showError("Erreur lors de la mise à jour du statut.");
-      console.error(err);
+      console.error("[Admin] Erreur fatale:", err);
+      setDbError(`Erreur de permission : Votre compte n'a peut-être pas les droits d'écriture en base de données.`);
+      showError("Échec de la mise à jour. Vérifiez les logs.");
     } finally {
       setIsUpdating(null);
     }
   };
 
   const deleteOrder = async (id: string) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement la commande ${id} ?`)) return;
+    if (!window.confirm(`Supprimer définitivement la commande ${id} ?`)) return;
 
     try {
-      const { error } = await supabase
-        .from('orders')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from('orders').delete().eq('id', id);
       if (error) throw error;
-
-      showSuccess(`Commande ${id} supprimée avec succès.`);
+      showSuccess("Commande supprimée.");
       setOrders(orders.filter(o => o.id !== id));
     } catch (err: any) {
-      showError("Erreur lors de la suppression de la commande.");
+      showError("Erreur lors de la suppression.");
     }
   };
 
@@ -129,6 +136,13 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
+        {dbError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3 text-red-700 animate-pulse">
+            <AlertTriangle className="h-5 w-5 shrink-0" />
+            <p className="text-sm font-bold">{dbError}</p>
+          </div>
+        )}
+
         <Card className="border-none shadow-2xl bg-white overflow-hidden rounded-[2rem]">
           <CardHeader className="border-b bg-stone-50/50 py-6 px-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -153,7 +167,7 @@ const AdminDashboard = () => {
                     <TableHead className="font-black text-gray-900">CLIENT</TableHead>
                     <TableHead className="font-black text-gray-900">MONTANT</TableHead>
                     <TableHead className="font-black text-gray-900">STATUT ACTUEL</TableHead>
-                    <TableHead className="font-black text-gray-900 text-right pr-8">ACTIONS DE VALIDATION</TableHead>
+                    <TableHead className="font-black text-gray-900 text-right pr-8">ACTIONS</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -189,16 +203,16 @@ const AdminDashboard = () => {
                         <TableCell className="text-right pr-8">
                           <div className="flex justify-end gap-2">
                             <Button 
-                              variant="outline" 
+                              variant={order.status === 'Payé' ? 'default' : 'outline'}
                               size="sm" 
                               disabled={isUpdating === order.id}
                               onClick={() => updateOrderStatus(order.id, 'Payé')} 
                               className={`rounded-xl h-9 px-3 font-bold transition-all ${order.status === 'Payé' ? 'bg-orange-600 text-white border-orange-600' : 'hover:border-orange-500 hover:text-orange-600'}`}
                             >
-                              <CreditCard className="w-3.5 h-3.5 mr-1.5" /> Payé
+                              {isUpdating === order.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CreditCard className="w-3.5 h-3.5 mr-1.5" />} Payé
                             </Button>
                             <Button 
-                              variant="outline" 
+                              variant={order.status === 'En cours' ? 'default' : 'outline'}
                               size="sm" 
                               disabled={isUpdating === order.id}
                               onClick={() => updateOrderStatus(order.id, 'En cours')} 
@@ -207,7 +221,7 @@ const AdminDashboard = () => {
                               <Truck className="w-3.5 h-3.5 mr-1.5" /> En cours
                             </Button>
                             <Button 
-                              variant="outline" 
+                              variant={order.status === 'Livré' ? 'default' : 'outline'}
                               size="sm" 
                               disabled={isUpdating === order.id}
                               onClick={() => updateOrderStatus(order.id, 'Livré')} 
