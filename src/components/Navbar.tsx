@@ -120,12 +120,6 @@ const Navbar = () => {
           <Link to="/feedback" className="text-sm font-bold text-gray-600 hover:text-orange-600 flex items-center transition-colors">
             <MessageSquare className="mr-1 h-4 w-4" /> Avis
           </Link>
-
-          {isSuperAdmin && (
-            <Link to="/admin" className="text-sm font-black text-orange-600 hover:text-orange-700 flex items-center transition-colors bg-orange-50 px-3 py-1 rounded-full">
-              <LayoutDashboard className="mr-1 h-4 w-4" /> ADMIN
-            </Link>
-          )}
         </div>
 
         <div className="flex items-center space-x-2 sm:space-x-4">
@@ -164,18 +158,18 @@ const Navbar = () => {
                   <p className="text-xs font-bold text-gray-900 truncate">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator />
-                {isSuperAdmin && (
-                  <DropdownMenuItem asChild className="rounded-lg cursor-pointer bg-orange-50 text-orange-700 focus:bg-orange-100 focus:text-orange-800 mb-1">
-                    <Link to="/admin" className="flex items-center font-bold">
-                      <ShieldCheck className="mr-2 h-4 w-4" /> Gérer les Commandes
-                    </Link>
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
                   <Link to="/purchase-history" className="flex items-center">
                     <History className="mr-2 h-4 w-4" /> Historique d'achats
                   </Link>
                 </DropdownMenuItem>
+                {isSuperAdmin && (
+                  <DropdownMenuItem asChild className="rounded-lg cursor-pointer bg-orange-50 text-orange-700 focus:bg-orange-100 focus:text-orange-800 mt-1">
+                    <Link to="/admin" className="flex items-center font-bold">
+                      <LayoutDashboard className="mr-2 h-4 w-4" /> Gérer les Commandes (Admin)
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer rounded-lg focus:bg-red-50 focus:text-red-700">
                   <LogOut className="mr-2 h-4 w-4" /> Déconnexion
