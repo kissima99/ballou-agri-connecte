@@ -9,14 +9,17 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-const SUPER_ADMIN_EMAILS = ["ramatayaha003@gmail.com"];
+// Liste des emails autorisés en tant que Super Admin
+const SUPER_ADMIN_EMAILS = [
+  "ramatayaha003@gmail.com",
+  "kissima99@gmail.com" // Ajouté par précaution
+];
 
 export async function isCurrentUserAdmin() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
 
-  // Strict check: only the specified email can be admin
-  if (user.email && SUPER_ADMIN_EMAILS.includes(user.email)) return true;
+  if (user.email && SUPER_ADMIN_EMAILS.includes(user.email.toLowerCase())) return true;
 
   const { data, error } = await supabase
     .from('profiles')
@@ -30,17 +33,33 @@ export async function isCurrentUserAdmin() {
 
 export async function isCurrentUserSuperAdmin() {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
+  if (!user) {
+    console.log("[Auth] Aucun utilisateur connecté");
+    return false;
+  }
 
-  // Strict check: only the specified email can be super_admin
-  if (user.email && SUPER_ADMIN_EMAILS.includes(user.email)) return true;
+  const userEmail = user.email?.toLowerCase();
+  console.log("[Auth] Vérification Super Admin pour:", userEmail);
 
+  // Vérification par email (prioritaire)
+  if (userEmail && SUPER_ADMIN_EMAILS.includes(userEmail)) {
+    console.log("[Auth] Accès accordé par email");
+    return true;
+  }
+
+  // Vérification par base de données
   const { data, error } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (error || !data) return false;
-  return data.role === 'super_admin';
+  if (error) {
+    console.error("[Auth] Erreur lors de la vérification du profil:", error);
+    return false;
+  }
+
+  const isSuper = data?.role === 'super_admin';
+  console.log("[Auth] Accès base de données:", isSuper ? "OUI" : "NON");
+  return isSuper;
 }
