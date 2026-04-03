@@ -62,17 +62,26 @@ const AdminDashboard = () => {
   const updateOrderStatus = async (id: string, newStatus: string) => {
     setIsUpdating(id);
     try {
+      // Mise à jour dans Supabase
       const { error } = await supabase
         .from('orders')
-        .update({ status: newStatus, is_new: false })
+        .update({ 
+          status: newStatus, 
+          is_new: false // On marque comme "lu/traité" dès qu'on change le statut
+        })
         .eq('id', id);
 
       if (error) throw error;
 
       showSuccess(`Commande ${id} : Statut mis à jour vers "${newStatus}"`);
-      setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus, is_new: false } : o));
+      
+      // Mise à jour immédiate de l'interface locale
+      setOrders(prevOrders => 
+        prevOrders.map(o => o.id === id ? { ...o, status: newStatus, is_new: false } : o)
+      );
     } catch (err: any) {
       showError("Erreur lors de la mise à jour du statut.");
+      console.error(err);
     } finally {
       setIsUpdating(null);
     }
@@ -98,7 +107,7 @@ const AdminDashboard = () => {
 
   const filteredOrders = orders.filter(order =>
     order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (order.customer_name && order.customer_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (order.phone && order.phone.includes(searchTerm))
   );
 
@@ -169,7 +178,7 @@ const AdminDashboard = () => {
                             <span className="text-xs text-gray-500 font-medium">{order.phone}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="font-black text-gray-900">{order.amount.toLocaleString()} FCFA</TableCell>
+                        <TableCell className="font-black text-gray-900">{order.amount?.toLocaleString()} FCFA</TableCell>
                         <TableCell>
                           <Badge className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border-none ${
                             (order.status === 'Attente Paiement' || order.status === 'Attente de validation admin') ? 'bg-red-100 text-red-700' :
