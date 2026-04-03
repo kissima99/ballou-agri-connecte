@@ -13,7 +13,10 @@ import {
   Bell,
   Loader2,
   RefreshCw,
-  Trash2
+  Trash2,
+  CheckCircle,
+  Truck,
+  CreditCard
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
@@ -51,8 +54,7 @@ const AdminDashboard = () => {
         setNewOrdersCount(formattedOrders.filter((o: any) => o.isNew).length);
       }
     } catch (err: any) {
-      console.error("Admin fetch error:", err);
-      showError("Accès refusé ou erreur lors du chargement des commandes.");
+      showError("Erreur lors du chargement des commandes.");
       navigate('/');
     } finally {
       setIsLoading(false);
@@ -67,25 +69,9 @@ const AdminDashboard = () => {
         navigate('/');
         return;
       }
-
       await fetchOrders();
-
-      const channel = supabase
-        .channel('admin_realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-          fetchOrders();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     };
-
-    const cleanupPromise = boot();
-    return () => {
-      void cleanupPromise;
-    };
+    boot();
   }, [navigate]);
 
   const updateOrderStatus = async (id: string, newStatus: string) => {
@@ -97,15 +83,16 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      showSuccess(`Commande ${id} mise à jour.`);
-      fetchOrders();
+      showSuccess(`Commande ${id} passée en statut : ${newStatus}`);
+      // Mise à jour locale pour éviter un rechargement complet
+      setOrders(orders.map(o => o.id === id ? { ...o, status: newStatus, isNew: false } : o));
     } catch (err: any) {
       showError("Erreur de mise à jour.");
     }
   };
 
   const deleteOrder = async (id: string) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement la commande ${id} ?`)) return;
+    if (!window.confirm(`Supprimer définitivement la commande ${id} ?`)) return;
 
     try {
       const { error } = await supabase
@@ -115,10 +102,10 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      showSuccess(`Commande ${id} supprimée avec succès.`);
-      fetchOrders();
+      showSuccess(`Commande ${id} supprimée.`);
+      setOrders(orders.filter(o => o.id !== id));
     } catch (err: any) {
-      showError("Erreur lors de la suppression de la commande.");
+      showError("Erreur lors de la suppression.");
     }
   };
 
@@ -127,13 +114,6 @@ const AdminDashboard = () => {
     order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (order.phone && order.phone.includes(searchTerm))
   );
-
-  const stats = {
-    total: orders.length,
-    pendingPayment: orders.filter(o => o.status === "Attente Paiement" || o.status === "Attente de validation admin").length,
-    pendingShipment: orders.filter(o => o.status === "Payé").length,
-    completed: orders.filter(o => o.status === "Livré").length,
-  };
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -145,66 +125,22 @@ const AdminDashboard = () => {
               <LayoutDashboard className="h-8 w-8 text-orange-600" />
               Super Admin
             </h1>
-            <p className="text-gray-500 font-medium">Gestion des commandes</p>
+            <p className="text-gray-500 font-medium">Gestion des flux et commandes</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={fetchOrders}
-              className="rounded-xl border-stone-200 bg-white h-12 px-6 font-bold"
-              disabled={isLoading}
-            >
-              {isLoading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <RefreshCw className="h-5 w-5 mr-2" />}
-              RAFRAÎCHIR
-            </Button>
-            <div className="relative">
-              <Button variant="outline" className="rounded-xl h-12 w-12 p-0 border-stone-200 bg-white">
-                <Bell className={`h-6 w-6 ${newOrdersCount > 0 ? 'text-orange-600 animate-pulse' : 'text-gray-400'}`} />
-                {newOrdersCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full">
-                    {newOrdersCount}
-                  </span>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-          <Card className="border-none shadow-sm bg-white">
-            <CardContent className="pt-6">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Total</p>
-              <h3 className="text-3xl font-black text-gray-900">{stats.total}</h3>
-            </CardContent>
-          </Card>
-          <Card className="border-none shadow-sm bg-white border-l-4 border-l-red-500">
-            <CardContent className="pt-6">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Attente Paiement</p>
-              <h3 className="text-3xl font-black text-red-600">{stats.pendingPayment}</h3>
-            </CardContent>
-          </Card>
-          <Card className="border-none shadow-sm bg-white border-l-4 border-l-orange-500">
-            <CardContent className="pt-6">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">À Expédier</p>
-              <h3 className="text-3xl font-black text-orange-600">{stats.pendingShipment}</h3>
-            </CardContent>
-          </Card>
-          <Card className="border-none shadow-sm bg-white border-l-4 border-l-green-500">
-            <CardContent className="pt-6">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Livrées</p>
-              <h3 className="text-3xl font-black text-green-600">{stats.completed}</h3>
-            </CardContent>
-          </Card>
+          <Button variant="outline" onClick={fetchOrders} className="rounded-xl h-12 px-6 font-bold" disabled={isLoading}>
+            {isLoading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <RefreshCw className="h-5 w-5 mr-2" />}
+            ACTUALISER
+          </Button>
         </div>
 
         <Card className="border-none shadow-xl bg-white overflow-hidden rounded-3xl">
           <CardHeader className="border-b bg-stone-50/50 py-6">
             <div className="flex flex-col md:flex-row justify-between gap-4">
-              <CardTitle className="text-xl font-bold">Commandes Récentes</CardTitle>
+              <CardTitle className="text-xl font-bold">Toutes les commandes</CardTitle>
               <div className="relative w-full md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Rechercher..."
+                  placeholder="ID, Nom ou Téléphone..."
                   className="pl-10 h-10 rounded-xl border-stone-200"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -216,20 +152,25 @@ const AdminDashboard = () => {
             <Table>
               <TableHeader className="bg-stone-50">
                 <TableRow className="hover:bg-transparent border-stone-100">
-                  <TableHead className="font-bold text-gray-900 py-4 pl-6">ID</TableHead>
-                  <TableHead className="font-bold text-gray-900">Client</TableHead>
-                  <TableHead className="font-bold text-gray-900">Montant</TableHead>
-                  <TableHead className="font-bold text-gray-900">Statut</TableHead>
-                  <TableHead className="font-bold text-gray-900 text-right pr-6">Actions</TableHead>
+                  <TableHead className="font-bold text-gray-900 py-4 pl-6">ID / DATE</TableHead>
+                  <TableHead className="font-bold text-gray-900">CLIENT</TableHead>
+                  <TableHead className="font-bold text-gray-900">MONTANT</TableHead>
+                  <TableHead className="font-bold text-gray-900">STATUT</TableHead>
+                  <TableHead className="font-bold text-gray-900 text-right pr-6">ACTIONS DE STATUT</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredOrders.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-20 text-gray-400 font-medium">Aucune commande trouvée.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center py-20 text-gray-400 font-medium">Aucune commande.</TableCell></TableRow>
                 ) : (
                   filteredOrders.map((order) => (
                     <TableRow key={order.id} className={`border-stone-50 hover:bg-stone-50/50 transition-colors ${order.isNew ? 'bg-orange-50/30' : ''}`}>
-                      <TableCell className="font-black text-orange-600 pl-6">{order.id}</TableCell>
+                      <TableCell className="pl-6">
+                        <div className="flex flex-col">
+                          <span className="font-black text-orange-600">{order.id}</span>
+                          <span className="text-[10px] text-gray-400">{new Date(order.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-bold text-gray-900">{order.customer}</span>
@@ -246,10 +187,31 @@ const AdminDashboard = () => {
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" onClick={() => updateOrderStatus(order.id, 'Payé')} className="rounded-xl">Payé</Button>
-                          <Button variant="outline" size="sm" onClick={() => updateOrderStatus(order.id, 'En cours')} className="rounded-xl">En cours</Button>
-                          <Button variant="outline" size="sm" onClick={() => updateOrderStatus(order.id, 'Livré')} className="rounded-xl">Livré</Button>
-                          <Button variant="destructive" size="sm" onClick={() => deleteOrder(order.id)} className="rounded-xl">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => updateOrderStatus(order.id, 'Payé')} 
+                            className={`rounded-xl h-9 px-3 font-bold ${order.status === 'Payé' ? 'bg-orange-50 border-orange-500 text-orange-700' : ''}`}
+                          >
+                            <CreditCard className="w-3.5 h-3.5 mr-1.5" /> Payé
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => updateOrderStatus(order.id, 'En cours')} 
+                            className={`rounded-xl h-9 px-3 font-bold ${order.status === 'En cours' ? 'bg-blue-50 border-blue-500 text-blue-700' : ''}`}
+                          >
+                            <Truck className="w-3.5 h-3.5 mr-1.5" /> En cours
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => updateOrderStatus(order.id, 'Livré')} 
+                            className={`rounded-xl h-9 px-3 font-bold ${order.status === 'Livré' ? 'bg-green-50 border-green-500 text-green-700' : ''}`}
+                          >
+                            <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Livré
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => deleteOrder(order.id)} className="rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
