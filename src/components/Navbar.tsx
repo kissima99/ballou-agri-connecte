@@ -6,7 +6,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { supabase, isCurrentUserSuperAdmin } from '@/integrations/supabase/client';
 
 // Lucide icons
-import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText, ShieldCheck, LayoutDashboard } from 'lucide-react';
+import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText, ShieldCheck, LayoutDashboard, Bike } from 'lucide-react';
 
 // Shadcn UI components
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -29,7 +29,6 @@ const Navbar = () => {
       const currentUser = session?.user || null;
       setUser(currentUser);
       
-      // Vérification immédiate par email pour plus de rapidité
       if (currentUser?.email === "ramatayaha003@gmail.com") {
         setIsSuperAdmin(true);
       } else {
@@ -106,6 +105,11 @@ const Navbar = () => {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
+                <Link to="/thiak-thiak" className="flex items-center py-2">
+                  <Bike className="mr-2 h-4 w-4 text-orange-600" /> Allo Thiak-Thiak
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
                 <Link to="/tracking" className="flex items-center py-2">
                   <Truck className="mr-2 h-4 w-4 text-orange-600" /> Suivi Colis
                 </Link>
@@ -123,6 +127,10 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-2 sm:space-x-4">
+          <Button asChild variant="ghost" size="icon" className="rounded-full bg-orange-50 text-orange-600 hover:bg-orange-100 lg:hidden">
+            <Link to="/thiak-thiak"><Bike className="h-5 w-5" /></Link>
+          </Button>
+
           {lastOrderId && (
             <Button
               variant="outline"
