@@ -20,7 +20,8 @@ import {
   Calendar,
   AlertTriangle,
   MapPin,
-  Navigation
+  Navigation,
+  Banknote
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
@@ -248,7 +249,7 @@ const AdminDashboard = () => {
                     <TableRow className="hover:bg-transparent border-stone-100">
                       <TableHead className="font-black text-gray-900 py-5 pl-8">TRAJET</TableHead>
                       <TableHead className="font-black text-gray-900">CLIENT / CHAUFFEUR</TableHead>
-                      <TableHead className="font-black text-gray-900">PRIX</TableHead>
+                      <TableHead className="font-black text-gray-900">PRIX / PAIEMENT</TableHead>
                       <TableHead className="font-black text-gray-900">STATUT</TableHead>
                       <TableHead className="font-black text-gray-900 text-right pr-8">ACTIONS</TableHead>
                     </TableRow>
@@ -282,7 +283,14 @@ const AdminDashboard = () => {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-black text-orange-600">{ride.price} F</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-black text-orange-600">À partir de {ride.price} F</span>
+                            <div className="flex items-center gap-1 text-[9px] font-black text-green-600 uppercase">
+                              <Banknote className="h-2.5 w-2.5" /> Cash après course
+                            </div>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge className={`rounded-full px-3 py-1 text-[10px] font-black uppercase ${
                             ride.status === 'pending' ? 'bg-red-100 text-red-700' :

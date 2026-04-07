@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Navigation, Phone, Loader2, AlertCircle } from 'lucide-react';
+import { MapPin, Navigation, Phone, Loader2, AlertCircle, Banknote } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
 
@@ -95,6 +95,9 @@ const DriverDashboard = ({ user, profile }: { user: any, profile: any }) => {
               <h4 className="text-xl font-black">{activeRide.client?.full_name || "Client"}</h4>
               <Button asChild variant="outline"><a href={`tel:${activeRide.client?.phone_number}`}><Phone className="w-4 h-4 mr-2" /> Appeler</a></Button>
             </div>
+            <div className="bg-orange-50 p-3 rounded-xl flex items-center gap-2 text-orange-700 font-bold text-sm">
+              <Banknote className="h-4 w-4" /> Paiement Cash à la fin
+            </div>
             <div className="grid grid-cols-2 gap-3">
               {activeRide.status === 'accepted' && <Button onClick={() => updateStatus(activeRide.id, 'picked_up')} className="bg-blue-600">RÉCUPÉRÉ</Button>}
               {activeRide.status === 'picked_up' && <Button onClick={() => updateStatus(activeRide.id, 'completed')} className="bg-green-600 col-span-2">TERMINER</Button>}
@@ -109,8 +112,17 @@ const DriverDashboard = ({ user, profile }: { user: any, profile: any }) => {
           <Card key={ride.id} className="border-none shadow-md rounded-3xl bg-white">
             <CardContent className="p-6">
               <div className="flex justify-between mb-4">
-                <span>{ride.pickup_location} → {ride.destination}</span>
-                <span className="font-black text-orange-600">{ride.price} F</span>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-gray-400 uppercase">Trajet</span>
+                  <span className="font-bold">{ride.pickup_location} → {ride.destination}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs font-bold text-gray-400 uppercase">Prix</span>
+                  <p className="font-black text-orange-600">À partir de {ride.price} F</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-[10px] font-black text-green-600 uppercase mb-4">
+                <Banknote className="h-3 w-3" /> Paiement Cash après course
               </div>
               <Button onClick={() => acceptRide(ride.id)} disabled={!!activeRide} className="w-full bg-green-600 font-black">ACCEPTER</Button>
             </CardContent>

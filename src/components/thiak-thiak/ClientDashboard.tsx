@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Navigation, Phone, Loader2, CheckCircle2, MessageCircle } from 'lucide-react';
+import { MapPin, Navigation, Phone, Loader2, CheckCircle2, MessageCircle, Banknote, Info } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
 
@@ -61,6 +61,8 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
         `*Nouvelle Commande Thiak-Thiak*\n\n` +
         `*Départ:* ${pickup}\n` +
         `*Destination:* ${destination}\n\n` +
+        `*Tarif:* À partir de 500 FCFA (Ballou) / À discuter (Hors Ballou)\n` +
+        `*Paiement:* Cash après la course\n\n` +
         `Merci de me confirmer la disponibilité d'un chauffeur.`
       );
       window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
@@ -111,6 +113,11 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
             </div>
           </div>
 
+          <div className="bg-green-50 border border-green-100 p-4 rounded-2xl flex items-center gap-3 text-green-800">
+            <Banknote className="h-5 w-5 shrink-0" />
+            <p className="text-sm font-bold">Paiement : Cash après la course</p>
+          </div>
+
           {activeRide.driver ? (
             <div className="p-6 border-2 border-green-100 rounded-3xl bg-green-50/30">
               <div className="flex items-center justify-between mb-4">
@@ -145,6 +152,25 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
         <CardTitle className="text-xl">Où allez-vous ?</CardTitle>
       </CardHeader>
       <CardContent className="p-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100">
+            <div className="flex items-center gap-2 text-orange-600 mb-1">
+              <Banknote className="h-4 w-4" />
+              <span className="text-xs font-black uppercase tracking-widest">Tarif Ballou</span>
+            </div>
+            <p className="text-lg font-black text-gray-900">À partir de 500 FCFA</p>
+            <p className="text-[10px] text-gray-400 font-bold uppercase">Hors Ballou : À discuter</p>
+          </div>
+          <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100">
+            <div className="flex items-center gap-2 text-green-600 mb-1">
+              <Info className="h-4 w-4" />
+              <span className="text-xs font-black uppercase tracking-widest">Paiement</span>
+            </div>
+            <p className="text-lg font-black text-gray-900">Cash après course</p>
+            <p className="text-[10px] text-gray-400 font-bold uppercase">Directement au livreur</p>
+          </div>
+        </div>
+
         <form onSubmit={handleRequestRide} className="space-y-6">
           <div className="space-y-2">
             <Label className="font-bold text-gray-700">Départ</Label>
