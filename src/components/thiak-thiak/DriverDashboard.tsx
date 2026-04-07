@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Navigation, Phone, Loader2, AlertCircle, Banknote } from 'lucide-react';
+import { MapPin, Navigation, Phone, Loader2, AlertCircle, Banknote, Truck } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
 
@@ -86,14 +86,17 @@ const DriverDashboard = ({ user, profile }: { user: any, profile: any }) => {
         <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden border-2 border-green-500">
           <CardHeader className="bg-green-600 text-white p-6">
             <CardTitle className="text-lg flex items-center justify-between">
-              Course Active
+              <div className="flex items-center gap-2">
+                {activeRide.service_type === "MOTO-TAXI" ? <MotorcycleIcon className="w-6 h-6 bg-white p-1 rounded" /> : <Truck className="w-6 h-6 bg-white p-1 rounded text-green-600" />}
+                <span>{activeRide.service_type}</span>
+              </div>
               <Badge className="bg-white/20 text-white border-none">{activeRide.status}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-4">
             <div className="flex justify-between">
-              <h4 className="text-xl font-black">{activeRide.client?.full_name || "Client"}</h4>
-              <Button asChild variant="outline"><a href={`tel:${activeRide.client?.phone_number}`}><Phone className="w-4 h-4 mr-2" /> Appeler</a></Button>
+              <h4 className="text-xl font-black">{activeRide.client?.full_name || activeRide.customer_name || "Client"}</h4>
+              <Button asChild variant="outline"><a href={`tel:${activeRide.client?.phone_number || activeRide.phone}`}><Phone className="w-4 h-4 mr-2" /> Appeler</a></Button>
             </div>
             <div className="bg-orange-50 p-3 rounded-xl flex items-center gap-2 text-orange-700 font-bold text-sm">
               <Banknote className="h-4 w-4" /> Paiement Cash à la fin
@@ -113,12 +116,15 @@ const DriverDashboard = ({ user, profile }: { user: any, profile: any }) => {
             <CardContent className="p-6">
               <div className="flex justify-between mb-4">
                 <div className="flex flex-col">
-                  <span className="text-xs font-bold text-gray-400 uppercase">Trajet</span>
+                  <div className="flex items-center gap-2 mb-1">
+                    {ride.service_type === "MOTO-TAXI" ? <MotorcycleIcon className="w-4 h-4" /> : <Truck className="w-4 h-4 text-blue-600" />}
+                    <span className="text-xs font-black uppercase text-gray-400">{ride.service_type}</span>
+                  </div>
                   <span className="font-bold">{ride.pickup_location} → {ride.destination}</span>
                 </div>
                 <div className="text-right">
                   <span className="text-xs font-bold text-gray-400 uppercase">Prix</span>
-                  <p className="font-black text-orange-600">À partir de {ride.price} F</p>
+                  <p className="font-black text-orange-600">{ride.price} F</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 text-[10px] font-black text-green-600 uppercase mb-4">

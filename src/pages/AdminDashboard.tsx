@@ -48,21 +48,14 @@ const AdminDashboard = () => {
     setIsLoading(true);
     setDbError(null);
     try {
-      console.log("[Admin] Début de la récupération des données...");
-      
-      // 1. Récupération des Commandes
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (ordersError) {
-        console.error("[Admin] Erreur Orders:", ordersError);
-        throw ordersError;
-      }
+      if (ordersError) throw ordersError;
       setOrders(ordersData || []);
 
-      // 2. Récupération des Courses Thiak-Thiak
       const { data: ridesData, error: ridesError } = await supabase
         .from('rides')
         .select(`
@@ -72,16 +65,10 @@ const AdminDashboard = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (ridesError) {
-        console.error("[Admin] Erreur Rides:", ridesError);
-        throw ridesError;
-      }
-      
-      console.log("[Admin] Courses récupérées:", ridesData?.length || 0);
+      if (ridesError) throw ridesError;
       setRides(ridesData || []);
 
     } catch (err: any) {
-      console.error("[Admin] Erreur globale fetchData:", err);
       const message = err.message || "Problème de connexion";
       setDbError(message);
       showError("Erreur lors du chargement : " + message);
@@ -264,7 +251,7 @@ const AdminDashboard = () => {
                 <Table>
                   <TableHeader className="bg-stone-50">
                     <TableRow className="hover:bg-transparent border-stone-100">
-                      <TableHead className="font-black text-gray-900 py-5 pl-8">TRAJET</TableHead>
+                      <TableHead className="font-black text-gray-900 py-5 pl-8">TRAJET / SERVICE</TableHead>
                       <TableHead className="font-black text-gray-900">CLIENT / CHAUFFEUR</TableHead>
                       <TableHead className="font-black text-gray-900">PRIX / PAIEMENT</TableHead>
                       <TableHead className="font-black text-gray-900">STATUT</TableHead>
@@ -280,6 +267,9 @@ const AdminDashboard = () => {
                       <TableRow key={ride.id} className="border-stone-50">
                         <TableCell className="pl-8 py-5">
                           <div className="flex flex-col gap-1">
+                            <Badge className={`w-fit text-[9px] font-black mb-1 ${ride.service_type === 'MOTO-TAXI' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                              {ride.service_type}
+                            </Badge>
                             <div className="flex items-center gap-2 text-xs font-bold text-gray-900">
                               <MapPin className="h-3 w-3 text-red-500" /> {ride.pickup_location}
                             </div>
@@ -309,7 +299,7 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="font-black text-orange-600">À partir de {ride.price} F</span>
+                            <span className="font-black text-orange-600">{ride.price} F</span>
                             <div className="flex items-center gap-1 text-[9px] font-black text-green-600 uppercase">
                               <Banknote className="h-2.5 w-2.5" /> Cash après course
                             </div>

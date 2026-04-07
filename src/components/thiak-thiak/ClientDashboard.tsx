@@ -6,13 +6,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Navigation, Phone, Loader2, CheckCircle2, Banknote, Info, User as UserIcon } from 'lucide-react';
+import { MapPin, Navigation, Phone, Loader2, CheckCircle2, Banknote, Info, User as UserIcon, Truck } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
+
+// Icône personnalisée pour Wotoro (Charrette/Transport marchandise)
+const WotoroIcon = ({ className }: { className?: string }) => (
+  <Truck className={className} />
+);
+
+// Image de la moto de livraison rouge (Thiak-Thiak)
+const MotorcycleIcon = ({ className }: { className?: string }) => (
+  <img 
+    src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" 
+    alt="Moto Thiak-Thiak" 
+    className={className}
+    style={{ filter: 'hue-rotate(340deg) saturate(5)' }}
+  />
+);
 
 const ClientDashboard = ({ user }: { user: any, profile: any }) => {
   const [pickup, setPickup] = useState("");
   const [destination, setDestination] = useState("");
+  const [serviceType, setServiceType] = useState<"MOTO-TAXI" | "WOTORO-TIGUI">("MOTO-TAXI");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,7 +86,8 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
         phone: user ? null : customerPhone,
         pickup_location: pickup,
         destination: destination,
-        price: 500,
+        service_type: serviceType,
+        price: serviceType === "MOTO-TAXI" ? 500 : 1000, // Prix de base différent
         status: 'pending'
       };
 
@@ -80,15 +97,20 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
 
       if (error) throw error;
       
-      showSuccess("Demande envoyée au Super Admin !");
+      showSuccess("Demande envoyée !");
       setPickup("");
       setDestination("");
       setCustomerName("");
       setCustomerPhone("");
       
       if (!user) {
-        // Pour les anonymes, on affiche un message de confirmation spécial
-        setActiveRide({ status: 'pending', pickup_location: pickup, destination: destination, is_anonymous: true });
+        setActiveRide({ 
+          status: 'pending', 
+          pickup_location: pickup, 
+          destination: destination, 
+          service_type: serviceType,
+          is_anonymous: true 
+        });
       }
     } catch (err: any) {
       showError(err.message);
@@ -102,7 +124,10 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
       <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
         <CardHeader className="bg-orange-600 text-white p-8">
           <CardTitle className="flex items-center justify-between">
-            <span>{activeRide.is_anonymous ? "Demande envoyée" : "Course en cours"}</span>
+            <div className="flex items-center gap-3">
+              {activeRide.service_type === "MOTO-TAXI" ? <MotorcycleIcon className="w-8 h-8 bg-white p-1 rounded-lg" /> : <WotoroIcon className="w-8 h-8 bg-white p-1 rounded-lg text-orange-600" />}
+              <span>{activeRide.service_type}</span>
+            </div>
             <Badge className="bg-white/20 text-white border-white/30 uppercase text-[10px]">
               {activeRide.status}
             </Badge>
@@ -162,26 +187,42 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
   return (
     <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
       <CardHeader className="bg-orange-900 text-white p-8">
-        <CardTitle className="text-xl">Où allez-vous ?</CardTitle>
+        <CardTitle className="text-xl">Choisissez votre transport</CardTitle>
       </CardHeader>
       <CardContent className="p-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100">
-            <div className="flex items-center gap-2 text-orange-600 mb-1">
-              <Banknote className="h-4 w-4" />
-              <span className="text-xs font-black uppercase tracking-widest">Tarif Ballou</span>
+        {/* Sélection du type de service */}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <button
+            type="button"
+            onClick={() => setServiceType("MOTO-TAXI")}
+            className={`flex flex-col items-center justify-center p-6 rounded-[2rem] border-2 transition-all ${
+              serviceType === "MOTO-TAXI" 
+                ? "border-orange-600 bg-orange-50 shadow-lg scale-105" 
+                : "border-stone-100 bg-white hover:border-orange-200"
+            }`}
+          >
+            <div className={`p-4 rounded-2xl mb-3 ${serviceType === "MOTO-TAXI" ? "bg-orange-600 text-white" : "bg-stone-100 text-stone-400"}`}>
+              <MotorcycleIcon className="w-10 h-10" />
             </div>
-            <p className="text-lg font-black text-gray-900">À partir de 500 FCFA</p>
-            <p className="text-[10px] text-gray-400 font-bold uppercase">Hors Ballou : À discuter</p>
-          </div>
-          <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100">
-            <div className="flex items-center gap-2 text-green-600 mb-1">
-              <Info className="h-4 w-4" />
-              <span className="text-xs font-black uppercase tracking-widest">Paiement</span>
+            <span className={`font-black text-sm ${serviceType === "MOTO-TAXI" ? "text-orange-900" : "text-stone-400"}`}>MOTO-TAXI</span>
+            <span className="text-[10px] font-bold text-orange-600 mt-1">Dès 500 F</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setServiceType("WOTORO-TIGUI")}
+            className={`flex flex-col items-center justify-center p-6 rounded-[2rem] border-2 transition-all ${
+              serviceType === "WOTORO-TIGUI" 
+                ? "border-blue-600 bg-blue-50 shadow-lg scale-105" 
+                : "border-stone-100 bg-white hover:border-blue-200"
+            }`}
+          >
+            <div className={`p-4 rounded-2xl mb-3 ${serviceType === "WOTORO-TIGUI" ? "bg-blue-600 text-white" : "bg-stone-100 text-stone-400"}`}>
+              <WotoroIcon className="w-10 h-10" />
             </div>
-            <p className="text-lg font-black text-gray-900">Cash après course</p>
-            <p className="text-[10px] text-gray-400 font-bold uppercase">Directement au livreur</p>
-          </div>
+            <span className={`font-black text-sm ${serviceType === "WOTORO-TIGUI" ? "text-blue-900" : "text-stone-400"}`}>WOTORO-TIGUI</span>
+            <span className="text-[10px] font-bold text-blue-600 mt-1">Marchandises</span>
+          </button>
         </div>
 
         <form onSubmit={handleRequestRide} className="space-y-6">
@@ -222,8 +263,16 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
             <Label className="font-bold text-gray-700">Destination</Label>
             <Input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Ex: Gare routière" className="h-14 rounded-2xl" required />
           </div>
-          <Button type="submit" disabled={isSubmitting} className="w-full h-16 bg-orange-600 font-black text-xl rounded-2xl shadow-lg hover:bg-orange-700 transition-all">
-            {isSubmitting ? <Loader2 className="animate-spin" /> : "COMMANDER LA COURSE"}
+          
+          <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100 flex items-center gap-3 text-gray-500">
+            <Info className="h-5 w-5 text-orange-500" />
+            <p className="text-xs font-medium">Paiement cash après la course. Prix à discuter pour les trajets hors Ballou.</p>
+          </div>
+
+          <Button type="submit" disabled={isSubmitting} className={`w-full h-16 font-black text-xl rounded-2xl shadow-lg transition-all ${
+            serviceType === "MOTO-TAXI" ? "bg-orange-600 hover:bg-orange-700" : "bg-blue-600 hover:bg-blue-700"
+          }`}>
+            {isSubmitting ? <Loader2 className="animate-spin" /> : `COMMANDER ${serviceType}`}
           </Button>
         </form>
       </CardContent>
