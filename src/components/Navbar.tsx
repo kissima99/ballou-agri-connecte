@@ -77,6 +77,15 @@ const Navbar = () => {
     window.dispatchEvent(new Event('storage'));
   };
 
+  // Illustration de scooter de livraison (style celui de l'image)
+  const DeliveryScooterIcon = () => (
+    <img 
+      src="https://cdn-icons-png.flaticon.com/512/2972/2972185.png" 
+      alt="Allo Thiak-Thiak" 
+      className="w-8 h-8 object-contain"
+    />
+  );
+
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="container flex items-center justify-between px-4 h-16">
@@ -106,7 +115,7 @@ const Navbar = () => {
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="rounded-xl cursor-pointer bg-orange-50 text-orange-700 font-bold">
                 <Link to="/thiak-thiak" className="flex items-center py-2">
-                  <Bike className="mr-2 h-5 w-5 text-orange-600 animate-bounce" /> Allo Thiak-Thiak
+                  <div className="mr-2"><DeliveryScooterIcon /></div> Allo Thiak-Thiak
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
@@ -127,11 +136,11 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-2 sm:space-x-4">
-          {/* Bouton Thiak-Thiak ultra-visible */}
-          <Button asChild variant="default" size="sm" className="rounded-full bg-orange-600 hover:bg-orange-700 text-white font-black shadow-lg shadow-orange-200 animate-pulse-slow px-4 h-10">
+          {/* Bouton Allo Thiak-Thiak ultra-visible avec illustration */}
+          <Button asChild variant="default" size="sm" className="rounded-full bg-white border-2 border-orange-500 hover:bg-orange-50 text-orange-600 font-black shadow-lg shadow-orange-100 animate-pulse-slow px-2 sm:px-4 h-11">
             <Link to="/thiak-thiak" className="flex items-center gap-2">
-              <Bike className="h-5 w-5" />
-              <span className="hidden sm:inline text-xs">THIAK-THIAK</span>
+              <DeliveryScooterIcon />
+              <span className="hidden sm:inline text-[10px] font-black tracking-tighter">ALLO THIAK-THIAK</span>
             </Link>
           </Button>
 
@@ -172,7 +181,7 @@ const Navbar = () => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
                   <Link to="/thiak-thiak" className="flex items-center font-bold text-orange-600">
-                    <Bike className="mr-2 h-4 w-4" /> Allo Thiak-Thiak
+                    <div className="mr-2 scale-75"><DeliveryScooterIcon /></div> Allo Thiak-Thiak
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
