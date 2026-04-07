@@ -104,9 +104,9 @@ const Navbar = () => {
                   <Package className="mr-2 h-4 w-4 text-blue-600" /> Produits de Dakar
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
+              <DropdownMenuItem asChild className="rounded-xl cursor-pointer bg-orange-50 text-orange-700 font-bold">
                 <Link to="/thiak-thiak" className="flex items-center py-2">
-                  <Bike className="mr-2 h-4 w-4 text-orange-600" /> Allo Thiak-Thiak
+                  <Bike className="mr-2 h-5 w-5 text-orange-600 animate-bounce" /> Allo Thiak-Thiak
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
@@ -127,9 +127,12 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-2 sm:space-x-4">
-          {/* Bouton Thiak-Thiak rapide pour mobile et desktop */}
-          <Button asChild variant="ghost" size="icon" className="rounded-full bg-orange-50 text-orange-600 hover:bg-orange-100">
-            <Link to="/thiak-thiak" title="Allo Thiak-Thiak"><Bike className="h-5 w-5" /></Link>
+          {/* Bouton Thiak-Thiak ultra-visible */}
+          <Button asChild variant="default" size="sm" className="rounded-full bg-orange-600 hover:bg-orange-700 text-white font-black shadow-lg shadow-orange-200 animate-pulse-slow px-4 h-10">
+            <Link to="/thiak-thiak" className="flex items-center gap-2">
+              <Bike className="h-5 w-5" />
+              <span className="hidden sm:inline text-xs">THIAK-THIAK</span>
+            </Link>
           </Button>
 
           {lastOrderId && (
