@@ -78,27 +78,25 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Quick Thiak-Thiak Action for Logged In Users */}
-      {user && (
-        <section className="py-12 container px-4 mx-auto -mt-16 relative z-10">
-          <Card className="bg-orange-600 border-none shadow-2xl rounded-[2.5rem] overflow-hidden text-white">
-            <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="flex items-center gap-6">
-                <div className="bg-white p-4 rounded-3xl shadow-xl">
-                  <MotorcycleIcon className="w-16 h-16" />
-                </div>
-                <div>
-                  <h2 className="text-3xl font-black tracking-tight">Besoin d'un Thiak-Thiak ?</h2>
-                  <p className="text-orange-100 font-medium">Commandez une course rapide à Ballou en un clic.</p>
-                </div>
+      {/* Quick Thiak-Thiak Action - NOW VISIBLE TO EVERYONE */}
+      <section className="py-12 container px-4 mx-auto -mt-16 relative z-10">
+        <Card className="bg-orange-600 border-none shadow-2xl rounded-[2.5rem] overflow-hidden text-white">
+          <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex items-center gap-6">
+              <div className="bg-white p-4 rounded-3xl shadow-xl">
+                <MotorcycleIcon className="w-16 h-16" />
               </div>
-              <Button asChild size="lg" className="bg-white text-orange-600 hover:bg-orange-50 h-16 px-10 text-xl font-black rounded-2xl shadow-xl">
-                <Link to="/thiak-thiak">COMMANDER MAINTENANT <Navigation className="ml-2 h-6 w-6" /></Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </section>
-      )}
+              <div>
+                <h2 className="text-3xl font-black tracking-tight">Besoin d'un Thiak-Thiak ?</h2>
+                <p className="text-orange-100 font-medium">Commandez une course rapide à Ballou en un clic.</p>
+              </div>
+            </div>
+            <Button asChild size="lg" className="bg-white text-orange-600 hover:bg-orange-50 h-16 px-10 text-xl font-black rounded-2xl shadow-xl">
+              <Link to="/thiak-thiak">COMMANDER MAINTENANT <Navigation className="ml-2 h-6 w-6" /></Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
 
       {/* Main Features */}
       <section className="py-24 container px-4 mx-auto">

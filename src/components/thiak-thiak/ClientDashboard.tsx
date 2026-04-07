@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Navigation, Phone, Loader2, CheckCircle2 } from 'lucide-react';
+import { MapPin, Navigation, Phone, Loader2, CheckCircle2, MessageCircle } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
 
@@ -17,6 +17,8 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
   const [activeRide, setActiveRide] = useState<any>(null);
 
   useEffect(() => {
+    if (!user) return;
+
     const fetchActiveRide = async () => {
       const { data, error } = await supabase
         .from('rides')
@@ -43,12 +45,26 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user.id]);
+  }, [user?.id]);
 
   const handleRequestRide = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pickup || !destination) {
       showError("Veuillez remplir les lieux.");
+      return;
+    }
+
+    // Si l'utilisateur n'est pas connecté, on utilise WhatsApp
+    if (!user) {
+      const phoneNumber = "782254548";
+      const message = encodeURIComponent(
+        `*Nouvelle Commande Thiak-Thiak*\n\n` +
+        `*Départ:* ${pickup}\n` +
+        `*Destination:* ${destination}\n\n` +
+        `Merci de me confirmer la disponibilité d'un chauffeur.`
+      );
+      window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+      showSuccess("Redirection vers WhatsApp...");
       return;
     }
 
@@ -138,8 +154,12 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
             <Label className="font-bold text-gray-700">Destination</Label>
             <Input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Ex: Gare" className="h-14 rounded-2xl" />
           </div>
-          <Button type="submit" disabled={isSubmitting} className="w-full h-16 bg-orange-600 font-black text-xl rounded-2xl">
-            {isSubmitting ? <Loader2 className="animate-spin" /> : "COMMANDER"}
+          <Button type="submit" disabled={isSubmitting} className="w-full h-16 bg-orange-600 font-black text-xl rounded-2xl shadow-lg hover:bg-orange-700 transition-all">
+            {isSubmitting ? <Loader2 className="animate-spin" /> : (
+              <span className="flex items-center gap-2">
+                {user ? "COMMANDER" : <><MessageCircle className="h-6 w-6" /> COMMANDER VIA WHATSAPP</>}
+              </span>
+            )}
           </Button>
         </form>
       </CardContent>

@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, ShieldCheck, Loader2 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { User, ShieldCheck, Loader2, Info } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import ClientDashboard from '@/components/thiak-thiak/ClientDashboard';
 import DriverDashboard from '@/components/thiak-thiak/DriverDashboard';
-import { showError } from '@/utils/toast';
 
 // Image de la moto de livraison rouge (Thiak-Thiak)
 const MotorcycleIcon = ({ className }: { className?: string }) => (
@@ -47,21 +47,6 @@ const ThiakThiak = () => {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-orange-600" /></div>;
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-stone-50">
-        <Navbar />
-        <div className="container px-4 py-20 mx-auto text-center max-w-md">
-          <Card className="border-none shadow-2xl rounded-[2.5rem] p-8">
-            <MotorcycleIcon className="w-24 h-24 mx-auto mb-6" />
-            <h1 className="text-3xl font-black mb-4">Allo Thiak-Thiak</h1>
-            <a href="/login" className="block w-full bg-orange-600 text-white font-black py-4 rounded-2xl">SE CONNECTER</a>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-stone-50">
       <Navbar />
@@ -69,7 +54,17 @@ const ThiakThiak = () => {
         <div className="text-center mb-10">
           <MotorcycleIcon className="w-20 h-20 mx-auto mb-4" />
           <h1 className="text-4xl font-black tracking-tighter">ALLO THIAK-THIAK</h1>
+          <p className="text-gray-500 font-medium mt-2">Le transport rapide et fiable à Ballou.</p>
         </div>
+
+        {!user && (
+          <div className="mb-8 bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-start gap-3 text-blue-800">
+            <Info className="h-5 w-5 shrink-0 mt-0.5" />
+            <p className="text-sm font-medium">
+              Vous n'êtes pas connecté. Vos commandes seront envoyées directement via <strong>WhatsApp</strong> pour une prise en charge immédiate.
+            </p>
+          </div>
+        )}
 
         <Tabs defaultValue={profile?.role === 'driver' ? 'driver' : 'client'} className="w-full">
           <TabsList className="grid grid-cols-2 mb-8 bg-white p-1 rounded-2xl shadow-sm border h-14">
@@ -86,7 +81,18 @@ const ThiakThiak = () => {
           </TabsContent>
 
           <TabsContent value="driver">
-            <DriverDashboard user={user} profile={profile} />
+            {user ? (
+              <DriverDashboard user={user} profile={profile} />
+            ) : (
+              <Card className="border-none shadow-xl rounded-[2.5rem] p-12 text-center bg-white">
+                <ShieldCheck className="w-16 h-16 text-green-600 mx-auto mb-6" />
+                <h2 className="text-2xl font-black mb-4">Espace Chauffeur</h2>
+                <p className="text-gray-500 mb-8">Veuillez vous connecter pour accéder à vos courses et gérer votre disponibilité.</p>
+                <Button asChild className="bg-green-600 hover:bg-green-700 h-14 px-10 font-black rounded-2xl">
+                  <a href="/login">SE CONNECTER</a>
+                </Button>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>
