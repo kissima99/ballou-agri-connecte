@@ -167,6 +167,11 @@ const Navbar = () => {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                  <Link to="/thiak-thiak" className="flex items-center font-bold text-orange-600">
+                    <Bike className="mr-2 h-4 w-4" /> Allo Thiak-Thiak
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
                   <Link to="/purchase-history" className="flex items-center">
                     <History className="mr-2 h-4 w-4" /> Historique d'achats
                   </Link>
