@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LayoutDashboard,
   Search,
@@ -17,34 +18,58 @@ import {
   Truck,
   CreditCard,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  MapPin,
+  Navigation
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase, isCurrentUserSuperAdmin } from "@/integrations/supabase/client";
 
+// Image de la moto de livraison rouge (Thiak-Thiak)
+const MotorcycleIcon = ({ className }: { className?: string }) => (
+  <img 
+    src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" 
+    alt="Moto Thiak-Thiak" 
+    className={className}
+    style={{ filter: 'hue-rotate(340deg) saturate(5)' }}
+  />
+);
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<any[]>([]);
+  const [rides, setRides] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
 
-  const fetchOrders = async () => {
+  const fetchData = async () => {
     setIsLoading(true);
     setDbError(null);
     try {
-      const { data, error } = await supabase
+      // Fetch Orders
+      const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setOrders(data || []);
+      if (ordersError) throw ordersError;
+      setOrders(ordersData || []);
+
+      // Fetch Rides
+      const { data: ridesData, error: ridesError } = await supabase
+        .from('rides')
+        .select('*, client:client_id(full_name, phone_number), driver:driver_id(full_name, phone_number)')
+        .order('created_at', { ascending: false });
+
+      if (ridesError) throw ridesError;
+      setRides(ridesData || []);
+
     } catch (err: any) {
       console.error("[Admin] Erreur chargement:", err);
-      showError("Impossible de charger les commandes.");
+      showError("Impossible de charger les données.");
     } finally {
       setIsLoading(false);
     }
@@ -58,37 +83,41 @@ const AdminDashboard = () => {
         navigate('/');
         return;
       }
-      await fetchOrders();
+      await fetchData();
     };
     checkAuth();
   }, [navigate]);
 
   const updateOrderStatus = async (id: string, newStatus: string) => {
     setIsUpdating(id);
-    setDbError(null);
     try {
-      const { error, data } = await supabase
+      const { error } = await supabase
         .from('orders')
-        .update({ 
-          status: newStatus, 
-          is_new: false 
-        })
-        .eq('id', id)
-        .select();
+        .update({ status: newStatus, is_new: false })
+        .eq('id', id);
 
       if (error) throw error;
-
-      if (!data || data.length === 0) {
-        throw new Error("La base de données a refusé la modification. Vérifiez vos droits RLS.");
-      }
-
       showSuccess(`Statut mis à jour : ${newStatus}`);
-      
-      // Mise à jour locale
       setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus, is_new: false } : o));
     } catch (err: any) {
-      console.error("[Admin] Erreur:", err);
-      setDbError("Erreur de permission : Votre compte n'a pas les droits d'écriture.");
+      showError("Échec de la mise à jour.");
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  const updateRideStatus = async (id: string, newStatus: string) => {
+    setIsUpdating(id);
+    try {
+      const { error } = await supabase
+        .from('rides')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+      showSuccess(`Course mise à jour : ${newStatus}`);
+      setRides(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
+    } catch (err: any) {
       showError("Échec de la mise à jour.");
     } finally {
       setIsUpdating(null);
@@ -96,22 +125,34 @@ const AdminDashboard = () => {
   };
 
   const deleteOrder = async (id: string) => {
-    if (!window.confirm(`Supprimer définitivement la commande ${id} ?`)) return;
-
+    if (!window.confirm(`Supprimer la commande ${id} ?`)) return;
     try {
       const { error } = await supabase.from('orders').delete().eq('id', id);
       if (error) throw error;
-      showSuccess("Commande supprimée.");
       setOrders(orders.filter(o => o.id !== id));
-    } catch (err: any) {
-      showError("Erreur lors de la suppression.");
-    }
+      showSuccess("Supprimé.");
+    } catch (err) { showError("Erreur."); }
+  };
+
+  const deleteRide = async (id: string) => {
+    if (!window.confirm(`Supprimer cette course ?`)) return;
+    try {
+      const { error } = await supabase.from('rides').delete().eq('id', id);
+      if (error) throw error;
+      setRides(rides.filter(r => r.id !== id));
+      showSuccess("Supprimé.");
+    } catch (err) { showError("Erreur."); }
   };
 
   const filteredOrders = orders.filter(order =>
     order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (order.customer_name && order.customer_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (order.phone && order.phone.includes(searchTerm))
+    (order.customer_name && order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const filteredRides = rides.filter(ride =>
+    ride.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ride.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (ride.client?.full_name && ride.client.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -122,133 +163,146 @@ const AdminDashboard = () => {
           <div>
             <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
               <LayoutDashboard className="h-8 w-8 text-orange-600" />
-              Gestion des Commandes
+              Tableau de Bord Admin
             </h1>
-            <p className="text-gray-500 font-medium">Validez les étapes de livraison et gérez les flux.</p>
+            <p className="text-gray-500 font-medium">Gestion centralisée des commandes et des courses.</p>
           </div>
-          <Button variant="outline" onClick={fetchOrders} className="rounded-xl h-12 px-6 font-bold border-stone-200 bg-white" disabled={isLoading}>
+          <Button variant="outline" onClick={fetchData} className="rounded-xl h-12 px-6 font-bold border-stone-200 bg-white" disabled={isLoading}>
             {isLoading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <RefreshCw className="h-5 w-5 mr-2" />}
             ACTUALISER
           </Button>
         </div>
 
-        {dbError && (
-          <div className="mb-6 p-6 bg-red-50 border-2 border-red-200 rounded-[2rem] flex flex-col gap-4 text-red-700">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-6 w-6 shrink-0" />
-              <p className="text-lg font-black">PROBLÈME DE PERMISSION DÉTECTÉ</p>
-            </div>
-            <p className="text-sm font-medium leading-relaxed">
-              Votre compte est reconnu comme Admin par l'interface, mais la base de données refuse les modifications. 
-              <br /><strong>Solution :</strong> Allez dans votre tableau de bord Supabase {" > "} SQL Editor et exécutez le script pour passer votre rôle en 'super_admin'.
-            </p>
-          </div>
-        )}
+        <Tabs defaultValue="orders" className="w-full">
+          <TabsList className="grid grid-cols-2 mb-8 bg-white p-1 rounded-2xl shadow-sm border h-14 max-w-md">
+            <TabsTrigger value="orders" className="font-bold rounded-xl data-[state=active]:bg-green-600 data-[state=active]:text-white">
+              <Truck className="w-4 h-4 mr-2" /> COMMANDES ({orders.length})
+            </TabsTrigger>
+            <TabsTrigger value="rides" className="font-bold rounded-xl data-[state=active]:bg-orange-600 data-[state=active]:text-white">
+              <MotorcycleIcon className="w-6 h-6 mr-2" /> THIAK-THIAK ({rides.length})
+            </TabsTrigger>
+          </TabsList>
 
-        <Card className="border-none shadow-2xl bg-white overflow-hidden rounded-[2rem]">
-          <CardHeader className="border-b bg-stone-50/50 py-6 px-8">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <CardTitle className="text-xl font-bold text-gray-800">Liste des Transactions</CardTitle>
-              <div className="relative w-full md:w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Rechercher par ID, Nom ou Tel..."
-                  className="pl-10 h-11 rounded-xl border-stone-200 bg-white focus-visible:ring-orange-500"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-stone-50">
-                  <TableRow className="hover:bg-transparent border-stone-100">
-                    <TableHead className="font-black text-gray-900 py-5 pl-8">COMMANDE</TableHead>
-                    <TableHead className="font-black text-gray-900">CLIENT</TableHead>
-                    <TableHead className="font-black text-gray-900">MONTANT</TableHead>
-                    <TableHead className="font-black text-gray-900">STATUT ACTUEL</TableHead>
-                    <TableHead className="font-black text-gray-900 text-right pr-8">ACTIONS</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-20"><Loader2 className="h-10 w-10 animate-spin text-orange-500 mx-auto" /></TableCell></TableRow>
-                  ) : filteredOrders.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-20 text-gray-400 font-medium">Aucune commande trouvée.</TableCell></TableRow>
-                  ) : (
-                    filteredOrders.map((order) => (
-                      <TableRow key={order.id} className={`border-stone-50 hover:bg-stone-50/30 transition-colors ${order.is_new ? 'bg-orange-50/40' : ''}`}>
+          <div className="relative mb-6">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              placeholder="Rechercher..."
+              className="pl-12 h-14 rounded-2xl border-none shadow-sm bg-white text-lg font-medium"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <TabsContent value="orders">
+            <Card className="border-none shadow-xl bg-white overflow-hidden rounded-[2rem]">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader className="bg-stone-50">
+                    <TableRow className="hover:bg-transparent border-stone-100">
+                      <TableHead className="font-black text-gray-900 py-5 pl-8">COMMANDE</TableHead>
+                      <TableHead className="font-black text-gray-900">CLIENT</TableHead>
+                      <TableHead className="font-black text-gray-900">MONTANT</TableHead>
+                      <TableHead className="font-black text-gray-900">STATUT</TableHead>
+                      <TableHead className="font-black text-gray-900 text-right pr-8">ACTIONS</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow><TableCell colSpan={5} className="text-center py-20"><Loader2 className="h-10 w-10 animate-spin text-green-600 mx-auto" /></TableCell></TableRow>
+                    ) : filteredOrders.map((order) => (
+                      <TableRow key={order.id} className={`border-stone-50 ${order.is_new ? 'bg-orange-50/40' : ''}`}>
                         <TableCell className="pl-8 py-5">
-                          <div className="flex flex-col">
-                            <span className="font-black text-orange-600 text-base">{order.id}</span>
-                            <span className="text-[10px] text-gray-400 flex items-center mt-1">
-                              <Calendar className="h-3 w-3 mr-1" /> {new Date(order.created_at).toLocaleDateString('fr-FR')}
-                            </span>
-                          </div>
+                          <span className="font-black text-orange-600">{order.id}</span>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="font-bold text-gray-900">{order.customer_name}</span>
-                            <span className="text-xs text-gray-500 font-medium">{order.phone}</span>
+                            <span className="font-bold">{order.customer_name}</span>
+                            <span className="text-xs text-gray-500">{order.phone}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="font-black text-gray-900">{order.amount?.toLocaleString()} FCFA</TableCell>
+                        <TableCell className="font-black">{order.amount?.toLocaleString()} F</TableCell>
                         <TableCell>
-                          <Badge className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider border-none ${
-                            (order.status === 'Attente Paiement' || order.status === 'Attente de validation admin') ? 'bg-red-100 text-red-700' :
-                            order.status === 'Payé' ? 'bg-orange-100 text-orange-700' :
-                            order.status === 'En cours' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                          }`}>{order.status}</Badge>
+                          <Badge className="rounded-full px-3 py-1 text-[10px] font-black uppercase">{order.status}</Badge>
                         </TableCell>
                         <TableCell className="text-right pr-8">
                           <div className="flex justify-end gap-2">
-                            <Button 
-                              variant={order.status === 'Payé' ? 'default' : 'outline'}
-                              size="sm" 
-                              disabled={isUpdating === order.id}
-                              onClick={() => updateOrderStatus(order.id, 'Payé')} 
-                              className={`rounded-xl h-9 px-3 font-bold transition-all ${order.status === 'Payé' ? 'bg-orange-600 text-white border-orange-600' : 'hover:border-orange-500 hover:text-orange-600'}`}
-                            >
-                              {isUpdating === order.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CreditCard className="w-3.5 h-3.5 mr-1.5" />} Payé
-                            </Button>
-                            <Button 
-                              variant={order.status === 'En cours' ? 'default' : 'outline'}
-                              size="sm" 
-                              disabled={isUpdating === order.id}
-                              onClick={() => updateOrderStatus(order.id, 'En cours')} 
-                              className={`rounded-xl h-9 px-3 font-bold transition-all ${order.status === 'En cours' ? 'bg-blue-600 text-white border-blue-600' : 'hover:border-blue-500 hover:text-blue-600'}`}
-                            >
-                              <Truck className="w-3.5 h-3.5 mr-1.5" /> En cours
-                            </Button>
-                            <Button 
-                              variant={order.status === 'Livré' ? 'default' : 'outline'}
-                              size="sm" 
-                              disabled={isUpdating === order.id}
-                              onClick={() => updateOrderStatus(order.id, 'Livré')} 
-                              className={`rounded-xl h-9 px-3 font-bold transition-all ${order.status === 'Livré' ? 'bg-green-600 text-white border-green-600' : 'hover:border-green-500 hover:text-green-600'}`}
-                            >
-                              <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Livré
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => deleteOrder(order.id)} 
-                              className="rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 ml-2"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => updateOrderStatus(order.id, 'Payé')} className="rounded-xl h-9">Payé</Button>
+                            <Button size="sm" variant="outline" onClick={() => updateOrderStatus(order.id, 'En cours')} className="rounded-xl h-9">En cours</Button>
+                            <Button size="sm" variant="outline" onClick={() => updateOrderStatus(order.id, 'Livré')} className="rounded-xl h-9">Livré</Button>
+                            <Button variant="ghost" size="icon" onClick={() => deleteOrder(order.id)} className="text-red-400"><Trash2 className="h-4 w-4" /></Button>
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="rides">
+            <Card className="border-none shadow-xl bg-white overflow-hidden rounded-[2rem]">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader className="bg-stone-50">
+                    <TableRow className="hover:bg-transparent border-stone-100">
+                      <TableHead className="font-black text-gray-900 py-5 pl-8">TRAJET</TableHead>
+                      <TableHead className="font-black text-gray-900">CLIENT / CHAUFFEUR</TableHead>
+                      <TableHead className="font-black text-gray-900">PRIX</TableHead>
+                      <TableHead className="font-black text-gray-900">STATUT</TableHead>
+                      <TableHead className="font-black text-gray-900 text-right pr-8">ACTIONS</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow><TableCell colSpan={5} className="text-center py-20"><Loader2 className="h-10 w-10 animate-spin text-orange-500 mx-auto" /></TableCell></TableRow>
+                    ) : filteredRides.map((ride) => (
+                      <TableRow key={ride.id} className="border-stone-50">
+                        <TableCell className="pl-8 py-5">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2 text-xs font-bold text-gray-900">
+                              <MapPin className="h-3 w-3 text-red-500" /> {ride.pickup_location}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs font-bold text-gray-900">
+                              <Navigation className="h-3 w-3 text-green-500" /> {ride.destination}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-black text-gray-400 uppercase">Client</span>
+                              <span className="font-bold text-sm">{ride.client?.full_name || "Anonyme"}</span>
+                            </div>
+                            {ride.driver && (
+                              <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-green-600 uppercase">Chauffeur</span>
+                                <span className="font-bold text-sm">{ride.driver.full_name}</span>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-black text-orange-600">{ride.price} F</TableCell>
+                        <TableCell>
+                          <Badge className={`rounded-full px-3 py-1 text-[10px] font-black uppercase ${
+                            ride.status === 'pending' ? 'bg-red-100 text-red-700' :
+                            ride.status === 'accepted' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                          }`}>{ride.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right pr-8">
+                          <div className="flex justify-end gap-2">
+                            <Button size="sm" variant="outline" onClick={() => updateRideStatus(ride.id, 'completed')} className="rounded-xl h-9">Terminer</Button>
+                            <Button variant="ghost" size="icon" onClick={() => deleteRide(ride.id)} className="text-red-400"><Trash2 className="h-4 w-4" /></Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
