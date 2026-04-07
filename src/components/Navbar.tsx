@@ -127,8 +127,9 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-2 sm:space-x-4">
-          <Button asChild variant="ghost" size="icon" className="rounded-full bg-orange-50 text-orange-600 hover:bg-orange-100 lg:hidden">
-            <Link to="/thiak-thiak"><Bike className="h-5 w-5" /></Link>
+          {/* Bouton Thiak-Thiak rapide pour mobile et desktop */}
+          <Button asChild variant="ghost" size="icon" className="rounded-full bg-orange-50 text-orange-600 hover:bg-orange-100">
+            <Link to="/thiak-thiak" title="Allo Thiak-Thiak"><Bike className="h-5 w-5" /></Link>
           </Button>
 
           {lastOrderId && (
