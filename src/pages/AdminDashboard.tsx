@@ -18,7 +18,8 @@ import {
   MapPin,
   Navigation,
   Banknote,
-  Phone
+  Phone,
+  AlertCircle
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
@@ -41,28 +42,49 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [dbError, setDbError] = useState<string | null>(null);
 
   const fetchData = async () => {
     setIsLoading(true);
+    setDbError(null);
     try {
+      console.log("[Admin] Début de la récupération des données...");
+      
+      // 1. Récupération des Commandes
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (ordersError) throw ordersError;
+      if (ordersError) {
+        console.error("[Admin] Erreur Orders:", ordersError);
+        throw ordersError;
+      }
       setOrders(ordersData || []);
 
+      // 2. Récupération des Courses Thiak-Thiak
       const { data: ridesData, error: ridesError } = await supabase
         .from('rides')
-        .select('*, client:client_id(full_name, phone_number), driver:driver_id(full_name, phone_number)')
+        .select(`
+          *,
+          client:client_id(full_name, phone_number),
+          driver:driver_id(full_name, phone_number)
+        `)
         .order('created_at', { ascending: false });
 
-      if (ridesError) throw ridesError;
+      if (ridesError) {
+        console.error("[Admin] Erreur Rides:", ridesError);
+        throw ridesError;
+      }
+      
+      console.log("[Admin] Courses récupérées:", ridesData?.length || 0);
       setRides(ridesData || []);
 
     } catch (err: any) {
-      showError("Impossible de charger les données.");
+      console.error("[Admin] Erreur globale fetchData:", err);
+      const message = err.message || "Problème de connexion";
+      setDbError(message);
+      showError("Erreur lors du chargement : " + message);
     } finally {
       setIsLoading(false);
     }
@@ -180,7 +202,7 @@ const AdminDashboard = () => {
           <div className="relative mb-6">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <Input
-              placeholder="Rechercher..."
+              placeholder="Rechercher par nom, lieu, ID..."
               className="pl-12 h-14 rounded-2xl border-none shadow-sm bg-white text-lg font-medium"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -203,6 +225,8 @@ const AdminDashboard = () => {
                   <TableBody>
                     {isLoading ? (
                       <TableRow><TableCell colSpan={5} className="text-center py-20"><Loader2 className="h-10 w-10 animate-spin text-green-600 mx-auto" /></TableCell></TableRow>
+                    ) : filteredOrders.length === 0 ? (
+                      <TableRow><TableCell colSpan={5} className="text-center py-10 text-gray-400">Aucune commande trouvée.</TableCell></TableRow>
                     ) : filteredOrders.map((order) => (
                       <TableRow key={order.id} className={`border-stone-50 ${order.is_new ? 'bg-orange-50/40' : ''}`}>
                         <TableCell className="pl-8 py-5">
@@ -250,6 +274,8 @@ const AdminDashboard = () => {
                   <TableBody>
                     {isLoading ? (
                       <TableRow><TableCell colSpan={5} className="text-center py-20"><Loader2 className="h-10 w-10 animate-spin text-orange-500 mx-auto" /></TableCell></TableRow>
+                    ) : filteredRides.length === 0 ? (
+                      <TableRow><TableCell colSpan={5} className="text-center py-10 text-gray-400">Aucune course trouvée.</TableCell></TableRow>
                     ) : filteredRides.map((ride) => (
                       <TableRow key={ride.id} className="border-stone-50">
                         <TableCell className="pl-8 py-5">
@@ -309,6 +335,13 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        
+        {dbError && (
+          <div className="mt-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-700 text-sm">
+            <AlertCircle className="h-5 w-5" />
+            <span>{dbError}</span>
+          </div>
+        )}
       </div>
     </div>
   );
