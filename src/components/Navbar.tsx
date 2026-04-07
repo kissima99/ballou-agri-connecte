@@ -6,12 +6,33 @@ import { showSuccess, showError } from '@/utils/toast';
 import { supabase, isCurrentUserSuperAdmin } from '@/integrations/supabase/client';
 
 // Lucide icons
-import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText, ShieldCheck, LayoutDashboard, Bike } from 'lucide-react';
+import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText, ShieldCheck, LayoutDashboard } from 'lucide-react';
 
 // Shadcn UI components
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
+// Icône Moto de Livraison personnalisée (SVG)
+const MotorcycleIcon = ({ className }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <circle cx="6" cy="18" r="2" />
+    <circle cx="18" cy="18" r="2" />
+    <path d="M10 10h4l2 4h2" />
+    <path d="M14 10l-2-6h-4l-2 6" />
+    <path d="M8 10h8" />
+    <path d="M18 18h2a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3" />
+    <path d="M6 18H4a2 2 0 0 1-2-2v-3" />
+  </svg>
+);
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -77,15 +98,6 @@ const Navbar = () => {
     window.dispatchEvent(new Event('storage'));
   };
 
-  // Illustration de scooter de livraison (style celui de l'image)
-  const DeliveryScooterIcon = () => (
-    <img 
-      src="https://cdn-icons-png.flaticon.com/512/2972/2972185.png" 
-      alt="Allo Thiak-Thiak" 
-      className="w-8 h-8 object-contain"
-    />
-  );
-
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="container flex items-center justify-between px-4 h-16">
@@ -115,7 +127,7 @@ const Navbar = () => {
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="rounded-xl cursor-pointer bg-orange-50 text-orange-700 font-bold">
                 <Link to="/thiak-thiak" className="flex items-center py-2">
-                  <div className="mr-2"><DeliveryScooterIcon /></div> Allo Thiak-Thiak
+                  <MotorcycleIcon className="mr-2 h-5 w-5 text-orange-600" /> Allo Thiak-Thiak
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
@@ -136,11 +148,11 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-2 sm:space-x-4">
-          {/* Bouton Allo Thiak-Thiak ultra-visible avec illustration */}
-          <Button asChild variant="default" size="sm" className="rounded-full bg-white border-2 border-orange-500 hover:bg-orange-50 text-orange-600 font-black shadow-lg shadow-orange-100 animate-pulse-slow px-2 sm:px-4 h-11">
+          {/* Bouton Allo Thiak-Thiak ultra-visible avec icône moto */}
+          <Button asChild variant="default" size="sm" className="rounded-full bg-orange-600 hover:bg-orange-700 text-white font-black shadow-lg shadow-orange-200 animate-pulse-slow px-4 h-10">
             <Link to="/thiak-thiak" className="flex items-center gap-2">
-              <DeliveryScooterIcon />
-              <span className="hidden sm:inline text-[10px] font-black tracking-tighter">ALLO THIAK-THIAK</span>
+              <MotorcycleIcon className="h-5 w-5" />
+              <span className="hidden sm:inline text-xs">THIAK-THIAK</span>
             </Link>
           </Button>
 
@@ -181,7 +193,7 @@ const Navbar = () => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
                   <Link to="/thiak-thiak" className="flex items-center font-bold text-orange-600">
-                    <div className="mr-2 scale-75"><DeliveryScooterIcon /></div> Allo Thiak-Thiak
+                    <MotorcycleIcon className="mr-2 h-4 w-4" /> Allo Thiak-Thiak
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-lg cursor-pointer">

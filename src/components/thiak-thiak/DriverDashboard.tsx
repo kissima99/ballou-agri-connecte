@@ -5,9 +5,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Bike, MapPin, Navigation, Phone, Loader2, AlertCircle } from 'lucide-react';
+import { MapPin, Navigation, Phone, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
+
+// Icône Moto de Livraison personnalisée (SVG)
+const MotorcycleIcon = ({ className }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <circle cx="6" cy="18" r="2" />
+    <circle cx="18" cy="18" r="2" />
+    <path d="M10 10h4l2 4h2" />
+    <path d="M14 10l-2-6h-4l-2 6" />
+    <path d="M8 10h8" />
+    <path d="M18 18h2a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3" />
+    <path d="M6 18H4a2 2 0 0 1-2-2v-3" />
+  </svg>
+);
 
 const DriverDashboard = ({ user, profile }: { user: any, profile: any }) => {
   const [isAvailable, setIsAvailable] = useState(profile?.is_available ?? true);
@@ -65,7 +86,7 @@ const DriverDashboard = ({ user, profile }: { user: any, profile: any }) => {
       <Card className="border-none shadow-lg rounded-3xl bg-white">
         <CardContent className="p-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Bike className={`w-6 h-6 ${isAvailable ? 'text-green-600' : 'text-gray-400'}`} />
+            <MotorcycleIcon className={`w-6 h-6 ${isAvailable ? 'text-green-600' : 'text-gray-400'}`} />
             <h3 className="font-black">Mode Travail</h3>
           </div>
           <Switch checked={isAvailable} onCheckedChange={toggleAvailability} />

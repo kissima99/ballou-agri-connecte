@@ -4,11 +4,32 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bike, User, ShieldCheck, Loader2 } from 'lucide-react';
+import { User, ShieldCheck, Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import ClientDashboard from '@/components/thiak-thiak/ClientDashboard';
 import DriverDashboard from '@/components/thiak-thiak/DriverDashboard';
 import { showError } from '@/utils/toast';
+
+// Icône Moto de Livraison personnalisée (SVG)
+const MotorcycleIcon = ({ className }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <circle cx="6" cy="18" r="2" />
+    <circle cx="18" cy="18" r="2" />
+    <path d="M10 10h4l2 4h2" />
+    <path d="M14 10l-2-6h-4l-2 6" />
+    <path d="M8 10h8" />
+    <path d="M18 18h2a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3" />
+    <path d="M6 18H4a2 2 0 0 1-2-2v-3" />
+  </svg>
+);
 
 const ThiakThiak = () => {
   const [user, setUser] = useState<any>(null);
@@ -43,7 +64,7 @@ const ThiakThiak = () => {
         <Navbar />
         <div className="container px-4 py-20 mx-auto text-center max-w-md">
           <Card className="border-none shadow-2xl rounded-[2.5rem] p-8">
-            <Bike className="w-20 h-20 text-orange-500 mx-auto mb-6" />
+            <MotorcycleIcon className="w-20 h-20 text-orange-500 mx-auto mb-6" />
             <h1 className="text-3xl font-black mb-4">Allo Thiak-Thiak</h1>
             <a href="/login" className="block w-full bg-orange-600 text-white font-black py-4 rounded-2xl">SE CONNECTER</a>
           </Card>
@@ -57,7 +78,7 @@ const ThiakThiak = () => {
       <Navbar />
       <div className="container px-4 py-12 mx-auto max-w-4xl">
         <div className="text-center mb-10">
-          <Bike className="w-16 h-16 text-orange-600 mx-auto mb-4" />
+          <MotorcycleIcon className="w-16 h-16 text-orange-600 mx-auto mb-4" />
           <h1 className="text-4xl font-black tracking-tighter">ALLO THIAK-THIAK</h1>
         </div>
 
