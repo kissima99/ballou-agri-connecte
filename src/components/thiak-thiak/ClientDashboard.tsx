@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Navigation, Phone, Loader2, CheckCircle2, MessageCircle, Banknote, Info } from 'lucide-react';
+import { MapPin, Navigation, Phone, Loader2, CheckCircle2, Banknote, Info, User as UserIcon } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
 
 const ClientDashboard = ({ user }: { user: any, profile: any }) => {
   const [pickup, setPickup] = useState("");
   const [destination, setDestination] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeRide, setActiveRide] = useState<any>(null);
 
@@ -49,43 +51,45 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
 
   const handleRequestRide = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!pickup || !destination) {
       showError("Veuillez remplir les lieux.");
       return;
     }
 
-    // Si l'utilisateur n'est pas connecté, on utilise WhatsApp
-    if (!user) {
-      const phoneNumber = "782254548";
-      const message = encodeURIComponent(
-        `*Nouvelle Commande Thiak-Thiak*\n\n` +
-        `*Départ:* ${pickup}\n` +
-        `*Destination:* ${destination}\n\n` +
-        `*Tarif:* À partir de 500 FCFA (Ballou) / À discuter (Hors Ballou)\n` +
-        `*Paiement:* Cash après la course\n\n` +
-        `Merci de me confirmer la disponibilité d'un chauffeur.`
-      );
-      window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
-      showSuccess("Redirection vers WhatsApp...");
+    if (!user && (!customerName || !customerPhone)) {
+      showError("Veuillez remplir votre nom et téléphone.");
       return;
     }
 
     setIsSubmitting(true);
     try {
+      const rideData = {
+        client_id: user?.id || null,
+        customer_name: user ? null : customerName,
+        phone: user ? null : customerPhone,
+        pickup_location: pickup,
+        destination: destination,
+        price: 500,
+        status: 'pending'
+      };
+
       const { error } = await supabase
         .from('rides')
-        .insert([{
-          client_id: user.id,
-          pickup_location: pickup,
-          destination: destination,
-          price: 500,
-          status: 'pending'
-        }]);
+        .insert([rideData]);
 
       if (error) throw error;
-      showSuccess("Demande envoyée !");
+      
+      showSuccess("Demande envoyée au Super Admin !");
       setPickup("");
       setDestination("");
+      setCustomerName("");
+      setCustomerPhone("");
+      
+      if (!user) {
+        // Pour les anonymes, on affiche un message de confirmation spécial
+        setActiveRide({ status: 'pending', pickup_location: pickup, destination: destination, is_anonymous: true });
+      }
     } catch (err: any) {
       showError(err.message);
     } finally {
@@ -98,7 +102,7 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
       <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
         <CardHeader className="bg-orange-600 text-white p-8">
           <CardTitle className="flex items-center justify-between">
-            <span>Course en cours</span>
+            <span>{activeRide.is_anonymous ? "Demande envoyée" : "Course en cours"}</span>
             <Badge className="bg-white/20 text-white border-white/30 uppercase text-[10px]">
               {activeRide.status}
             </Badge>
@@ -138,7 +142,16 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
           ) : (
             <div className="text-center py-8">
               <Loader2 className="w-10 h-10 animate-spin text-orange-500 mx-auto mb-4" />
-              <p className="font-bold text-gray-900">Recherche d'un chauffeur...</p>
+              <p className="font-bold text-gray-900">
+                {activeRide.is_anonymous 
+                  ? "Le Super Admin a reçu votre demande. Un chauffeur va vous rappeler." 
+                  : "Recherche d'un chauffeur..."}
+              </p>
+              {activeRide.is_anonymous && (
+                <Button onClick={() => setActiveRide(null)} variant="outline" className="mt-6 rounded-xl">
+                  Nouvelle demande
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
@@ -172,20 +185,45 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
         </div>
 
         <form onSubmit={handleRequestRide} className="space-y-6">
+          {!user && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100 mb-4">
+              <div className="space-y-2">
+                <Label className="font-bold text-blue-900 flex items-center gap-2">
+                  <UserIcon className="h-4 w-4" /> Votre Nom
+                </Label>
+                <Input 
+                  value={customerName} 
+                  onChange={(e) => setCustomerName(e.target.value)} 
+                  placeholder="Ex: Moussa" 
+                  className="h-12 rounded-xl border-blue-200 bg-white" 
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-blue-900 flex items-center gap-2">
+                  <Phone className="h-4 w-4" /> Votre Téléphone
+                </Label>
+                <Input 
+                  value={customerPhone} 
+                  onChange={(e) => setCustomerPhone(e.target.value)} 
+                  placeholder="Ex: 77 123 45 67" 
+                  className="h-12 rounded-xl border-blue-200 bg-white" 
+                  required
+                />
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
-            <Label className="font-bold text-gray-700">Départ</Label>
-            <Input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="Ex: Marché" className="h-14 rounded-2xl" />
+            <Label className="font-bold text-gray-700">Lieu de départ</Label>
+            <Input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="Ex: Marché de Ballou" className="h-14 rounded-2xl" required />
           </div>
           <div className="space-y-2">
             <Label className="font-bold text-gray-700">Destination</Label>
-            <Input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Ex: Gare" className="h-14 rounded-2xl" />
+            <Input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Ex: Gare routière" className="h-14 rounded-2xl" required />
           </div>
           <Button type="submit" disabled={isSubmitting} className="w-full h-16 bg-orange-600 font-black text-xl rounded-2xl shadow-lg hover:bg-orange-700 transition-all">
-            {isSubmitting ? <Loader2 className="animate-spin" /> : (
-              <span className="flex items-center gap-2">
-                {user ? "COMMANDER" : <><MessageCircle className="h-6 w-6" /> COMMANDER VIA WHATSAPP</>}
-              </span>
-            )}
+            {isSubmitting ? <Loader2 className="animate-spin" /> : "COMMANDER LA COURSE"}
           </Button>
         </form>
       </CardContent>

@@ -14,14 +14,11 @@ import {
   Loader2,
   RefreshCw,
   Trash2,
-  CheckCircle,
   Truck,
-  CreditCard,
-  Calendar,
-  AlertTriangle,
   MapPin,
   Navigation,
-  Banknote
+  Banknote,
+  Phone
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
@@ -44,13 +41,10 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
-  const [dbError, setDbError] = useState<string | null>(null);
 
   const fetchData = async () => {
     setIsLoading(true);
-    setDbError(null);
     try {
-      // Fetch Orders
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
@@ -59,7 +53,6 @@ const AdminDashboard = () => {
       if (ordersError) throw ordersError;
       setOrders(ordersData || []);
 
-      // Fetch Rides
       const { data: ridesData, error: ridesError } = await supabase
         .from('rides')
         .select('*, client:client_id(full_name, phone_number), driver:driver_id(full_name, phone_number)')
@@ -69,7 +62,6 @@ const AdminDashboard = () => {
       setRides(ridesData || []);
 
     } catch (err: any) {
-      console.error("[Admin] Erreur chargement:", err);
       showError("Impossible de charger les données.");
     } finally {
       setIsLoading(false);
@@ -153,6 +145,7 @@ const AdminDashboard = () => {
   const filteredRides = rides.filter(ride =>
     ride.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ride.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (ride.customer_name && ride.customer_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (ride.client?.full_name && ride.client.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -273,7 +266,12 @@ const AdminDashboard = () => {
                           <div className="flex flex-col gap-2">
                             <div className="flex flex-col">
                               <span className="text-[10px] font-black text-gray-400 uppercase">Client</span>
-                              <span className="font-bold text-sm">{ride.client?.full_name || "Anonyme"}</span>
+                              <span className="font-bold text-sm">
+                                {ride.customer_name || ride.client?.full_name || "Anonyme"}
+                              </span>
+                              <span className="text-xs text-blue-600 font-bold flex items-center gap-1">
+                                <Phone className="h-3 w-3" /> {ride.phone || ride.client?.phone_number || "N/A"}
+                              </span>
                             </div>
                             {ride.driver && (
                               <div className="flex flex-col">
