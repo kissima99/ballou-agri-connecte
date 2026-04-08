@@ -6,21 +6,16 @@ import { showSuccess, showError } from '@/utils/toast';
 import { supabase, isCurrentUserSuperAdmin } from '@/integrations/supabase/client';
 
 // Lucide icons
-import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText, ShieldCheck, LayoutDashboard } from 'lucide-react';
+import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText, ShieldCheck, LayoutDashboard, Bike } from 'lucide-react';
 
 // Shadcn UI components
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-// Image de la moto de livraison rouge (Thiak-Thiak)
+// Icône Thiak-Thiak transparente
 const MotorcycleIcon = ({ className }: { className?: string }) => (
-  <img 
-    src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" 
-    alt="Moto Thiak-Thiak" 
-    className={className}
-    style={{ filter: 'hue-rotate(340deg) saturate(5)' }}
-  />
+  <Bike className={className} />
 );
 
 const Navbar = () => {
@@ -116,7 +111,7 @@ const Navbar = () => {
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="rounded-xl cursor-pointer bg-orange-50 text-orange-700 font-bold">
                 <Link to="/thiak-thiak" className="flex items-center py-2">
-                  <MotorcycleIcon className="mr-2 h-6 w-6" /> Allo Thiak-Thiak
+                  <MotorcycleIcon className="mr-2 h-5 w-5" /> Allo Thiak-Thiak
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
@@ -137,10 +132,9 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-2 sm:space-x-4">
-          {/* Bouton Allo Thiak-Thiak TOUJOURS visible et très flashy */}
           <Button asChild variant="default" size="sm" className="rounded-full bg-orange-600 hover:bg-orange-700 text-white font-black shadow-lg shadow-orange-200 animate-pulse-slow px-4 h-11 border-2 border-white">
             <Link to="/thiak-thiak" className="flex items-center gap-2">
-              <MotorcycleIcon className="h-7 w-7" />
+              <MotorcycleIcon className="h-5 w-5" />
               <span className="hidden xs:inline text-[10px] font-black tracking-tighter">ALLO THIAK-THIAK</span>
             </Link>
           </Button>

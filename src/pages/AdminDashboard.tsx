@@ -20,19 +20,16 @@ import {
   Package,
   Clock,
   CreditCard,
-  Phone
+  Phone,
+  Bike
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase, isCurrentUserSuperAdmin } from '@/integrations/supabase/client';
 
+// Icône Thiak-Thiak transparente
 const MotorcycleIcon = ({ className }: { className?: string }) => (
-  <img 
-    src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" 
-    alt="Moto Thiak-Thiak" 
-    className={className}
-    style={{ filter: 'hue-rotate(340deg) saturate(5)' }}
-  />
+  <Bike className={className} />
 );
 
 const AdminDashboard = () => {
@@ -296,7 +293,7 @@ const AdminDashboard = () => {
                     <CardHeader className={`${ride.status === 'completed' ? 'bg-stone-100' : 'bg-orange-50'} p-5`}>
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                          {ride.service_type === 'MOTO-TAXI' ? <MotorcycleIcon className="h-6 w-6" /> : <Truck className="h-6 w-6 text-blue-600" />}
+                          <MotorcycleIcon className="h-6 w-6" />
                           <span className="text-xs font-black uppercase tracking-tighter">{ride.service_type}</span>
                         </div>
                         <Badge variant="outline" className="text-[10px] font-black border-stone-300 uppercase">{ride.status}</Badge>

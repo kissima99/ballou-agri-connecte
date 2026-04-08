@@ -18,19 +18,15 @@ import {
   CheckCircle2,
   Users,
   Headphones,
-  Navigation
+  Navigation,
+  Bike
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 
-// Image de la moto de livraison rouge (Thiak-Thiak)
+// Icône Thiak-Thiak transparente
 const MotorcycleIcon = ({ className }: { className?: string }) => (
-  <img 
-    src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" 
-    alt="Moto Thiak-Thiak" 
-    className={className}
-    style={{ filter: 'hue-rotate(340deg) saturate(5)' }}
-  />
+  <Bike className={className} />
 );
 
 const Index = () => {
@@ -78,13 +74,13 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Quick Thiak-Thiak Action - NOW VISIBLE TO EVERYONE */}
+      {/* Quick Thiak-Thiak Action */}
       <section className="py-12 container px-4 mx-auto -mt-16 relative z-10">
         <Card className="bg-orange-600 border-none shadow-2xl rounded-[2.5rem] overflow-hidden text-white">
           <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="flex items-center gap-6">
-              <div className="bg-white p-4 rounded-3xl shadow-xl">
-                <MotorcycleIcon className="w-16 h-16" />
+              <div className="bg-white/10 backdrop-blur-md p-4 rounded-3xl border border-white/20">
+                <MotorcycleIcon className="w-16 h-16 text-white" />
               </div>
               <div>
                 <h2 className="text-3xl font-black tracking-tight">Besoin d'un Thiak-Thiak ?</h2>
@@ -146,7 +142,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Support Section with Call Center Logo */}
+      {/* Support Section */}
       <section className="py-24 bg-stone-100 border-y">
         <div className="container px-4 mx-auto">
           <div className="max-w-6xl mx-auto bg-white rounded-[3rem] overflow-hidden shadow-2xl flex flex-col lg:flex-row items-stretch">
