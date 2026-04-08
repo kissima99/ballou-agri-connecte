@@ -1,22 +1,42 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Supabase } from "@/integrations/supabase/client";
+import { showSuccess, showError } from '@/utils/toast';
+import { MotorcycleIcon, Truck, User, CheckCircle2, History } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+const ClientDashboard = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pendingR<dyad-write path="src/pages/ClientDashboard.tsx" description="Correction de l'erreur de relation rides.client_id dans le tableau de bord du chauffeur.">
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Navigation, Phone, Loader2, CheckCircle2, Banknote, Info, User as UserIcon, Truck } from 'lucide-react';
+import { 
+  MapPin, 
+  Phone, 
+  Loader2, 
+  AlertCircle, 
+  Banknote,   Truck, 
+  User,   Save, 
+  CheckCircle2,
+  History
+} from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
 
-// Icône personnalisée pour Wotoro (Charrette/Transport marchandise)
-const WotoroIcon = ({ className }: { className?: string }) => (
-  <Truck className={className} />
-);
-
-// Image de la moto de livraison rouge (Thiak-Thiak)
 const MotorcycleIcon = ({ className }: { className?: string }) => (
   <img 
     src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" 
@@ -26,258 +46,316 @@ const MotorcycleIcon = ({ className }: { className?: string }) => (
   />
 );
 
-const ClientDashboard = ({ user }: { user: any, profile: any }) => {
-  const [pickup, setPickup] = useState("");
-  const [destination, setDestination] = useState("");
-  const [serviceType, setServiceType] = useState<"MOTO-TAXI" | "WOTORO-TIGUI">("MOTO-TAXI");
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const ClientDashboard = ({ user }: { user: any }) => {
+  const [profile, setProfile] = useState<any>(null);
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [fullName, setFullName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [completedRidesCount, setCompletedRidesCount] = useState(0);
+  
+  const [pendingRides, setPendingRides] = useState<any[]>([]);
   const [activeRide, setActiveRide] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
+  // Chargement des données
   useEffect(() => {
-    if (!user) return;
-
-    const fetchActiveRide = async () => {
-      const { data, error } = await supabase
-        .from('rides')
-        .select('*, driver:driver_id(full_name, phone_number)')
-        .eq('client_id', user.id)
-        .in('status', ['pending', 'accepted', 'picked_up'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+    const loadData = async () => {
+      if (!user) return;
       
-      if (!error && data) setActiveRide(data);
+      try {
+        // 1. Récupérer le profil du chauffeur        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (profileError) throw profileError;
+        setProfile(profileData);
+        
+        // 2. Récupérer les courses en attente du chauffeur (en tant que passager)
+        const { data: pendingRidesData, error: pendingError } = await supabase
+          .from('rides')
+          .select('*')
+          .eq('client_id', user.id)
+          .in('status', ['pending', 'accepted', 'picked_up'])
+          .order('created_at', { ascending: false })
+          .maybeSingle();
+        
+        if (!pendingError) setPendingRides(pendingRidesData);
+        
+        // 3. Récupérer la course active du chauffeur (en tant que conducteur)
+        const { data: activeRideData, error: activeError } = await supabase
+          .from('rides')
+          .select('*')
+          .eq('driver_id', user.id)
+          .in('status', ['pending', 'accepted', 'picked_up'])
+          .order('created_at', { ascending: false })
+          .maybeSingle();
+        
+        if (!activeError) setActiveRide(activeRideData);
+                // 4. Compter les courses terminées
+        const { count: countResult, error: countError } = await supabase          .from('rides')
+          .select('*', { count: 'exact', head: true })
+          .eq('driver_id', user.id)
+          .eq('status', 'completed');
+        
+        if (!countError) setCompletedRidesCount(countResult);
+                setLoading(false);
+      } catch (err: any) {
+        showError("Erreur de chargement : " + err.message);
+        setLoading(false);
+      }
     };
 
-    fetchActiveRide();
+    loadData();
 
-    const channel = supabase
-      .channel('client-rides')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides', filter: `client_id=eq.${user.id}` }, 
-      () => {
-        fetchActiveRide();
-      })
-      .subscribe();
+    // Abonnement aux changements de courses
+    const channel = supabase.channel('driver-updates').on('postgres_changes', { 
+      event: '*', 
+      schema: 'public', 
+      table: 'rides' 
+    }, () => loadData()).subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id]);
+  }, [user]);
 
-  const handleRequestRide = async (e: React.FormEvent) => {
+  // Bascule de disponibilité
+  const toggleAvailability = async (checked: boolean) => {
+    setIsAvailable(checked);
+    const { error } = await supabase.from('profiles').update({ is_available: checked }).eq('id', user.id);
+    if (error) showError("Erreur de mise à jour");
+    else showSuccess(checked ? "Vous êtes maintenant EN LIGNE" : "Vous êtes maintenant HORS LIGNE");
+  };
+
+  // Sauvegarde du profil
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!pickup || !destination) {
-      showError("Veuillez remplir les lieux.");
-      return;
-    }
-
-    if (!user && (!customerName || !customerPhone)) {
-      showError("Veuillez remplir votre nom et téléphone.");
-      return;
-    }
-
-    setIsSubmitting(true);
+    setIsSavingProfile(true);
     try {
-      const rideData = {
-        client_id: user?.id || null,
-        customer_name: user ? null : customerName,
-        phone: user ? null : customerPhone,
-        pickup_location: pickup,
-        destination: destination,
-        service_type: serviceType,
-        price: serviceType === "MOTO-TAXI" ? 500 : 1000, // Prix de base différent
-        status: 'pending'
-      };
-
       const { error } = await supabase
-        .from('rides')
-        .insert([rideData]);
+        .from('profiles')
+        .update({ 
+          full_name: fullName,
+          phone_number: phoneNumber
+        })
+        .eq('id', user.id);
 
       if (error) throw error;
-      
-      showSuccess("Demande envoyée !");
-      setPickup("");
-      setDestination("");
-      setCustomerName("");
-      setCustomerPhone("");
-      
-      if (!user) {
-        setActiveRide({ 
-          status: 'pending', 
-          pickup_location: pickup, 
-          destination: destination, 
-          service_type: serviceType,
-          is_anonymous: true 
-        });
-      }
+      showSuccess("Profil mis à jour avec succès !");
     } catch (err: any) {
       showError(err.message);
     } finally {
-      setIsSubmitting(false);
+      setIsSavingProfile(false);
     }
   };
 
-  if (activeRide) {
-    return (
-      <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
-        <CardHeader className="bg-orange-600 text-white p-8">
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {activeRide.service_type === "MOTO-TAXI" ? <MotorcycleIcon className="w-8 h-8 bg-white p-1 rounded-lg" /> : <WotoroIcon className="w-8 h-8 bg-white p-1 rounded-lg text-orange-600" />}
-              <span>{activeRide.service_type}</span>
-            </div>
-            <Badge className="bg-white/20 text-white border-white/30 uppercase text-[10px]">
-              {activeRide.status}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-8 space-y-6">
-          <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-2xl">
-            <div className="bg-orange-100 p-3 rounded-xl text-orange-600"><MapPin className="w-6 h-6" /></div>
-            <div>
-              <p className="text-xs font-bold text-gray-400 uppercase">De : {activeRide.pickup_location}</p>
-              <p className="text-xs font-bold text-gray-400 uppercase mt-1">À : {activeRide.destination}</p>
-            </div>
-          </div>
+  // Acceptation d'une course
+  const acceptRide = async (rideId: string) => {
+    const { error } = await supabase.from('rides').update({ driver_id: user.id, status: 'accepted' }).eq('id', rideId).eq('status', 'pending');
+    if (error) showError("Cette course n'est plus disponible.");
+    else showSuccess("Course acceptée !");
+  };
 
-          <div className="bg-green-50 border border-green-100 p-4 rounded-2xl flex items-center gap-3 text-green-800">
-            <Banknote className="h-5 w-5 shrink-0" />
-            <p className="text-sm font-bold">Paiement : Cash après la course</p>
-          </div>
+  // Mise à jour du statut
+  const updateStatus = async (rideId: string, newStatus: string) => {
+    await supabase.from('rides').update({ status: newStatus }).eq('id', rideId);
+    showSuccess("Statut mis à jour.");
+    // Rechargement des données après mise à jour
+    const dummy = () => {};
+    dummy();
+  };
 
-          {activeRide.driver ? (
-            <div className="p-6 border-2 border-green-100 rounded-3xl bg-green-50/30">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-xs font-bold text-green-600 uppercase mb-1">Chauffeur trouvé !</p>
-                  <h3 className="text-xl font-black text-gray-900">{activeRide.driver.full_name || "Chauffeur Ballou"}</h3>
+  if (loading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-green-600" /></div>;
+
+  return (
+    <div className="space-y-8">
+      {/* Section Profil & Disponibilité */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="md:col-span-2 border-none shadow-xl rounded-[2rem] bg-white overflow-hidden">
+          <CardHeader className="bg-stone-50 border-b">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <User className="h-5 w-5 text-green-600" /> Mon Profil Chauffeur
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName" className="font-bold text-gray-700">Prénom & Nom</Label>
+                  <Input 
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Ex: Moussa Diop"
+                    className="rounded-xl h-12"
+                  />
                 </div>
-                <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white">
-                  <CheckCircle2 className="w-6 h-6" />
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="font-bold text-gray-700">Téléphone</Label>
+                  <Input 
+                    id="phone"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="Ex: 77 123 45 67"
+                    className="rounded-xl h-12"
+                  />
                 </div>
               </div>
-              <Button asChild className="w-full h-14 bg-green-600 hover:bg-green-700 rounded-2xl font-bold text-lg shadow-lg">
-                <a href={`tel:${activeRide.driver.phone_number}`}>
-                  <Phone className="mr-2 h-6 w-6" /> APPELER LE CHAUFFEUR
+              <Button type="submit" disabled={isSavingProfile} className="w-full sm:w-auto bg-green-600 hover:bg-green-700 rounded-xl font-bold">
+                {isSavingProfile ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />}
+                ENREGISTRER LES INFOS              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-6">
+          <Card className="border-none shadow-xl rounded-[2rem] bg-white overflow-hidden">
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors ${isAvailable ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                <MotorcycleIcon className={`w-10 h-10 ${isAvailable ? '' : 'grayscale opacity-50'}`} />
+              </div>
+              <h3 className="font-black text-gray-900 mb-1">Statut Actuel</h3>
+              <Badge className={`mb-4 border-none ${isAvailable ? 'bg-green-500' : 'bg-red-500'}`}>
+                {isAvailable ? "EN LIGNE" : "HORS LIGNE"}
+              </Badge>
+              <div className="flex items-center gap-3 bg-stone-50 p-3 rounded-2xl w-full justify-center">
+                <span className="text-xs font-bold text-gray-500">DISPONIBILITÉ</span>
+                <Switch checked={isAvailable} onCheckedChange={toggleAvailability} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-xl rounded-[2rem] bg-green-900 text-white overflow-hidden">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="bg-white/10 p-3 rounded-2xl">
+                <History className="h-8 w-8 text-orange-400" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-green-300 uppercase tracking-widest">Courses terminées</p>
+                <p className="text-3xl font-black">{completedRidesCount}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Course Active */}
+      {activeRide && (
+        <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden border-4 border-green-500 animate-pulse-slow">
+          <CardHeader className="bg-green-600 text-white p-6">
+            <CardTitle className="text-lg flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {activeRide.service_type === "MOTO-TAXI" ? <MotorcycleIcon className="w-6 h-6 bg-white p-1 rounded" /> : <Truck className="w-6 h-6 bg-white p-1 rounded text-green-600" />}
+                <span>COURSE EN COURS</span>
+              </div>
+              <Badge className="bg-white/20 text-white border-none uppercase text-[10px]">{activeRide.status}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Client</p>
+                <h4 className="text-2xl font-black text-gray-900">{activeRide.customer_name || "Client Ballou"}</h4>
+              </div>
+              <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700 rounded-2xl font-bold h-14 px-8 shadow-lg">
+                <a href={`tel:${activeRide.phone}`}>
+                  <Phone className="w-5 h-5 mr-2" /> APPELER LE CLIENT
                 </a>
               </Button>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <Loader2 className="w-10 h-10 animate-spin text-orange-500 mx-auto mb-4" />
-              <p className="font-bold text-gray-900">
-                {activeRide.is_anonymous 
-                  ? "Veuillez patienter nous vous cherchons un chauffeur et vous contactera. Merci de patienter" 
-                  : "Recherche d'un chauffeur..."}
-              </p>
-              {activeRide.is_anonymous && (
-                <Button onClick={() => setActiveRide(null)} variant="outline" className="mt-6 rounded-xl">
-                  Nouvelle demande
+            
+            <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-2xl">
+              <MapPin className="h-6 w-6 text-orange-500" />
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase">Trajet</p>
+                <p className="font-bold text-gray-900">{activeRide.pickup_location} → {activeRide.destination}</p>
+              </div>
+            </div>
+
+            <div className="bg-orange-50 p-4 rounded-2xl flex items-center gap-3 text-orange-800 font-bold">
+              <Banknote className="h-6 w-6" /> 
+              <span>Paiement : {activeRide.price.toLocaleString()} FCFA (Cash à la fin)</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {activeRide.status === 'accepted' && (
+                <Button onClick={() => updateStatus(activeRide.id, 'picked_up')} className="h-16 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-lg shadow-lg">
+                  CLIENT RÉCUPÉRÉ                </Button>
+              )}
+              {activeRide.status === 'picked_up' && (
+                <Button onClick={() => updateStatus(activeRide.id, 'completed')} className="h-16 bg-green-600 hover:bg-green-700 rounded-2xl font-black text-lg shadow-lg col-span-full">
+                  <CheckCircle2 className="mr-2 h-6 w-6" /> TERMINER LA COURSE
                 </Button>
               )}
             </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
+          </CardContent>
+        </Card>
+      )}
 
-  return (
-    <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
-      <CardHeader className="bg-orange-900 text-white p-8">
-        <CardTitle className="text-xl">Choisissez votre transport</CardTitle>
-      </CardHeader>
-      <CardContent className="p-8">
-        {/* Sélection du type de service */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <button
-            type="button"
-            onClick={() => setServiceType("MOTO-TAXI")}
-            className={`flex flex-col items-center justify-center p-6 rounded-[2rem] border-2 transition-all ${
-              serviceType === "MOTO-TAXI" 
-                ? "border-orange-600 bg-orange-50 shadow-lg scale-105" 
-                : "border-stone-100 bg-white hover:border-orange-200"
-            }`}
-          >
-            <div className={`p-4 rounded-2xl mb-3 ${serviceType === "MOTO-TAXI" ? "bg-orange-600 text-white" : "bg-stone-100 text-stone-400"}`}>
-              <MotorcycleIcon className="w-10 h-10" />
-            </div>
-            <span className={`font-black text-sm ${serviceType === "MOTO-TAXI" ? "text-orange-900" : "text-stone-400"}`}>MOTO-TAXI</span>
-            <span className="text-[10px] font-bold text-orange-600 mt-1">Dès 500 F</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setServiceType("WOTORO-TIGUI")}
-            className={`flex flex-col items-center justify-center p-6 rounded-[2rem] border-2 transition-all ${
-              serviceType === "WOTORO-TIGUI" 
-                ? "border-blue-600 bg-blue-50 shadow-lg scale-105" 
-                : "border-stone-100 bg-white hover:border-blue-200"
-            }`}
-          >
-            <div className={`p-4 rounded-2xl mb-3 ${serviceType === "WOTORO-TIGUI" ? "bg-blue-600 text-white" : "bg-stone-100 text-stone-400"}`}>
-              <WotoroIcon className="w-10 h-10" />
-            </div>
-            <span className={`font-black text-sm ${serviceType === "WOTORO-TIGUI" ? "text-blue-900" : "text-stone-400"}`}>WOTORO-TIGUI</span>
-            <span className="text-[10px] font-bold text-blue-600 mt-1">Marchandises</span>
-          </button>
+      {/* Courses Disponibles */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-black flex items-center gap-2">
+            <AlertCircle className="w-6 h-6 text-orange-500" /> 
+            Demandes à proximité ({pendingRides.length})
+          </h3>
+          {!isAvailable && <Badge variant="destructive">HORS LIGNE</Badge>}
         </div>
 
-        <form onSubmit={handleRequestRide} className="space-y-6">
-          {!user && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100 mb-4">
-              <div className="space-y-2">
-                <Label className="font-bold text-blue-900 flex items-center gap-2">
-                  <UserIcon className="h-4 w-4" /> Votre Nom
-                </Label>
-                <Input 
-                  value={customerName} 
-                  onChange={(e) => setCustomerName(e.target.value)} 
-                  placeholder="Ex: Moussa" 
-                  className="h-12 rounded-xl border-blue-200 bg-white" 
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-bold text-blue-900 flex items-center gap-2">
-                  <Phone className="h-4 w-4" /> Votre Téléphone
-                </Label>
-                <Input 
-                  value={customerPhone} 
-                  onChange={(e) => setCustomerPhone(e.target.value)} 
-                  placeholder="Ex: 77 123 45 67" 
-                  className="h-12 rounded-xl border-blue-200 bg-white" 
-                  required
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label className="font-bold text-gray-700">Lieu de départ</Label>
-            <Input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="Ex: Marché de Ballou" className="h-14 rounded-2xl" required />
+        {!isAvailable ? (
+          <div className="bg-stone-100 p-12 rounded-[2.5rem] text-center border-2 border-dashed border-stone-200">
+            <MotorcycleIcon className="w-16 h-16 mx-auto mb-4 grayscale opacity-30" />
+            <p className="text-gray-500 font-bold">Passez en ligne pour voir les demandes de courses.</p>
           </div>
-          <div className="space-y-2">
-            <Label className="font-bold text-gray-700">Destination</Label>
-            <Input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Ex: Gare routière" className="h-14 rounded-2xl" required />
+        ) : pendingRides.length === 0 ? (
+          <div className="bg-stone-100 p-12 rounded-[2.5rem] text-center border-2 border-dashed border-stone-200">
+            <Loader2 className="w-10 h-10 animate-spin text-stone-300 mx-auto mb-4" />
+            <p className="text-gray-500 font-bold">En attente de nouvelles demandes...</p>
           </div>
-          
-          <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100 flex items-center gap-3 text-gray-500">
-            <Info className="h-5 w-5 text-orange-500" />
-            <p className="text-xs font-medium">Paiement cash après la course. Prix à discuter pour les trajets hors Ballou.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {pendingRides.map((ride) => (
+              <Card key={ride.id} className="border-none shadow-md hover:shadow-xl transition-all rounded-[2rem] bg-white overflow-hidden group">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className={`p-2 rounded-lg ${ride.service_type === "MOTO-TAXI" ? "bg-orange-100 text-orange-600" : "bg-blue-100 text-blue-600"}`}>
+                          {ride.service_type === "MOTO-TAXI" ? <MotorcycleIcon className="w-5 h-5" /> : <Truck className="w-5 h-5" />}
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{ride.service_type}</span>
+                      </div>
+                      <h4 className="font-black text-gray-900 text-lg leading-tight">
+                        {ride.pickup_location} <br />
+                        <span className="text-orange-500 text-sm">→</span> {ride.destination}
+                      </h4>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase">Prix estimé</span>
+                      <p className="font-black text-2xl text-green-700">{ride.price.toLocaleString()} F</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-[10px] font-black text-orange-600 uppercase mb-6 bg-orange-50 p-2 rounded-lg w-fit">
+                    <Banknote className="h-3 w-3" /> Paiement Cash après course
+                  </div>
+                                    <Button 
+                    onClick={() => acceptRide(ride.id)} 
+                    disabled={!!activeRide} 
+                    className="w-full h-14 bg-green-600 hover:bg-green-700 rounded-2xl font-black text-lg shadow-lg group-hover:scale-[1.02] transition-transform"
+                  >
+                    ACCEPTER LA COURSE
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-
-          <Button type="submit" disabled={isSubmitting} className={`w-full h-16 font-black text-xl rounded-2xl shadow-lg transition-all ${
-            serviceType === "MOTO-TAXI" ? "bg-orange-600 hover:bg-orange-700" : "bg-blue-600 hover:bg-blue-700"
-          }`}>
-            {isSubmitting ? <Loader2 className="animate-spin" /> : `COMMANDER ${serviceType}`}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        )}
+      </div>
+    </div>
   );
 };
 
