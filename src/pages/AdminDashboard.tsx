@@ -1,9 +1,7 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableHead, TableRow, TableHeader, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +21,7 @@ import {
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
-import { supabase, isCurrentUserSuperAdmin } from "@/integrations/supabase/client";
+import { supabase, isCurrentUserSuperAdmin } from '@/integrations/supabase/client';
 
 // Image de la moto de livraison rouge (Thiak-Thiak)
 const MotorcycleIcon = ({ className }: { className?: string }) => (
@@ -58,16 +56,11 @@ const AdminDashboard = () => {
 
       const { data: ridesData, error: ridesError } = await supabase
         .from('rides')
-        .select(`
-          *,
-          client:client_id(full_name, phone_number),
-          driver:driver_id(full_name, phone_number)
-        `)
+        .select(`*, client:client_id(full_name, phone_number), driver:driver_id(full_name, phone_number)`)
         .order('created_at', { ascending: false });
 
       if (ridesError) throw ridesError;
       setRides(ridesData || []);
-
     } catch (err: any) {
       const message = err.message || "Problème de connexion";
       setDbError(message);
@@ -146,15 +139,15 @@ const AdminDashboard = () => {
     } catch (err) { showError("Erreur."); }
   };
 
-  const filteredOrders = orders.filter(order =>
-    order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredOrders = orders.filter(order => 
+    order.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (order.customer_name && order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const filteredRides = rides.filter(ride =>
-    ride.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ride.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (ride.customer_name && ride.customer_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  const filteredRides = rides.filter(ride => 
+    ride.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    ride.destination.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (ride.customer_name && ride.customer_name.toLowerCase().includes(searchTerm.toLowerCase())) || 
     (ride.client?.full_name && ride.client.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 

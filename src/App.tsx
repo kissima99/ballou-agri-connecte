@@ -41,7 +41,6 @@ const App = () => (
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/receipt/:orderId" element={<Receipt />} />
-            <Route path="/thiak-thiak" element={<ThiakThiak />} />
             <Route 
               path="/admin" 
               element={
