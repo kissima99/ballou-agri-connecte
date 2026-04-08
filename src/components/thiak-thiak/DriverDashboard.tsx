@@ -9,7 +9,6 @@ import { MapPin, Navigation, Phone, Loader2, AlertCircle, Banknote, Truck } from
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
 
-// Image de la moto de livraison rouge (Thiak-Thiak)
 const MotorcycleIcon = ({ className }: { className?: string }) => (
   <img 
     src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" 
@@ -26,9 +25,10 @@ const DriverDashboard = ({ user, profile }: { user: any, profile: any }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchRides = async () => {
+    // On récupère les données sans jointure pour éviter l'erreur de relation
     const { data: pending } = await supabase
       .from('rides')
-      .select('*, client:client_id(full_name, phone_number)')
+      .select('*')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
     
@@ -36,7 +36,7 @@ const DriverDashboard = ({ user, profile }: { user: any, profile: any }) => {
 
     const { data: active } = await supabase
       .from('rides')
-      .select('*, client:client_id(full_name, phone_number)')
+      .select('*')
       .eq('driver_id', user.id)
       .in('status', ['accepted', 'picked_up'])
       .maybeSingle();
@@ -95,8 +95,8 @@ const DriverDashboard = ({ user, profile }: { user: any, profile: any }) => {
           </CardHeader>
           <CardContent className="p-6 space-y-4">
             <div className="flex justify-between">
-              <h4 className="text-xl font-black">{activeRide.client?.full_name || activeRide.customer_name || "Client"}</h4>
-              <Button asChild variant="outline"><a href={`tel:${activeRide.client?.phone_number || activeRide.phone}`}><Phone className="w-4 h-4 mr-2" /> Appeler</a></Button>
+              <h4 className="text-xl font-black">{activeRide.customer_name || "Client"}</h4>
+              <Button asChild variant="outline"><a href={`tel:${activeRide.phone}`}><Phone className="w-4 h-4 mr-2" /> Appeler</a></Button>
             </div>
             <div className="bg-orange-50 p-3 rounded-xl flex items-center gap-2 text-orange-700 font-bold text-sm">
               <Banknote className="h-4 w-4" /> Paiement Cash à la fin
