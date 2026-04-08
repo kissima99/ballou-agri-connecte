@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Upload, PlusCircle, Loader2, Zap, Save, Pencil, Sparkles, Trash2 } from 'lucide-react';
+import { ShoppingCart, Package, Sprout, Minus, Plus, Home, Apple, Upload, PlusCircle, Loader2, Zap, Save, Pencil, Sparkles } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
@@ -32,7 +32,6 @@ const ImportedProducts = () => {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [products, setProducts] = useState<ImportedProduct[]>([]);
-  const [activeTab, setActiveTab] = useState("importes");
 
   const categories = [
     { id: "importes", name: "Importés", icon: <Package className="w-3.5 h-3.5 mr-1.5" /> },
@@ -85,82 +84,58 @@ const ImportedProducts = () => {
     return diffInDays < 7;
   };
 
-  const addNewProduct = () => {
-    const newProd: ImportedProduct = {
-      id: `temp-${Date.now()}`,
-      name: "Nouveau Produit",
-      price: 0,
-      unit: "unité",
-      category: activeTab,
-      image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&q=80",
-      quantity: 1
-    };
-    setProducts([newProd, ...products]);
-    showSuccess("Nouveau produit ajouté. Remplissez les infos et enregistrez !");
+  const updateQuantity = (id: string, delta: number) => {
+    setProducts(products.map(p =>
+      p.id === id ? { ...p, quantity: Math.max(1, p.quantity + delta) } : p
+    ));
   };
 
-  const updateProductField = (id: string, field: keyof ImportedProduct, value: any) => {
-    setProducts(products.map(p => p.id === id ? { ...p, [field]: value } : p));
+  const updatePrice = (id: string, newPrice: string) => {
+    if (!isSuperAdmin || !editMode) return;
+    const price = parseInt(newPrice) || 0;
+    setProducts(products.map(p =>
+      p.id === id ? { ...p, price: price } : p
+    ));
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, productId: string) => {
+    if (!isSuperAdmin || !editMode) return;
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        updateProductField(productId, 'image', reader.result as string);
-        showSuccess("Image chargée !");
+        const base64Image = reader.result as string;
+        setProducts(products.map(p =>
+          p.id === productId ? { ...p, image: base64Image } : p
+        ));
+        showSuccess("Image prête !");
       };
       reader.readAsDataURL(file);
     }
   };
 
   const saveProduct = async (product: ImportedProduct) => {
+    if (!isSuperAdmin || !editMode) return;
     setSavingKey(product.id);
     try {
-      const isNew = product.id.startsWith('temp-');
-      const payload: any = {
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        unit: product.unit,
-        category: product.category,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (!isNew) {
-        payload.id = product.id;
-      }
-
       const { error } = await supabase
         .from('products')
-        .upsert([payload]);
+        .upsert([{
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          unit: product.unit,
+          category: product.category,
+          updated_at: new Date().toISOString(),
+        }]);
 
       if (error) throw error;
       showSuccess(`${product.name} enregistré !`);
-      if (isNew) fetchProducts();
     } catch (err: any) {
       showError("Erreur : " + err.message);
     } finally {
       setSavingKey(null);
-    }
-  };
-
-  const deleteProduct = async (id: string) => {
-    if (id.startsWith('temp-')) {
-      setProducts(products.filter(p => p.id !== id));
-      return;
-    }
-
-    if (!window.confirm("Supprimer ce produit ?")) return;
-
-    try {
-      const { error } = await supabase.from('products').delete().eq('id', id);
-      if (error) throw error;
-      setProducts(products.filter(p => p.id !== id));
-      showSuccess("Produit supprimé.");
-    } catch (err: any) {
-      showError("Erreur lors de la suppression.");
     }
   };
 
@@ -192,24 +167,17 @@ const ImportedProducts = () => {
             </div>
           </div>
           {isSuperAdmin && (
-            <div className="flex gap-2">
-              {editMode && (
-                <Button onClick={addNewProduct} className="bg-blue-600 hover:bg-blue-700 text-white font-black">
-                  <PlusCircle className="w-4 h-4 mr-2" /> AJOUTER UN PRODUIT
-                </Button>
-              )}
-              <Button
-                variant={editMode ? "default" : "outline"}
-                onClick={() => setEditMode(!editMode)}
-                className={editMode ? "bg-orange-600 hover:bg-orange-700 text-white font-black" : "font-black"}
-              >
-                <Pencil className="w-4 h-4 mr-2" /> {editMode ? "Mode édition : ON" : "Mode édition"}
-              </Button>
-            </div>
+            <Button
+              variant={editMode ? "default" : "outline"}
+              onClick={() => setEditMode(!editMode)}
+              className={editMode ? "bg-orange-600 hover:bg-orange-700 text-white font-black" : "font-black"}
+            >
+              <Pencil className="w-4 h-4 mr-2" /> {editMode ? "Mode édition : ON" : "Mode édition"}
+            </Button>
           )}
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue="importes" className="w-full">
           <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-8 h-auto p-1.5 bg-blue-100/50 rounded-2xl gap-2">
             {categories.map(cat => (
               <TabsTrigger key={cat.id} value={cat.id} className="py-3 text-xs md:text-sm font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-xl">
@@ -231,48 +199,30 @@ const ImportedProducts = () => {
                     <div className="relative h-40 overflow-hidden">
                       <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       {isSuperAdmin && editMode && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px] gap-2">
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px]">
                           <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full flex items-center text-xs font-black shadow-2xl">
                             <Upload className="w-4 h-4 mr-2" /> IMAGE
                             <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, product.id)} />
                           </label>
-                          <Button variant="destructive" size="icon" className="rounded-full" onClick={() => deleteProduct(product.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       )}
                     </div>
                     <CardContent className="pt-4 pb-3 px-5">
-                      {editMode ? (
-                        <Input 
-                          value={product.name} 
-                          onChange={(e) => updateProductField(product.id, 'name', e.target.value)}
-                          className="h-8 mb-2 font-bold"
-                        />
-                      ) : (
-                        <h3 className="font-bold text-base text-gray-900 truncate mb-1">{product.name}</h3>
-                      )}
+                      <h3 className="font-bold text-base text-gray-900 truncate mb-1">{product.name}</h3>
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex-1">
-                          {editMode ? (
-                            <div className="flex flex-col gap-1">
-                              <Input type="number" value={product.price} onChange={(e) => updateProductField(product.id, 'price', parseInt(e.target.value) || 0)} className="h-8 w-full text-sm font-black" />
-                              <Input value={product.unit} onChange={(e) => updateProductField(product.id, 'unit', e.target.value)} className="h-6 text-[10px]" placeholder="Unité" />
-                            </div>
+                          {isSuperAdmin && editMode ? (
+                            <Input type="number" value={product.price} onChange={(e) => updatePrice(product.id, e.target.value)} className="h-8 w-full text-sm font-black" />
                           ) : (
-                            <>
-                              <p className="text-xl font-black text-blue-700">{product.price.toLocaleString()} FCFA</p>
-                              <p className="text-[10px] font-bold text-gray-400 uppercase">{product.unit}</p>
-                            </>
+                            <p className="text-xl font-black text-blue-700">{product.price.toLocaleString()} FCFA</p>
                           )}
+                          <p className="text-[10px] font-bold text-gray-400 uppercase">{product.unit}</p>
                         </div>
-                        {!editMode && (
-                          <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateProductField(product.id, 'quantity', Math.max(1, product.quantity - 1))}><Minus className="h-3 w-3" /></Button>
-                            <span className="font-black text-sm">{product.quantity}</span>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateProductField(product.id, 'quantity', product.quantity + 1)}><Plus className="h-3 w-3" /></Button>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateQuantity(product.id, -1)}><Minus className="h-3 w-3" /></Button>
+                          <span className="font-black text-sm">{product.quantity}</span>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateQuantity(product.id, 1)}><Plus className="h-3 w-3" /></Button>
+                        </div>
                       </div>
                     </CardContent>
                     <CardFooter className="pb-4 pt-0 px-5 flex flex-col gap-2">
@@ -281,16 +231,12 @@ const ImportedProducts = () => {
                           {savingKey === product.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} ENREGISTRER
                         </Button>
                       )}
-                      {!editMode && (
-                        <>
-                          <Button variant="outline" className="w-full border-blue-600 text-blue-700 h-10 text-[10px] font-black" onClick={() => handleAddToCart(product)}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> AJOUTER AU PANIER
-                          </Button>
-                          <Button className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-[10px] font-black" onClick={() => { handleAddToCart(product); navigate('/cart'); }}>
-                            <ShoppingCart className="mr-2 h-4 w-4" /> ACHETER MAINTENANT
-                          </Button>
-                        </>
-                      )}
+                      <Button variant="outline" className="w-full border-blue-600 text-blue-700 h-10 text-[10px] font-black" onClick={() => handleAddToCart(product)}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> AJOUTER AU PANIER
+                      </Button>
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-[10px] font-black" onClick={() => { handleAddToCart(product); navigate('/cart'); }}>
+                        <ShoppingCart className="mr-2 h-4 w-4" /> ACHETER MAINTENANT
+                      </Button>
                     </CardFooter>
                   </Card>
                 ))}

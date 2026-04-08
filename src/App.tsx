@@ -18,7 +18,9 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import Feedback from "@/pages/Feedback";
 import Login from "@/pages/Login";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import PurchaseHistory from "@/pages/PurchaseHistory"; // NEW IMPORT
+import PurchaseHistory from "@/pages/PurchaseHistory";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import ThiakThiak from "@/pages/ThiakThiak";
 
 const queryClient = new QueryClient();
 
@@ -39,9 +41,17 @@ const App = () => (
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/receipt/:orderId" element={<Receipt />} />
-            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/thiak-thiak" element={<ThiakThiak />} />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/feedback" element={<Feedback />} />
-            <Route path="/purchase-history" element={<PurchaseHistory />} /> // NEW ROUTE
+            <Route path="/purchase-history" element={<PurchaseHistory />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <WhatsAppButton />

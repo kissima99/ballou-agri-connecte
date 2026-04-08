@@ -73,7 +73,15 @@ const Login = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.status === 429) {
+          showError("Trop de tentatives. Veuillez attendre 15 minutes avant de réessayer.");
+        } else {
+          throw error;
+        }
+        return;
+      }
+      
       showSuccess("Lien envoyé ! Vérifiez votre boîte mail.");
     } catch (err: any) {
       showError(err.message || "Erreur lors de l'envoi du lien.");

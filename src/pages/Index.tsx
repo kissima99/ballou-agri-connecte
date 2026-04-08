@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,11 +17,33 @@ import {
   Star,
   CheckCircle2,
   Users,
-  Headphones
+  Headphones,
+  Navigation
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from "@/integrations/supabase/client";
+
+// Image de la moto de livraison rouge (Thiak-Thiak)
+const MotorcycleIcon = ({ className }: { className?: string }) => (
+  <img 
+    src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" 
+    alt="Moto Thiak-Thiak" 
+    className={className}
+    style={{ filter: 'hue-rotate(340deg) saturate(5)' }}
+  />
+);
 
 const Index = () => {
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    checkUser();
+  }, []);
+
   return (
     <div className="min-h-screen bg-stone-50">
       <Navbar />
@@ -54,6 +76,26 @@ const Index = () => {
             </Button>
           </div>
         </div>
+      </section>
+
+      {/* Quick Thiak-Thiak Action - NOW VISIBLE TO EVERYONE */}
+      <section className="py-12 container px-4 mx-auto -mt-16 relative z-10">
+        <Card className="bg-orange-600 border-none shadow-2xl rounded-[2.5rem] overflow-hidden text-white">
+          <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex items-center gap-6">
+              <div className="bg-white p-4 rounded-3xl shadow-xl">
+                <MotorcycleIcon className="w-16 h-16" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-black tracking-tight">Besoin d'un Thiak-Thiak ?</h2>
+                <p className="text-orange-100 font-medium">Commandez une course rapide à Ballou en un clic.</p>
+              </div>
+            </div>
+            <Button asChild size="lg" className="bg-white text-orange-600 hover:bg-orange-50 h-16 px-10 text-xl font-black rounded-2xl shadow-xl">
+              <Link to="/thiak-thiak">COMMANDER MAINTENANT <Navigation className="ml-2 h-6 w-6" /></Link>
+            </Button>
+          </CardContent>
+        </Card>
       </section>
 
       {/* Main Features */}
