@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,9 +39,10 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
     if (!user) return;
 
     const fetchActiveRide = async () => {
+      // Récupérer la course active du client (sans jointure)
       const { data, error } = await supabase
         .from('rides')
-        .select('*, driver:driver_id(full_name, phone_number)')
+        .select('*')
         .eq('client_id', user.id)
         .in('status', ['pending', 'accepted', 'picked_up'])
         .order('created_at', { ascending: false })

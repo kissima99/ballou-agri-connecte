@@ -44,7 +44,7 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const fetchData = async () => {
-    // 1. Récupérer les courses en attente
+    // 1️⃣ Récupérer les courses en attente
     const { data: pending } = await supabase
       .from('rides')
       .select('*')
@@ -53,7 +53,7 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
     
     setPendingRides(pending || []);
 
-    // 2. Récupérer la course active du chauffeur
+    // 2️⃣ Récupérer la course active du chauffeur (sans jointure)
     const { data: active } = await supabase
       .from('rides')
       .select('*')
@@ -63,7 +63,7 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
     
     setActiveRide(active);
 
-    // 3. Compter les courses terminées
+    // 3️⃣ Compter les courses terminées
     const { count } = await supabase
       .from('rides')
       .select('*', { count: 'exact', head: true })
@@ -77,8 +77,14 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
 
   useEffect(() => {
     fetchData();
-    const channel = supabase.channel('driver-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => fetchData()).subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const channel = supabase
+      .channel('driver-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user.id]);
 
   const toggleAvailability = async (checked: boolean) => {
@@ -110,7 +116,12 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
   };
 
   const acceptRide = async (rideId: string) => {
-    const { error } = await supabase.from('rides').update({ driver_id: user.id, status: 'accepted' }).eq('id', rideId).eq('status', 'pending');
+    const { error } = await supabase
+      .from('rides')
+      .update({ driver_id: user.id, status: 'accepted' })
+      .eq('id', rideId)
+      .eq('status', 'pending');
+
     if (error) showError("Cette course n'est plus disponible.");
     else showSuccess("Course acceptée !");
   };
@@ -125,7 +136,7 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
 
   return (
     <div className="space-y-8">
-      {/* Section Profil & Disponibilité */}
+      {/* Profil & Disponibilité */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-2 border-none shadow-xl rounded-[2rem] bg-white overflow-hidden">
           <CardHeader className="bg-stone-50 border-b">
