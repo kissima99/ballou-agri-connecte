@@ -288,39 +288,60 @@ const AdminDashboard = () => {
 
           <TabsContent value="rides" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredRides.map((ride) => (
-                <Card key={ride.id} className="border-none shadow-lg rounded-[2rem] overflow-hidden bg-white group">
-                  <CardHeader className={`${ride.status === 'completed' ? 'bg-stone-100' : 'bg-orange-50'} p-5`}>
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        {ride.service_type === 'MOTO-TAXI' ? <MotorcycleIcon className="h-6 w-6" /> : <Truck className="h-6 w-6 text-blue-600" />}
-                        <span className="text-xs font-black uppercase">{ride.service_type}</span>
+              {filteredRides.length === 0 ? (
+                <div className="col-span-full text-center py-20 bg-white rounded-[2rem] text-gray-400 font-medium">Aucune course enregistrée.</div>
+              ) : (
+                filteredRides.map((ride) => (
+                  <Card key={ride.id} className="border-none shadow-lg rounded-[2rem] overflow-hidden bg-white group">
+                    <CardHeader className={`${ride.status === 'completed' ? 'bg-stone-100' : 'bg-orange-50'} p-5`}>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          {ride.service_type === 'MOTO-TAXI' ? <MotorcycleIcon className="h-6 w-6" /> : <Truck className="h-6 w-6 text-blue-600" />}
+                          <span className="text-xs font-black uppercase tracking-tighter">{ride.service_type}</span>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] font-black border-stone-300 uppercase">{ride.status}</Badge>
                       </div>
-                      <Badge variant="outline" className="text-[10px] font-black border-stone-300 uppercase">{ride.status}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="flex items-start gap-3">
-                      <MapPin className="h-4 w-4 text-orange-500 mt-1" />
-                      <div>
-                        <p className="text-[10px] text-gray-400 font-black uppercase">Trajet</p>
-                        <p className="font-bold text-sm">{ride.pickup_location} → {ride.destination}</p>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-4">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-orange-100 p-2 rounded-lg text-orange-600"><MapPin className="h-4 w-4" /></div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Trajet</p>
+                          <p className="font-bold text-sm text-gray-900">{ride.pickup_location} <span className="text-orange-500">→</span> {ride.destination}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex justify-between items-center pt-4 border-t border-stone-100">
-                      <div className="font-black text-lg text-orange-600">{ride.price.toLocaleString()} F</div>
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-9 w-9 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
-                        onClick={() => deleteRide(ride.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      
+                      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-stone-100">
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Client</p>
+                          <p className="font-bold text-xs text-gray-800">{ride.customer_name || "Client Anonyme"}</p>
+                          <p className="text-[10px] text-gray-500">{ride.phone || "Pas de tel"}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Prix</p>
+                          <p className="font-black text-lg text-orange-600">{ride.price.toLocaleString()} F</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400">
+                          <Clock className="h-3 w-3" /> {new Date(ride.created_at).toLocaleDateString()}
+                        </div>
+                        <Button 
+                          variant="destructive"
+                          size="sm"
+                          className="h-9 rounded-xl text-[10px] font-black bg-red-600 hover:bg-red-700"
+                          onClick={() => deleteRide(ride.id)}
+                          disabled={isUpdating === ride.id}
+                        >
+                          {isUpdating === ride.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Trash2 className="h-3 w-3 mr-1" />}
+                          SUPPRIMER
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </TabsContent>
         </Tabs>
