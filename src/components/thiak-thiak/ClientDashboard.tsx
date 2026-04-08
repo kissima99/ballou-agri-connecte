@@ -169,7 +169,7 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
               <Loader2 className="w-10 h-10 animate-spin text-orange-500 mx-auto mb-4" />
               <p className="font-bold text-gray-900">
                 {activeRide.is_anonymous 
-                  ? "Le Super Admin a reçu votre demande. Un chauffeur va vous rappeler." 
+                  ? "Veuillez patienter nous vous cherchons un chauffeur et vous contactera. Merci de patienter" 
                   : "Recherche d'un chauffeur..."}
               </p>
               {activeRide.is_anonymous && (
