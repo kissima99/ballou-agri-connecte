@@ -16,21 +16,22 @@ import {
   Trash2,
   Truck,
   MapPin,
-  Navigation,
   Banknote,
-  Phone,
-  AlertCircle,
   CheckCircle2,
-  XCircle
-} from 'lucode-react';
+  Package,
+  Clock,
+  XCircle,
+  CreditCard,
+  Phone
+} from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase, isCurrentUserSuperAdmin } from '@/integrations/supabase/client';
 
 const MotorcycleIcon = ({ className }: { className?: string }) => (
-  <img
-    src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png"
-    alt="Moto Thiak-Thiak"
+  <img 
+    src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" 
+    alt="Moto Thiak-Thiak" 
     className={className}
     style={{ filter: 'hue-rotate(340deg) saturate(5)' }}
   />
@@ -47,7 +48,7 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // --- COMMANDES (orders) ---
+      // Récupération des commandes produits
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
@@ -56,7 +57,7 @@ const AdminDashboard = () => {
       if (ordersError) throw ordersError;
       setOrders(ordersData || []);
 
-      // --- COURSES (rides) ---
+      // Récupération des courses Thiak-Thiak
       const { data: ridesData, error: ridesError } = await supabase
         .from('rides')
         .select('*')
@@ -64,6 +65,7 @@ const AdminDashboard = () => {
 
       if (ridesError) throw ridesError;
       setRides(ridesData || []);
+
     } catch (err: any) {
       showError("Erreur lors du chargement : " + err.message);
     } finally {
@@ -84,7 +86,6 @@ const AdminDashboard = () => {
     checkAuth();
   }, [navigate]);
 
-  // --- ACTIONS SUR LES COMMANDES ---
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     setIsUpdating(orderId);
     try {
@@ -94,7 +95,7 @@ const AdminDashboard = () => {
         .eq('id', orderId);
 
       if (error) throw error;
-      showSuccess("Statut mis à jour !");
+      showSuccess(`Commande passée en statut : ${newStatus}`);
       await fetchData();
     } catch (err: any) {
       showError(err.message);
@@ -104,59 +105,53 @@ const AdminDashboard = () => {
   };
 
   const deleteOrder = async (orderId: string) => {
-    if (!window.confirm("Supprimer cette commande ?")) return;
+    if (!window.confirm("Voulez-vous vraiment supprimer cette commande ? Cette action est irréversible.")) return;
+    
+    setIsUpdating(orderId);
     try {
-      const { error } = await supabase.from('orders').delete().eq('id', orderId);
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
       if (error) throw error;
-      showSuccess("Commande supprimée.");
-      await fetchData();
+      showSuccess("Commande supprimée avec succès.");
+      setOrders(orders.filter(o => o.id !== orderId));
     } catch (err: any) {
-      showError(err.message);
+      showError("Erreur lors de la suppression : " + err.message);
+    } finally {
+      setIsUpdating(null);
     }
-  };
-
-  // --- ACTIONS SUR LES COURSES ---
-  const acceptRide = async (rideId: string) => {
-    const { error } = await supabase
-      .from('rides')
-      .update({ status: 'accepted' })
-      .eq('id', rideId)
-      .eq('status', 'pending');
-
-    if (error) showError("Cette course n'est plus disponible.");
-    else showSuccess("Course acceptée !");
-    await fetchData();
-  };
-
-  const updateRideStatus = async (rideId: string, newStatus: string) => {
-    const { error } = await supabase
-      .from('rides')
-      .update({ status: newStatus })
-      .eq('id', rideId);
-
-    if (error) showError(error.message);
-    else showSuccess("Statut de la course mis à jour.");
-    await fetchData();
   };
 
   const deleteRide = async (rideId: string) => {
-    if (!window.confirm("Supprimer cette course ?")) return;
-    const { error } = await supabase.from('rides').delete().eq('id', rideId);
-    if (error) showError(error.message);
-    else {
+    if (!window.confirm("Voulez-vous vraiment supprimer cette course ?")) return;
+    
+    setIsUpdating(rideId);
+    try {
+      const { error } = await supabase
+        .from('rides')
+        .delete()
+        .eq('id', rideId);
+
+      if (error) throw error;
       showSuccess("Course supprimée.");
-      await fetchData();
+      setRides(rides.filter(r => r.id !== rideId));
+    } catch (err: any) {
+      showError("Erreur : " + err.message);
+    } finally {
+      setIsUpdating(null);
     }
   };
 
-  const filteredOrders = orders.filter(o =>
-    o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredOrders = orders.filter(o => 
+    o.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
     o.customer_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredRides = rides.filter(r =>
-    r.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (r.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredRides = rides.filter(r => 
+    (r.customer_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.pickup_location.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (isLoading) {
@@ -171,278 +166,189 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-stone-50">
       <Navbar />
       <div className="container px-4 py-12 mx-auto">
-        {/* En‑tête */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
               <LayoutDashboard className="h-8 w-8 text-green-700" />
-              Tableau de Bord Admin
+              Gestion des Commandes (Super Admin)
             </h1>
-            <p className="text-gray-500 font-medium">Gestion des commandes et des courses</p>
+            <p className="text-gray-500 font-medium">Contrôle total des flux Ballou Agri Connect</p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
             <div className="relative flex-1 md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Rechercher..."
-                className="pl-10 rounded-xl"
+              <Input 
+                placeholder="Rechercher un ID ou un nom..." 
+                className="pl-10 rounded-xl border-stone-200"
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button onClick={fetchData} variant="outline" className="rounded-xl">
+            <Button onClick={fetchData} variant="outline" className="rounded-xl border-stone-200 bg-white">
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {/* Onglets : Gestion (fusion), Commandes, Courses */}
-        <Tabs defaultValue="manage" className="w-full">
-          <TabsList className="mb-8 bg-white p-1 rounded-xl shadow-sm border">
-            <TabsTrigger value="manage" className="font-bold">
-              Gestion (Tout)
+        <Tabs defaultValue="orders" className="w-full">
+          <TabsList className="mb-8 bg-white p-1 rounded-2xl shadow-sm border h-14">
+            <TabsTrigger value="orders" className="font-bold rounded-xl px-8 data-[state=active]:bg-green-600 data-[state=active]:text-white">
+              <Package className="w-4 h-4 mr-2" /> PRODUITS ({orders.length})
             </TabsTrigger>
-            <TabsTrigger value="orders" className="font-bold">
-              Commandes ({orders.length})
-            </TabsTrigger>
-            <TabsTrigger value="rides" className="font-bold">
-              Courses ({rides.length})
+            <TabsTrigger value="rides" className="font-bold rounded-xl px-8 data-[state=active]:bg-orange-600 data-[state=active]:text-white">
+              <MotorcycleIcon className="w-5 h-5 mr-2" /> THIAK-THIAK ({rides.length})
             </TabsTrigger>
           </TabsList>
 
-          {/* ==== Onglet Gestion (fusion) ==== */}
-          <TabsContent value="manage">
-            {/* SECTION COMMANDES */}
-            <Card className="border-none shadow-xl rounded-3xl overflow-hidden mb-12">
-              <CardHeader className="bg-green-50">
-                <CardTitle className="text-xl font-bold">Commandes</CardTitle>
-              </CardHeader>
-              <Table>
-                <TableHeader className="bg-stone-50">
-                  <TableRow>
-                    <TableHead className="font-bold">ID / Date</TableHead>
-                    <TableHead className="font-bold">Client</TableHead>
-                    <TableHead className="font-bold">Montant</TableHead>
-                    <TableHead className="font-bold">Statut</TableHead>
-                    <TableHead className="font-bold text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredOrders.map(order => (
-                    <TableRow key={order.id}>
-                      <TableCell>
-                        <div className="font-bold text-gray-900">{order.id}</div>
-                        <div className="text-[10px] text-gray-400 uppercase">
-                          {new Date(order.created_at).toLocaleDateString()}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{order.customer_name}</div>
-                        <div className="text-xs text-gray-500">{order.phone}</div>
-                      </TableCell>
-                      <TableCell className="font-bold text-green-700">
-                        {order.amount.toLocaleString()} F
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={
-                          order.status === 'Livré' ? 'bg-green-100 text-green-700' :
-                          order.status === 'En cours' ? 'bg-blue-100 text-blue-700' :
-                          'bg-orange-100 text-orange-700'
-                        }>
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 rounded-lg text-[10px] font-bold"
-                          onClick={() => updateOrderStatus(order.id, 'En cours')}
-                          disabled={isUpdating === order.id}
-                        >
-                          EXPÉDIER
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="h-8 rounded-lg text-[10px] font-bold bg-green-600"
-                          onClick={() => updateOrderStatus(order.id, 'Livré')}
-                          disabled={isUpdating === order.id}
-                        >
-                          LIVRER
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 text-red-500"
-                          onClick={() => deleteOrder(order.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+          <TabsContent value="orders" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-stone-50">
+                    <TableRow>
+                      <TableHead className="font-black text-gray-400 uppercase text-[10px] tracking-widest px-6">Commande</TableHead>
+                      <TableHead className="font-black text-gray-400 uppercase text-[10px] tracking-widest">Client</TableHead>
+                      <TableHead className="font-black text-gray-400 uppercase text-[10px] tracking-widest">Montant</TableHead>
+                      <TableHead className="font-black text-gray-400 uppercase text-[10px] tracking-widest">Statut</TableHead>
+                      <TableHead className="font-black text-gray-400 uppercase text-[10px] tracking-widest text-right px-6">Actions de Gestion</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-
-            {/* SECTION COURSES */}
-            <Card className="border-none shadow-xl rounded-3xl overflow-hidden">
-              <CardHeader className="bg-orange-50">
-                <CardTitle className="text-xl font-bold">Courses (Thiak‑Thiak)</CardTitle>
-              </CardHeader>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-                {filteredRides.map(ride => (
-                  <Card key={ride.id} className="border-none shadow-md hover:shadow-xl transition-all rounded-[2rem] bg-white overflow-hidden">
-                    <CardHeader className={`${ride.status === 'completed' ? 'bg-stone-100' : 'bg-orange-50'} p-4`}>
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          {ride.service_type === 'MOTO-TAXI' ? (
-                            <MotorcycleIcon className="h-5 w-5" />
-                          ) : (
-                            <Truck className="h-5 w-5 text-blue-600" />
-                          )}
-                          <span className="text-xs font-black uppercase">{ride.service_type}</span>
-                        </div>
-                        <Badge variant="outline" className="text-[10px] font-bold">{ride.status}</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-4">
-                      <div className="flex items-start gap-3">
-                        <MapPin className="h-4 w-4 text-orange-500 mt-1" />
-                        <div>
-                          <p className="text-xs text-gray-400 font-bold uppercase">Trajet</p>
-                          <p className="font-bold text-sm">{ride.pickup_location} → {ride.destination}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between pt-2 border-t">
-                        <div>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">Client</p>
-                          <p className="font-bold text-xs">{ride.customer_name || "Client"}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">Prix</p>
-                          <p className="font-black text-orange-600">{ride.price} F</p>
-                        </div>
-                      </div>
-
-                      {/* Actions rapides */}
-                      <div className="flex gap-2 mt-4">
-                        {ride.status === 'pending' && (
-                          <Button
-                            size="sm"
-                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                            onClick={() => updateRideStatus(ride.id, 'accepted')}
-                          >
-                            Accepter
-                          </Button>
-                        )}
-                        {ride.status !== 'completed' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1"
-                            onClick={() => deleteRide(ride.id)}
-                          >
-                            Supprimer
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrders.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-20 text-gray-400 font-medium">Aucune commande trouvée.</TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredOrders.map((order) => (
+                        <TableRow key={order.id} className="hover:bg-stone-50/50 transition-colors">
+                          <TableCell className="px-6">
+                            <div className="font-black text-gray-900">{order.id}</div>
+                            <div className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
+                              <Clock className="h-3 w-3" /> {new Date(order.created_at).toLocaleDateString('fr-FR')}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-bold text-gray-800">{order.customer_name}</div>
+                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                              <Phone className="h-3 w-3" /> {order.phone}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-black text-green-700">{order.amount.toLocaleString()} F</div>
+                            <div className="text-[9px] font-bold text-gray-400 uppercase">{order.zone || 'Dakar'}</div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={`border-none font-black text-[10px] px-3 py-1 rounded-full ${
+                              order.status === 'Livré' ? 'bg-green-100 text-green-700' : 
+                              order.status === 'Expédié' ? 'bg-blue-100 text-blue-700' : 
+                              order.status === 'Payé' ? 'bg-purple-100 text-purple-700' :
+                              'bg-orange-100 text-orange-700'
+                            }`}>
+                              {order.status.toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right px-6 space-x-2">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-9 rounded-xl text-[10px] font-black border-purple-200 text-purple-700 hover:bg-purple-50"
+                                onClick={() => updateOrderStatus(order.id, 'Payé')}
+                                disabled={isUpdating === order.id}
+                              >
+                                <CreditCard className="h-3 w-3 mr-1" /> PAYÉ
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-9 rounded-xl text-[10px] font-black border-blue-200 text-blue-700 hover:bg-blue-50"
+                                onClick={() => updateOrderStatus(order.id, 'Expédié')}
+                                disabled={isUpdating === order.id}
+                              >
+                                <Truck className="h-3 w-3 mr-1" /> EXPÉDIER
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                className="h-9 rounded-xl text-[10px] font-black bg-green-600 hover:bg-green-700"
+                                onClick={() => updateOrderStatus(order.id, 'Livré')}
+                                disabled={isUpdating === order.id}
+                              >
+                                <CheckCircle2 className="h-3 w-3 mr-1" /> LIVRER
+                              </Button>
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                className="h-9 w-9 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl"
+                                onClick={() => deleteOrder(order.id)}
+                                disabled={isUpdating === order.id}
+                              >
+                                {isUpdating === order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
               </div>
             </Card>
           </TabsContent>
 
-          {/* ==== Onglet Commandes (existant) ==== */}
-          <TabsContent value="orders">
-            <Card className="border-none shadow-xl rounded-3xl overflow-hidden">
-              <Table>
-                <TableHeader className="bg-stone-50">
-                  <TableRow>
-                    <TableHead className="font-bold">ID / Date</TableHead>
-                    <TableHead className="font-bold">Client</TableHead>
-                    <TableHead className="font-bold">Montant</TableHead>
-                    <TableHead className="font-bold">Statut</TableHead>
-                    <TableHead className="font-bold text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredOrders.map(order => (
-                    <TableRow key={order.id}>
-                      <TableCell>
-                        <div className="font-bold text-gray-900">{order.id}</div>
-                        <div className="text-[10px] text-gray-400 uppercase">{new Date(order.created_at).toLocaleDateString()}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{order.customer_name}</div>
-                        <div className="text-xs text-gray-500">{order.phone}</div>
-                      </TableCell>
-                      <TableCell className="font-bold text-green-700">{order.amount.toLocaleString()} F</TableCell>
-                      <TableCell>
-                        <Badge className={
-                          order.status === 'Livré' ? 'bg-green-100 text-green-700' :
-                          order.status === 'En cours' ? 'bg-blue-100 text-blue-700' :
-                          'bg-orange-100 text-orange-700'
-                        }>
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button size="sm" variant="outline" className="h-8 rounded-lg text-[10px] font-bold" onClick={() => updateOrderStatus(order.id, 'En cours')} disabled={isUpdating === order.id}>EXPÉDIER</Button>
-                        <Button size="sm" className="h-8 rounded-lg text-[10px] font-bold bg-green-600" onClick={() => updateOrderStatus(order.id, 'Livré')} disabled={isUpdating === order.id}>LIVRER</Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => deleteOrder(order.id)}><Trash2 className="h-4 w-4" /></Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </TabsContent>
-
-          {/* ==== Onglet Courses (existant) ==== */}
-          <TabsContent value="rides">
+          <TabsContent value="rides" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {rides.map(ride => (
-                <Card key={ride.id} className="border-none shadow-md rounded-[2rem] bg-white overflow-hidden">
-                  <CardHeader className={`${ride.status === 'completed' ? 'bg-stone-100' : 'bg-orange-50'} p-4`}>
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        {ride.service_type === 'MOTO-TAXI' ? <MotorcycleIcon className="h-5 w-5" /> : <Truck className="h-5 w-5 text-blue-600" />}
-                        <span className="text-xs font-black uppercase">{ride.service_type}</span>
+              {filteredRides.length === 0 ? (
+                <div className="col-span-full text-center py-20 bg-white rounded-[2rem] text-gray-400 font-medium">Aucune course enregistrée.</div>
+              ) : (
+                filteredRides.map((ride) => (
+                  <Card key={ride.id} className="border-none shadow-lg rounded-[2rem] overflow-hidden bg-white group">
+                    <CardHeader className={`${ride.status === 'completed' ? 'bg-stone-100' : 'bg-orange-50'} p-5`}>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          {ride.service_type === 'MOTO-TAXI' ? <MotorcycleIcon className="h-6 w-6" /> : <Truck className="h-6 w-6 text-blue-600" />}
+                          <span className="text-xs font-black uppercase tracking-tighter">{ride.service_type}</span>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] font-black border-stone-300 uppercase">{ride.status}</Badge>
                       </div>
-                      <Badge variant="outline" className="text-[10px] font-bold">{ride.status}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="flex items-start gap-3">
-                      <MapPin className="h-4 w-4 text-orange-500 mt-1" />
-                      <div>
-                        <p className="text-xs text-gray-400 font-bold uppercase">Trajet</p>
-                        <p className="font-bold text-sm">{ride.pickup_location} → {ride.destination}</p>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-4">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-orange-100 p-2 rounded-lg text-orange-600"><MapPin className="h-4 w-4" /></div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Trajet</p>
+                          <p className="font-bold text-sm text-gray-900">{ride.pickup_location} <span className="text-orange-500">→</span> {ride.destination}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <div>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase">Client</p>
-                        <p className="font-bold text-xs">{ride.customer_name || "Client"}</p>
+                      
+                      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-stone-100">
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Client</p>
+                          <p className="font-bold text-xs text-gray-800">{ride.customer_name || "Client Anonyme"}</p>
+                          <p className="text-[10px] text-gray-500">{ride.phone || "Pas de tel"}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Prix</p>
+                          <p className="font-black text-lg text-orange-600">{ride.price.toLocaleString()} F</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[10px] text-gray-400 font-bold uppercase">Prix</p>
-                        <p className="font-black text-orange-600">{ride.price} F</p>
+
+                      <div className="flex items-center justify-between pt-4">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400">
+                          <Clock className="h-3 w-3" /> {new Date(ride.created_at).toLocaleDateString()}
+                        </div>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-9 w-9 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => deleteRide(ride.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </div>
-                    <div className="flex gap-2 mt-4">
-                      {ride.status === 'pending' && (
-                        <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={() => updateRideStatus(ride.id, 'accepted')}>Accepter</Button>
-                      )}
-                      {ride.status !== 'completed' && (
-                        <Button size="sm" variant="outline" className="flex-1" onClick={() => deleteRide(ride.id)}>Supprimer</Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </TabsContent>
         </Tabs>
