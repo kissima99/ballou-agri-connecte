@@ -16,11 +16,9 @@ import {
   Trash2,
   Truck,
   MapPin,
-  Banknote,
   CheckCircle2,
   Package,
   Clock,
-  XCircle,
   CreditCard,
   Phone
 } from 'lucide-react';
@@ -48,7 +46,6 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Récupération des commandes produits
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
@@ -57,7 +54,6 @@ const AdminDashboard = () => {
       if (ordersError) throw ordersError;
       setOrders(ordersData || []);
 
-      // Récupération des courses Thiak-Thiak
       const { data: ridesData, error: ridesError } = await supabase
         .from('rides')
         .select('*')
@@ -95,7 +91,7 @@ const AdminDashboard = () => {
         .eq('id', orderId);
 
       if (error) throw error;
-      showSuccess(`Commande passée en statut : ${newStatus}`);
+      showSuccess(`Commande mise à jour : ${newStatus}`);
       await fetchData();
     } catch (err: any) {
       showError(err.message);
@@ -105,7 +101,7 @@ const AdminDashboard = () => {
   };
 
   const deleteOrder = async (orderId: string) => {
-    if (!window.confirm("Voulez-vous vraiment supprimer cette commande ? Cette action est irréversible.")) return;
+    if (!window.confirm("Voulez-vous vraiment supprimer cette commande ?")) return;
     
     setIsUpdating(orderId);
     try {
@@ -115,10 +111,10 @@ const AdminDashboard = () => {
         .eq('id', orderId);
 
       if (error) throw error;
-      showSuccess("Commande supprimée avec succès.");
+      showSuccess("Commande supprimée.");
       setOrders(orders.filter(o => o.id !== orderId));
     } catch (err: any) {
-      showError("Erreur lors de la suppression : " + err.message);
+      showError("Erreur : " + err.message);
     } finally {
       setIsUpdating(null);
     }
@@ -170,15 +166,15 @@ const AdminDashboard = () => {
           <div>
             <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
               <LayoutDashboard className="h-8 w-8 text-green-700" />
-              Gestion des Commandes (Super Admin)
+              Gestion des Commandes
             </h1>
-            <p className="text-gray-500 font-medium">Contrôle total des flux Ballou Agri Connect</p>
+            <p className="text-gray-500 font-medium">Espace Super Admin</p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
             <div className="relative flex-1 md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input 
-                placeholder="Rechercher un ID ou un nom..." 
+                placeholder="Rechercher..." 
                 className="pl-10 rounded-xl border-stone-200"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -206,48 +202,43 @@ const AdminDashboard = () => {
                 <Table>
                   <TableHeader className="bg-stone-50">
                     <TableRow>
-                      <TableHead className="font-black text-gray-400 uppercase text-[10px] tracking-widest px-6">Commande</TableHead>
-                      <TableHead className="font-black text-gray-400 uppercase text-[10px] tracking-widest">Client</TableHead>
-                      <TableHead className="font-black text-gray-400 uppercase text-[10px] tracking-widest">Montant</TableHead>
-                      <TableHead className="font-black text-gray-400 uppercase text-[10px] tracking-widest">Statut</TableHead>
-                      <TableHead className="font-black text-gray-400 uppercase text-[10px] tracking-widest text-right px-6">Actions de Gestion</TableHead>
+                      <TableHead className="font-bold text-gray-600 px-6">ID / Date</TableHead>
+                      <TableHead className="font-bold text-gray-600">Client</TableHead>
+                      <TableHead className="font-bold text-gray-600">Montant</TableHead>
+                      <TableHead className="font-bold text-gray-600">Statut</TableHead>
+                      <TableHead className="font-bold text-gray-600 text-right px-6">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredOrders.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-20 text-gray-400 font-medium">Aucune commande trouvée.</TableCell>
+                        <TableCell colSpan={5} className="text-center py-20 text-gray-400">Aucune commande.</TableCell>
                       </TableRow>
                     ) : (
                       filteredOrders.map((order) => (
                         <TableRow key={order.id} className="hover:bg-stone-50/50 transition-colors">
                           <TableCell className="px-6">
-                            <div className="font-black text-gray-900">{order.id}</div>
-                            <div className="text-[10px] text-gray-400 font-bold flex items-center gap-1">
-                              <Clock className="h-3 w-3" /> {new Date(order.created_at).toLocaleDateString('fr-FR')}
-                            </div>
+                            <div className="font-bold text-gray-900">{order.id}</div>
+                            <div className="text-[10px] text-gray-400">{new Date(order.created_at).toLocaleDateString('fr-FR')}</div>
                           </TableCell>
                           <TableCell>
                             <div className="font-bold text-gray-800">{order.customer_name}</div>
-                            <div className="text-xs text-gray-500 flex items-center gap-1">
-                              <Phone className="h-3 w-3" /> {order.phone}
-                            </div>
+                            <div className="text-xs text-gray-500">{order.phone}</div>
                           </TableCell>
                           <TableCell>
                             <div className="font-black text-green-700">{order.amount.toLocaleString()} F</div>
-                            <div className="text-[9px] font-bold text-gray-400 uppercase">{order.zone || 'Dakar'}</div>
                           </TableCell>
                           <TableCell>
-                            <Badge className={`border-none font-black text-[10px] px-3 py-1 rounded-full ${
+                            <Badge className={`border-none font-bold text-[10px] px-3 py-1 rounded-full ${
                               order.status === 'Livré' ? 'bg-green-100 text-green-700' : 
                               order.status === 'Expédié' ? 'bg-blue-100 text-blue-700' : 
                               order.status === 'Payé' ? 'bg-purple-100 text-purple-700' :
                               'bg-orange-100 text-orange-700'
                             }`}>
-                              {order.status.toUpperCase()}
+                              {order.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right px-6 space-x-2">
+                          <TableCell className="text-right px-6">
                             <div className="flex items-center justify-end gap-2">
                               <Button 
                                 size="sm" 
@@ -269,7 +260,7 @@ const AdminDashboard = () => {
                               </Button>
                               <Button 
                                 size="sm" 
-                                className="h-9 rounded-xl text-[10px] font-black bg-green-600 hover:bg-green-700"
+                                className="h-9 rounded-xl text-[10px] font-black bg-green-600 hover:bg-green-700 text-white"
                                 onClick={() => updateOrderStatus(order.id, 'Livré')}
                                 disabled={isUpdating === order.id}
                               >
@@ -278,11 +269,11 @@ const AdminDashboard = () => {
                               <Button 
                                 size="icon" 
                                 variant="ghost" 
-                                className="h-9 w-9 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl"
+                                className="h-9 w-9 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl flex items-center justify-center"
                                 onClick={() => deleteOrder(order.id)}
                                 disabled={isUpdating === order.id}
                               >
-                                {isUpdating === order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                {isUpdating === order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-5 w-5" />}
                               </Button>
                             </div>
                           </TableCell>
@@ -297,58 +288,39 @@ const AdminDashboard = () => {
 
           <TabsContent value="rides" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredRides.length === 0 ? (
-                <div className="col-span-full text-center py-20 bg-white rounded-[2rem] text-gray-400 font-medium">Aucune course enregistrée.</div>
-              ) : (
-                filteredRides.map((ride) => (
-                  <Card key={ride.id} className="border-none shadow-lg rounded-[2rem] overflow-hidden bg-white group">
-                    <CardHeader className={`${ride.status === 'completed' ? 'bg-stone-100' : 'bg-orange-50'} p-5`}>
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          {ride.service_type === 'MOTO-TAXI' ? <MotorcycleIcon className="h-6 w-6" /> : <Truck className="h-6 w-6 text-blue-600" />}
-                          <span className="text-xs font-black uppercase tracking-tighter">{ride.service_type}</span>
-                        </div>
-                        <Badge variant="outline" className="text-[10px] font-black border-stone-300 uppercase">{ride.status}</Badge>
+              {filteredRides.map((ride) => (
+                <Card key={ride.id} className="border-none shadow-lg rounded-[2rem] overflow-hidden bg-white group">
+                  <CardHeader className={`${ride.status === 'completed' ? 'bg-stone-100' : 'bg-orange-50'} p-5`}>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        {ride.service_type === 'MOTO-TAXI' ? <MotorcycleIcon className="h-6 w-6" /> : <Truck className="h-6 w-6 text-blue-600" />}
+                        <span className="text-xs font-black uppercase">{ride.service_type}</span>
                       </div>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-4">
-                      <div className="flex items-start gap-3">
-                        <div className="bg-orange-100 p-2 rounded-lg text-orange-600"><MapPin className="h-4 w-4" /></div>
-                        <div>
-                          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Trajet</p>
-                          <p className="font-bold text-sm text-gray-900">{ride.pickup_location} <span className="text-orange-500">→</span> {ride.destination}</p>
-                        </div>
+                      <Badge variant="outline" className="text-[10px] font-black border-stone-300 uppercase">{ride.status}</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-4 w-4 text-orange-500 mt-1" />
+                      <div>
+                        <p className="text-[10px] text-gray-400 font-black uppercase">Trajet</p>
+                        <p className="font-bold text-sm">{ride.pickup_location} → {ride.destination}</p>
                       </div>
-                      
-                      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-stone-100">
-                        <div>
-                          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Client</p>
-                          <p className="font-bold text-xs text-gray-800">{ride.customer_name || "Client Anonyme"}</p>
-                          <p className="text-[10px] text-gray-500">{ride.phone || "Pas de tel"}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Prix</p>
-                          <p className="font-black text-lg text-orange-600">{ride.price.toLocaleString()} F</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-4">
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400">
-                          <Clock className="h-3 w-3" /> {new Date(ride.created_at).toLocaleDateString()}
-                        </div>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-9 w-9 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => deleteRide(ride.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
+                    </div>
+                    <div className="flex justify-between items-center pt-4 border-t border-stone-100">
+                      <div className="font-black text-lg text-orange-600">{ride.price.toLocaleString()} F</div>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-9 w-9 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
+                        onClick={() => deleteRide(ride.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </TabsContent>
         </Tabs>
