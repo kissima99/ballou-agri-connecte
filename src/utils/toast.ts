@@ -1,7 +1,9 @@
+import { toast } from "sonner";
+
 export const showSuccess = (message: string) => {
-  console.log(`✅ Success: ${message}`);
+  toast.success(message);
 };
 
 export const showError = (message: string) => {
-  console.error(`❌ Error: ${message}`);
+  toast.error(message);
 };

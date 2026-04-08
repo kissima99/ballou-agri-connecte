@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import { showError, showSuccess } from "@/utils/toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+// Nouveau lien de déploiement
+const APP_URL = "https://e-commerce-ballou-dh330rjmg-kissima-nianghanes-projects.vercel.app";
+
 const SUPER_ADMIN_EMAILS = ["ramatayaha003@gmail.com"];
 
 const Login = () => {
@@ -69,7 +72,7 @@ const Login = () => {
       const { error } = await supabase.auth.signInWithOtp({
         email: targetEmail,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: `${APP_URL}`,
         },
       });
 
