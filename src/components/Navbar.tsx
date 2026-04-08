@@ -13,6 +13,16 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+// Image de la moto de livraison rouge (Thiak-Thiak)
+const MotorcycleIcon = ({ className }: { className?: string }) => (
+  <img 
+    src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" 
+    alt="Moto Thiak-Thiak" 
+    className={className}
+    style={{ filter: 'hue-rotate(340deg) saturate(5)' }}
+  />
+);
+
 const Navbar = () => {
   const navigate = useNavigate();
   const { totalItems } = useCart();
@@ -29,7 +39,6 @@ const Navbar = () => {
       const currentUser = session?.user || null;
       setUser(currentUser);
       
-      // Vérification immédiate par email pour plus de rapidité
       if (currentUser?.email === "ramatayaha003@gmail.com") {
         setIsSuperAdmin(true);
       } else {
@@ -105,6 +114,11 @@ const Navbar = () => {
                   <Package className="mr-2 h-4 w-4 text-blue-600" /> Produits de Dakar
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild className="rounded-xl cursor-pointer bg-orange-50 text-orange-700 font-bold">
+                <Link to="/thiak-thiak" className="flex items-center py-2">
+                  <MotorcycleIcon className="mr-2 h-6 w-6" /> Allo Thiak-Thiak
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem asChild className="rounded-xl cursor-pointer">
                 <Link to="/tracking" className="flex items-center py-2">
                   <Truck className="mr-2 h-4 w-4 text-orange-600" /> Suivi Colis
@@ -120,15 +134,17 @@ const Navbar = () => {
           <Link to="/feedback" className="text-sm font-bold text-gray-600 hover:text-orange-600 flex items-center transition-colors">
             <MessageSquare className="mr-1 h-4 w-4" /> Avis
           </Link>
-
-          {isSuperAdmin && (
-            <Link to="/admin" className="text-sm font-black text-orange-600 hover:text-orange-700 flex items-center transition-colors bg-orange-50 px-3 py-1 rounded-full">
-              <LayoutDashboard className="mr-1 h-4 w-4" /> ADMIN
-            </Link>
-          )}
         </div>
 
         <div className="flex items-center space-x-2 sm:space-x-4">
+          {/* Bouton Allo Thiak-Thiak TOUJOURS visible et très flashy */}
+          <Button asChild variant="default" size="sm" className="rounded-full bg-orange-600 hover:bg-orange-700 text-white font-black shadow-lg shadow-orange-200 animate-pulse-slow px-4 h-11 border-2 border-white">
+            <Link to="/thiak-thiak" className="flex items-center gap-2">
+              <MotorcycleIcon className="h-7 w-7" />
+              <span className="hidden xs:inline text-[10px] font-black tracking-tighter">ALLO THIAK-THIAK</span>
+            </Link>
+          </Button>
+
           {lastOrderId && (
             <Button
               variant="outline"
@@ -164,18 +180,23 @@ const Navbar = () => {
                   <p className="text-xs font-bold text-gray-900 truncate">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator />
-                {isSuperAdmin && (
-                  <DropdownMenuItem asChild className="rounded-lg cursor-pointer bg-orange-50 text-orange-700 focus:bg-orange-100 focus:text-orange-800 mb-1">
-                    <Link to="/admin" className="flex items-center font-bold">
-                      <ShieldCheck className="mr-2 h-4 w-4" /> Gérer les Commandes
-                    </Link>
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem asChild className="rounded-lg cursor-pointer bg-orange-50 text-orange-700 font-bold">
+                  <Link to="/thiak-thiak" className="flex items-center">
+                    <MotorcycleIcon className="mr-2 h-5 w-5" /> Allo Thiak-Thiak
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
                   <Link to="/purchase-history" className="flex items-center">
                     <History className="mr-2 h-4 w-4" /> Historique d'achats
                   </Link>
                 </DropdownMenuItem>
+                {isSuperAdmin && (
+                  <DropdownMenuItem asChild className="rounded-lg cursor-pointer bg-stone-50 text-stone-700 focus:bg-stone-100 mt-1">
+                    <Link to="/admin" className="flex items-center font-bold">
+                      <LayoutDashboard className="mr-2 h-4 w-4" /> Gérer les Commandes (Admin)
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer rounded-lg focus:bg-red-50 focus:text-red-700">
                   <LogOut className="mr-2 h-4 w-4" /> Déconnexion
