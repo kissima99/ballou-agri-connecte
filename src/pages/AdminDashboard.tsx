@@ -86,7 +86,7 @@ const AdminDashboard = () => {
         .eq('id', orderId);
 
       if (error) throw error;
-      
+
       // Mise à jour locale immédiate
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
       showSuccess(`Commande ${orderId} : ${newStatus}`);
@@ -99,7 +99,7 @@ const AdminDashboard = () => {
 
   const deleteOrder = async (orderId: string) => {
     if (!window.confirm("Voulez-vous vraiment supprimer définitivement cette commande ?")) return;
-    
+
     setIsUpdating(orderId);
     try {
       const { error } = await supabase
@@ -108,7 +108,7 @@ const AdminDashboard = () => {
         .eq('id', orderId);
 
       if (error) throw error;
-      
+
       // Suppression locale immédiate pour que la ligne disparaisse
       setOrders(prev => prev.filter(o => o.id !== orderId));
       showSuccess("Commande supprimée.");
@@ -121,7 +121,7 @@ const AdminDashboard = () => {
 
   const deleteRide = async (rideId: string) => {
     if (!window.confirm("Voulez-vous vraiment supprimer cette course ?")) return;
-    
+
     setIsUpdating(rideId);
     try {
       const { error } = await supabase
@@ -130,7 +130,7 @@ const AdminDashboard = () => {
         .eq('id', rideId);
 
       if (error) throw error;
-      
+
       // Suppression locale immédiate
       setRides(prev => prev.filter(r => r.id !== rideId));
       showSuccess("Course supprimée.");
@@ -141,12 +141,12 @@ const AdminDashboard = () => {
     }
   };
 
-  const filteredOrders = orders.filter(o => 
-    o.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredOrders = orders.filter(o =>
+    o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     o.customer_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredRides = rides.filter(r => 
+  const filteredRides = rides.filter(r =>
     (r.customer_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.pickup_location.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -174,8 +174,8 @@ const AdminDashboard = () => {
           <div className="flex gap-2 w-full md:w-auto">
             <div className="relative flex-1 md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input 
-                placeholder="Rechercher..." 
+              <Input
+                placeholder="Rechercher..."
                 className="pl-10 rounded-xl border-stone-200"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -231,8 +231,8 @@ const AdminDashboard = () => {
                           </TableCell>
                           <TableCell>
                             <Badge className={`border-none font-bold text-[10px] px-3 py-1 rounded-full ${
-                              order.status === 'Livré' ? 'bg-green-100 text-green-700' : 
-                              order.status === 'Expédié' ? 'bg-blue-100 text-blue-700' : 
+                              order.status === 'Livré' ? 'bg-green-100 text-green-700' :
+                              order.status === 'Expédié' ? 'bg-blue-100 text-blue-700' :
                               order.status === 'Payé' ? 'bg-purple-100 text-purple-700' :
                               'bg-orange-100 text-orange-700'
                             }`}>
@@ -241,35 +241,35 @@ const AdminDashboard = () => {
                           </TableCell>
                           <TableCell className="text-right px-6">
                             <div className="flex items-center justify-end gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
+                              <Button
+                                size="sm"
+                                variant="outline"
                                 className="h-9 rounded-xl text-[10px] font-black border-purple-200 text-purple-700 hover:bg-purple-50"
                                 onClick={() => updateOrderStatus(order.id, 'Payé')}
                                 disabled={isUpdating === order.id}
                               >
                                 <CreditCard className="h-3 w-3 mr-1" /> PAYÉ
                               </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
+                              <Button
+                                size="sm"
+                                variant="outline"
                                 className="h-9 rounded-xl text-[10px] font-black border-blue-200 text-blue-700 hover:bg-blue-50"
                                 onClick={() => updateOrderStatus(order.id, 'Expédié')}
                                 disabled={isUpdating === order.id}
                               >
                                 <Truck className="h-3 w-3 mr-1" /> EXPÉDIER
                               </Button>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 className="h-9 rounded-xl text-[10px] font-black bg-green-600 hover:bg-green-700 text-white"
                                 onClick={() => updateOrderStatus(order.id, 'Livré')}
                                 disabled={isUpdating === order.id}
                               >
                                 <CheckCircle2 className="h-3 w-3 mr-1" /> LIVRER
                               </Button>
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
+                              <Button
+                                size="icon"
+                                variant="ghost"
                                 className="h-9 w-9 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl flex items-center justify-center"
                                 onClick={() => deleteOrder(order.id)}
                                 disabled={isUpdating === order.id}
@@ -311,7 +311,7 @@ const AdminDashboard = () => {
                           <p className="font-bold text-sm text-gray-900">{ride.pickup_location} <span className="text-orange-500">→</span> {ride.destination}</p>
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4 pt-2 border-t border-stone-100">
                         <div>
                           <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Client</p>
@@ -328,7 +328,7 @@ const AdminDashboard = () => {
                         <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400">
                           <Clock className="h-3 w-3" /> {new Date(ride.created_at).toLocaleDateString()}
                         </div>
-                        <Button 
+                        <Button
                           variant="destructive"
                           size="sm"
                           className="h-9 rounded-xl text-[10px] font-black bg-red-600 hover:bg-red-700"
