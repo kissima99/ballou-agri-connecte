@@ -20,14 +20,12 @@ import {
   Package,
   Clock,
   CreditCard,
-  Phone,
   Bike
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase, isCurrentUserSuperAdmin } from '@/integrations/supabase/client';
 
-// Icône Thiak-Thiak transparente
 const MotorcycleIcon = ({ className }: { className?: string }) => (
   <Bike className={className} />
 );
@@ -88,17 +86,19 @@ const AdminDashboard = () => {
         .eq('id', orderId);
 
       if (error) throw error;
-      showSuccess(`Commande mise à jour : ${newStatus}`);
-      await fetchData();
+      
+      // Mise à jour locale immédiate
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      showSuccess(`Commande ${orderId} : ${newStatus}`);
     } catch (err: any) {
-      showError(err.message);
+      showError("Erreur de mise à jour : " + err.message);
     } finally {
       setIsUpdating(null);
     }
   };
 
   const deleteOrder = async (orderId: string) => {
-    if (!window.confirm("Voulez-vous vraiment supprimer cette commande ?")) return;
+    if (!window.confirm("Voulez-vous vraiment supprimer définitivement cette commande ?")) return;
     
     setIsUpdating(orderId);
     try {
@@ -108,10 +108,12 @@ const AdminDashboard = () => {
         .eq('id', orderId);
 
       if (error) throw error;
+      
+      // Suppression locale immédiate pour que la ligne disparaisse
+      setOrders(prev => prev.filter(o => o.id !== orderId));
       showSuccess("Commande supprimée.");
-      setOrders(orders.filter(o => o.id !== orderId));
     } catch (err: any) {
-      showError("Erreur : " + err.message);
+      showError("Erreur lors de la suppression : " + err.message);
     } finally {
       setIsUpdating(null);
     }
@@ -128,10 +130,12 @@ const AdminDashboard = () => {
         .eq('id', rideId);
 
       if (error) throw error;
+      
+      // Suppression locale immédiate
+      setRides(prev => prev.filter(r => r.id !== rideId));
       showSuccess("Course supprimée.");
-      setRides(rides.filter(r => r.id !== rideId));
     } catch (err: any) {
-      showError("Erreur : " + err.message);
+      showError("Erreur lors de la suppression : " + err.message);
     } finally {
       setIsUpdating(null);
     }
@@ -163,9 +167,9 @@ const AdminDashboard = () => {
           <div>
             <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3">
               <LayoutDashboard className="h-8 w-8 text-green-700" />
-              Gestion des Commandes
+              Tableau de Bord Admin
             </h1>
-            <p className="text-gray-500 font-medium">Espace Super Admin</p>
+            <p className="text-gray-500 font-medium">Gestion des flux Ballou Agri Connect</p>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
             <div className="relative flex-1 md:w-64">
@@ -186,7 +190,7 @@ const AdminDashboard = () => {
         <Tabs defaultValue="orders" className="w-full">
           <TabsList className="mb-8 bg-white p-1 rounded-2xl shadow-sm border h-14">
             <TabsTrigger value="orders" className="font-bold rounded-xl px-8 data-[state=active]:bg-green-600 data-[state=active]:text-white">
-              <Package className="w-4 h-4 mr-2" /> PRODUITS ({orders.length})
+              <Package className="w-4 h-4 mr-2" /> COMMANDES ({orders.length})
             </TabsTrigger>
             <TabsTrigger value="rides" className="font-bold rounded-xl px-8 data-[state=active]:bg-orange-600 data-[state=active]:text-white">
               <MotorcycleIcon className="w-5 h-5 mr-2" /> THIAK-THIAK ({rides.length})
@@ -209,7 +213,7 @@ const AdminDashboard = () => {
                   <TableBody>
                     {filteredOrders.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-20 text-gray-400">Aucune commande.</TableCell>
+                        <TableCell colSpan={5} className="text-center py-20 text-gray-400 font-medium">Aucune commande trouvée.</TableCell>
                       </TableRow>
                     ) : (
                       filteredOrders.map((order) => (
