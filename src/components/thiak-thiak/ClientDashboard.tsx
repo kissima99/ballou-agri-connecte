@@ -68,13 +68,8 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
   const handleRequestRide = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!pickup || !destination) {
-      showError("Veuillez remplir les lieux.");
-      return;
-    }
-
-    if (!user && (!customerName || !customerPhone)) {
-      showError("Veuillez remplir votre nom et téléphone.");
+    if (!pickup || !destination || !customerPhone) {
+      showError("Veuillez remplir tous les champs obligatoires.");
       return;
     }
 
@@ -82,12 +77,12 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
     try {
       const rideData = {
         client_id: user?.id || null,
-        customer_name: user ? null : customerName,
-        phone: user ? null : customerPhone,
+        customer_name: customerName || (user ? user.email?.split('@')[0] : "Client"),
+        phone: customerPhone,
         pickup_location: pickup,
         destination: destination,
         service_type: serviceType,
-        price: serviceType === "MOTO-TAXI" ? 300 : 1000, // Prix fixé à 300 F pour Moto-taxi
+        price: serviceType === "MOTO-TAXI" ? 300 : 1000,
         status: 'pending'
       };
 
@@ -100,18 +95,17 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
       showSuccess("Demande envoyée !");
       setPickup("");
       setDestination("");
-      setCustomerName("");
-      setCustomerPhone("");
       
-      if (!user) {
-        setActiveRide({ 
-          status: 'pending', 
-          pickup_location: pickup, 
-          destination: destination, 
-          service_type: serviceType,
-          is_anonymous: true 
-        });
-      }
+      // On garde une trace locale pour l'affichage du message de patience
+      setActiveRide({ 
+        status: 'pending', 
+        pickup_location: pickup, 
+        destination: destination, 
+        service_type: serviceType,
+        phone: customerPhone,
+        customer_name: rideData.customer_name
+      });
+      
     } catch (err: any) {
       showError(err.message);
     } finally {
@@ -142,12 +136,19 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
             </div>
           </div>
 
-          <div className="bg-green-50 border border-green-100 p-4 rounded-2xl flex items-center gap-3 text-green-800">
-            <Banknote className="h-5 w-5 shrink-0" />
-            <p className="text-sm font-bold">Paiement : Cash après la course</p>
+          <div className="bg-blue-50 border border-blue-100 p-6 rounded-3xl text-center space-y-4">
+            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto text-white animate-pulse">
+              <Phone className="h-8 w-8" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-blue-900">Veuillez patienter</h3>
+              <p className="text-blue-700 font-medium mt-2">
+                Un chauffeur va vous appeler sur le <strong>{activeRide.phone}</strong> pour confirmer votre trajet.
+              </p>
+            </div>
           </div>
 
-          {activeRide.driver ? (
+          {activeRide.driver && (
             <div className="p-6 border-2 border-green-100 rounded-3xl bg-green-50/30">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -164,21 +165,11 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
                 </a>
               </Button>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <Loader2 className="w-10 h-10 animate-spin text-orange-500 mx-auto mb-4" />
-              <p className="font-bold text-gray-900">
-                {activeRide.is_anonymous 
-                  ? "Veuillez patienter nous vous cherchons un chauffeur et vous contactera. Merci de patienter" 
-                  : "Recherche d'un chauffeur..."}
-              </p>
-              {activeRide.is_anonymous && (
-                <Button onClick={() => setActiveRide(null)} variant="outline" className="mt-6 rounded-xl">
-                  Nouvelle demande
-                </Button>
-              )}
-            </div>
           )}
+          
+          <Button onClick={() => setActiveRide(null)} variant="ghost" className="w-full text-gray-400 text-xs font-bold">
+            RETOUR / NOUVELLE COMMANDE
+          </Button>
         </CardContent>
       </Card>
     );
@@ -190,7 +181,6 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
         <CardTitle className="text-xl">Choisissez votre transport</CardTitle>
       </CardHeader>
       <CardContent className="p-8">
-        {/* Sélection du type de service */}
         <div className="grid grid-cols-2 gap-4 mb-8">
           <button
             type="button"
@@ -226,34 +216,31 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
         </div>
 
         <form onSubmit={handleRequestRide} className="space-y-6">
-          {!user && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100 mb-4">
-              <div className="space-y-2">
-                <Label className="font-bold text-blue-900 flex items-center gap-2">
-                  <UserIcon className="h-4 w-4" /> Votre Nom
-                </Label>
-                <Input 
-                  value={customerName} 
-                  onChange={(e) => setCustomerName(e.target.value)} 
-                  placeholder="Ex: Moussa" 
-                  className="h-12 rounded-xl border-blue-200 bg-white" 
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-bold text-blue-900 flex items-center gap-2">
-                  <Phone className="h-4 w-4" /> Votre Téléphone
-                </Label>
-                <Input 
-                  value={customerPhone} 
-                  onChange={(e) => setCustomerPhone(e.target.value)} 
-                  placeholder="Ex: 77 123 45 67" 
-                  className="h-12 rounded-xl border-blue-200 bg-white" 
-                  required
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-stone-50 rounded-2xl border border-stone-100 mb-4">
+            <div className="space-y-2">
+              <Label className="font-bold text-gray-700 flex items-center gap-2">
+                <UserIcon className="h-4 w-4" /> Votre Nom
+              </Label>
+              <Input 
+                value={customerName} 
+                onChange={(e) => setCustomerName(e.target.value)} 
+                placeholder="Ex: Moussa" 
+                className="h-12 rounded-xl border-stone-200 bg-white" 
+              />
             </div>
-          )}
+            <div className="space-y-2">
+              <Label className="font-bold text-orange-700 flex items-center gap-2">
+                <Phone className="h-4 w-4" /> Votre Téléphone *
+              </Label>
+              <Input 
+                value={customerPhone} 
+                onChange={(e) => setCustomerPhone(e.target.value)} 
+                placeholder="Ex: 77 123 45 67" 
+                className="h-12 rounded-xl border-orange-200 bg-white focus-visible:ring-orange-500" 
+                required
+              />
+            </div>
+          </div>
 
           <div className="space-y-2">
             <Label className="font-bold text-gray-700">Lieu de départ</Label>
@@ -266,7 +253,7 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
           
           <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100 flex items-center gap-3 text-gray-500">
             <Info className="h-5 w-5 text-orange-500" />
-            <p className="text-xs font-medium">Paiement cash après la course. Prix à discuter pour les trajets hors Ballou.</p>
+            <p className="text-xs font-medium">Paiement cash après la course. Le chauffeur vous appellera immédiatement.</p>
           </div>
 
           <Button type="submit" disabled={isSubmitting} className={`w-full h-16 font-black text-xl rounded-2xl shadow-lg transition-all ${
