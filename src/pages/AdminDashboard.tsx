@@ -14,19 +14,16 @@ import {
   Loader2,
   RefreshCw,
   Trash2,
-  Truck,
-  MapPin,
-  CheckCircle2,
   Package,
-  Clock,
   CreditCard,
   Bike,
   BarChart3,
-  ExternalLink
+  AlertTriangle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { showSuccess, showError } from '@/utils/toast';
 import { supabase, isCurrentUserSuperAdmin } from '@/integrations/supabase/client';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -35,11 +32,19 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [dbRoleError, setDbRoleError] = useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Récupérer toutes les commandes pour l'admin
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+        if (profile?.role !== 'super_admin' && user.email !== 'ramatayaha003@gmail.com') {
+          setDbRoleError(true);
+        }
+      }
+
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
@@ -48,7 +53,6 @@ const AdminDashboard = () => {
       if (ordersError) throw ordersError;
       setOrders(ordersData || []);
 
-      // Récupérer les courses Thiak-Thiak
       const { data: ridesData, error: ridesError } = await supabase
         .from('rides')
         .select('*')
@@ -57,7 +61,7 @@ const AdminDashboard = () => {
       if (ridesError) throw ridesError;
       setRides(ridesData || []);
     } catch (err: any) {
-      showError("Erreur lors du chargement : " + err.message);
+      showError("Erreur de chargement : " + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -67,24 +71,12 @@ const AdminDashboard = () => {
     const checkAuth = async () => {
       const isSuper = await isCurrentUserSuperAdmin();
       if (!isSuper) {
-        showError("Accès réservé au Super Admin.");
         navigate('/');
         return;
       }
       await fetchData();
     };
     checkAuth();
-
-    // Écoute en temps réel des changements
-    const channel = supabase
-      .channel('admin-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => fetchData())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [navigate]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
@@ -97,18 +89,18 @@ const AdminDashboard = () => {
 
       if (error) throw error;
       
-      // Mise à jour locale immédiate pour la réactivité
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
       showSuccess(`Statut mis à jour : ${newStatus}`);
     } catch (err: any) {
-      showError("Erreur de mise à jour : " + err.message);
+      console.error("Update error:", err);
+      showError("Erreur SQL : " + err.message);
     } finally {
       setIsUpdating(null);
     }
   };
 
   const deleteOrder = async (orderId: string) => {
-    if (!window.confirm("Voulez-vous vraiment supprimer cette commande ? Cette action est irréversible.")) return;
+    if (!window.confirm("Supprimer définitivement cette commande ?")) return;
     
     setIsUpdating(orderId);
     try {
@@ -120,9 +112,9 @@ const AdminDashboard = () => {
       if (error) throw error;
       
       setOrders(prev => prev.filter(o => o.id !== orderId));
-      showSuccess("Commande supprimée avec succès.");
+      showSuccess("Commande supprimée.");
     } catch (err: any) {
-      showError("Erreur de suppression : " + err.message);
+      showError("Erreur SQL : " + err.message);
     } finally {
       setIsUpdating(null);
     }
@@ -130,23 +122,34 @@ const AdminDashboard = () => {
 
   const filteredOrders = orders.filter(o => 
     o.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    o.customer_name.toLowerCase().includes(searchTerm.toLowerCase())
+    (o.customer_name && o.customer_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
     <div className="min-h-screen bg-stone-50">
       <Navbar />
       <div className="container px-4 py-12 mx-auto">
+        {dbRoleError && (
+          <Alert variant="destructive" className="mb-8 bg-red-50 border-red-200 text-red-800 rounded-2xl">
+            <AlertTriangle className="h-5 w-5" />
+            <AlertTitle className="font-black">Attention : Problème de Permissions</AlertTitle>
+            <AlertDescription className="font-medium">
+              Votre email est reconnu comme Admin, mais votre rôle dans la base de données n'est pas "super_admin". 
+              Les modifications risquent d'être bloquées par la sécurité (RLS).
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
             <h1 className="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3">
               <LayoutDashboard className="h-10 w-10 text-green-600" /> Administration
             </h1>
-            <p className="text-gray-500 font-medium">Gestion centrale de Ballou Agri Connect</p>
+            <p className="text-gray-500 font-medium">Gestion des flux Ballou Agri Connect</p>
           </div>
           <div className="flex gap-3">
             <Button asChild variant="outline" className="rounded-xl font-bold border-blue-200 text-blue-700">
-              <Link to="/insights"><BarChart3 className="mr-2 h-4 w-4" /> Voir Insights</Link>
+              <Link to="/insights"><BarChart3 className="mr-2 h-4 w-4" /> Insights</Link>
             </Button>
             <Button onClick={fetchData} variant="outline" className="rounded-xl font-bold">
               <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Actualiser
@@ -159,7 +162,7 @@ const AdminDashboard = () => {
             <CardContent className="p-6 flex items-center gap-4">
               <div className="bg-green-100 p-4 rounded-2xl text-green-600"><Package className="h-8 w-8" /></div>
               <div>
-                <p className="text-xs font-bold text-gray-400 uppercase">Commandes Totales</p>
+                <p className="text-xs font-bold text-gray-400 uppercase">Commandes</p>
                 <p className="text-3xl font-black">{orders.length}</p>
               </div>
             </CardContent>
@@ -168,7 +171,7 @@ const AdminDashboard = () => {
             <CardContent className="p-6 flex items-center gap-4">
               <div className="bg-orange-100 p-4 rounded-2xl text-orange-600"><Bike className="h-8 w-8" /></div>
               <div>
-                <p className="text-xs font-bold text-gray-400 uppercase">Courses Thiak-Thiak</p>
+                <p className="text-xs font-bold text-gray-400 uppercase">Courses</p>
                 <p className="text-3xl font-black">{rides.length}</p>
               </div>
             </CardContent>
@@ -177,7 +180,7 @@ const AdminDashboard = () => {
             <CardContent className="p-6 flex items-center gap-4">
               <div className="bg-blue-100 p-4 rounded-2xl text-blue-600"><CreditCard className="h-8 w-8" /></div>
               <div>
-                <p className="text-xs font-bold text-gray-400 uppercase">CA Total (Est.)</p>
+                <p className="text-xs font-bold text-gray-400 uppercase">CA Total</p>
                 <p className="text-3xl font-black">{orders.reduce((acc, o) => acc + (Number(o.amount) || 0), 0).toLocaleString()} F</p>
               </div>
             </CardContent>
@@ -198,11 +201,11 @@ const AdminDashboard = () => {
             <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
               <CardHeader className="border-b p-8">
                 <div className="flex flex-col md:flex-row justify-between gap-4">
-                  <CardTitle className="text-xl">Gestion des Commandes</CardTitle>
+                  <CardTitle className="text-xl">Liste des Commandes</CardTitle>
                   <div className="relative w-full md:w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input 
-                      placeholder="Rechercher un client ou ID..." 
+                      placeholder="Rechercher..." 
                       className="pl-10 rounded-xl border-stone-200"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -249,7 +252,7 @@ const AdminDashboard = () => {
                               <Button 
                                 size="sm" 
                                 variant="outline" 
-                                className="h-8 text-[10px] font-black rounded-lg border-green-200 text-green-700 hover:bg-green-50"
+                                className="h-8 text-[10px] font-black rounded-lg border-green-200 text-green-700"
                                 onClick={() => updateOrderStatus(order.id, 'Payé')}
                                 disabled={isUpdating === order.id}
                               >
@@ -258,7 +261,7 @@ const AdminDashboard = () => {
                               <Button 
                                 size="sm" 
                                 variant="outline" 
-                                className="h-8 text-[10px] font-black rounded-lg border-blue-200 text-blue-700 hover:bg-blue-50"
+                                className="h-8 text-[10px] font-black rounded-lg border-blue-200 text-blue-700"
                                 onClick={() => updateOrderStatus(order.id, 'Expédié')}
                                 disabled={isUpdating === order.id}
                               >
@@ -267,7 +270,7 @@ const AdminDashboard = () => {
                               <Button 
                                 size="sm" 
                                 variant="outline" 
-                                className="h-8 text-[10px] font-black rounded-lg border-purple-200 text-purple-700 hover:bg-purple-50"
+                                className="h-8 text-[10px] font-black rounded-lg border-purple-200 text-purple-700"
                                 onClick={() => updateOrderStatus(order.id, 'Livré')}
                                 disabled={isUpdating === order.id}
                               >
@@ -276,7 +279,7 @@ const AdminDashboard = () => {
                               <Button 
                                 size="sm" 
                                 variant="ghost" 
-                                className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
                                 onClick={() => deleteOrder(order.id)}
                                 disabled={isUpdating === order.id}
                               >
@@ -289,18 +292,6 @@ const AdminDashboard = () => {
                     </TableBody>
                   </Table>
                 </div>
-                {filteredOrders.length === 0 && !isLoading && (
-                  <div className="p-20 text-center">
-                    <Package className="h-12 w-12 text-stone-200 mx-auto mb-4" />
-                    <p className="text-gray-400 font-bold">Aucune commande trouvée.</p>
-                  </div>
-                )}
-                {isLoading && (
-                  <div className="p-20 text-center">
-                    <Loader2 className="h-10 w-10 animate-spin text-green-600 mx-auto mb-4" />
-                    <p className="text-gray-400 font-bold">Chargement des données...</p>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -327,7 +318,7 @@ const AdminDashboard = () => {
                         <TableRow key={ride.id}>
                           <TableCell className="px-8">
                             <div className="flex items-center gap-2">
-                              {ride.service_type === 'MOTO-TAXI' ? <Bike className="h-4 w-4 text-orange-600" /> : <Truck className="h-4 w-4 text-blue-600" />}
+                              {ride.service_type === 'MOTO-TAXI' ? <Bike className="h-4 w-4 text-orange-600" /> : <Package className="h-4 w-4 text-blue-600" />}
                               <span className="font-black text-xs">{ride.service_type}</span>
                             </div>
                           </TableCell>
