@@ -39,11 +39,10 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Récupérer les commandes actives (non livrées)
+      // Récupérer toutes les commandes pour l'admin
       const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
-        .not('status', 'eq', 'Livré')
         .order('created_at', { ascending: false });
 
       if (ordersError) throw ordersError;
@@ -76,13 +75,15 @@ const AdminDashboard = () => {
     };
     checkAuth();
 
-    // Real-time updates
-    const ordersChannel = supabase.channel('admin-orders').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchData()).subscribe();
-    const ridesChannel = supabase.channel('admin-rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => fetchData()).subscribe();
+    // Écoute en temps réel des changements
+    const channel = supabase
+      .channel('admin-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => fetchData())
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(ordersChannel);
-      supabase.removeChannel(ridesChannel);
+      supabase.removeChannel(channel);
     };
   }, [navigate]);
 
@@ -95,24 +96,35 @@ const AdminDashboard = () => {
         .eq('id', orderId);
 
       if (error) throw error;
+      
+      // Mise à jour locale immédiate pour la réactivité
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
       showSuccess(`Statut mis à jour : ${newStatus}`);
-      fetchData();
     } catch (err: any) {
-      showError(err.message);
+      showError("Erreur de mise à jour : " + err.message);
     } finally {
       setIsUpdating(null);
     }
   };
 
   const deleteOrder = async (orderId: string) => {
-    if (!window.confirm("Supprimer cette commande ?")) return;
+    if (!window.confirm("Voulez-vous vraiment supprimer cette commande ? Cette action est irréversible.")) return;
+    
+    setIsUpdating(orderId);
     try {
-      const { error } = await supabase.from('orders').delete().eq('id', orderId);
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
       if (error) throw error;
-      showSuccess("Commande supprimée");
-      fetchData();
+      
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+      showSuccess("Commande supprimée avec succès.");
     } catch (err: any) {
-      showError(err.message);
+      showError("Erreur de suppression : " + err.message);
+    } finally {
+      setIsUpdating(null);
     }
   };
 
@@ -147,7 +159,7 @@ const AdminDashboard = () => {
             <CardContent className="p-6 flex items-center gap-4">
               <div className="bg-green-100 p-4 rounded-2xl text-green-600"><Package className="h-8 w-8" /></div>
               <div>
-                <p className="text-xs font-bold text-gray-400 uppercase">Commandes Actives</p>
+                <p className="text-xs font-bold text-gray-400 uppercase">Commandes Totales</p>
                 <p className="text-3xl font-black">{orders.length}</p>
               </div>
             </CardContent>
@@ -166,7 +178,7 @@ const AdminDashboard = () => {
               <div className="bg-blue-100 p-4 rounded-2xl text-blue-600"><CreditCard className="h-8 w-8" /></div>
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase">CA Total (Est.)</p>
-                <p className="text-3xl font-black">{orders.reduce((acc, o) => acc + (o.amount || 0), 0).toLocaleString()} F</p>
+                <p className="text-3xl font-black">{orders.reduce((acc, o) => acc + (Number(o.amount) || 0), 0).toLocaleString()} F</p>
               </div>
             </CardContent>
           </Card>
@@ -199,84 +211,94 @@ const AdminDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader className="bg-stone-50">
-                    <TableRow>
-                      <TableHead className="font-black text-[10px] uppercase px-8">ID / Date</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase">Client</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase">Montant</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase">Statut Actuel</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase text-right px-8">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredOrders.map((order) => (
-                      <TableRow key={order.id} className="hover:bg-stone-50/50">
-                        <TableCell className="px-8">
-                          <div className="font-black text-gray-900">{order.id}</div>
-                          <div className="text-[10px] text-gray-400 font-bold">{new Date(order.created_at).toLocaleDateString()}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-bold text-gray-900">{order.customer_name}</div>
-                          <div className="text-xs text-gray-500">{order.phone}</div>
-                        </TableCell>
-                        <TableCell className="font-black text-green-700">{order.amount.toLocaleString()} F</TableCell>
-                        <TableCell>
-                          <Badge className={`border-none font-black text-[10px] ${
-                            order.status === 'Payé' ? 'bg-green-100 text-green-700' : 
-                            order.status === 'Expédié' ? 'bg-blue-100 text-blue-700' : 
-                            'bg-orange-100 text-orange-700'
-                          }`}>
-                            {order.status.toUpperCase()}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right px-8">
-                          <div className="flex justify-end gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-8 text-[10px] font-black rounded-lg border-green-200 text-green-700"
-                              onClick={() => updateOrderStatus(order.id, 'Payé')}
-                              disabled={isUpdating === order.id}
-                            >
-                              PAYÉ
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-8 text-[10px] font-black rounded-lg border-blue-200 text-blue-700"
-                              onClick={() => updateOrderStatus(order.id, 'Expédié')}
-                              disabled={isUpdating === order.id}
-                            >
-                              EXPÉDIÉ
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="h-8 text-[10px] font-black rounded-lg border-gray-200 text-gray-700"
-                              onClick={() => updateOrderStatus(order.id, 'Livré')}
-                              disabled={isUpdating === order.id}
-                            >
-                              LIVRÉ
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
-                              className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
-                              onClick={() => deleteOrder(order.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-stone-50">
+                      <TableRow>
+                        <TableHead className="font-black text-[10px] uppercase px-8">ID / Date</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase">Client</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase">Montant</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase">Statut</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase text-right px-8">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {filteredOrders.length === 0 && (
+                    </TableHeader>
+                    <TableBody>
+                      {filteredOrders.map((order) => (
+                        <TableRow key={order.id} className="hover:bg-stone-50/50">
+                          <TableCell className="px-8">
+                            <div className="font-black text-gray-900">{order.id}</div>
+                            <div className="text-[10px] text-gray-400 font-bold">{new Date(order.created_at).toLocaleDateString()}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-bold text-gray-900">{order.customer_name}</div>
+                            <div className="text-xs text-gray-500">{order.phone}</div>
+                          </TableCell>
+                          <TableCell className="font-black text-green-700">{(Number(order.amount) || 0).toLocaleString()} F</TableCell>
+                          <TableCell>
+                            <Badge className={`border-none font-black text-[10px] ${
+                              order.status === 'Payé' ? 'bg-green-100 text-green-700' : 
+                              order.status === 'Expédié' ? 'bg-blue-100 text-blue-700' : 
+                              order.status === 'Livré' ? 'bg-purple-100 text-purple-700' :
+                              'bg-orange-100 text-orange-700'
+                            }`}>
+                              {order.status.toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right px-8">
+                            <div className="flex justify-end gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-8 text-[10px] font-black rounded-lg border-green-200 text-green-700 hover:bg-green-50"
+                                onClick={() => updateOrderStatus(order.id, 'Payé')}
+                                disabled={isUpdating === order.id}
+                              >
+                                PAYÉ
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-8 text-[10px] font-black rounded-lg border-blue-200 text-blue-700 hover:bg-blue-50"
+                                onClick={() => updateOrderStatus(order.id, 'Expédié')}
+                                disabled={isUpdating === order.id}
+                              >
+                                EXPÉDIÉ
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="h-8 text-[10px] font-black rounded-lg border-purple-200 text-purple-700 hover:bg-purple-50"
+                                onClick={() => updateOrderStatus(order.id, 'Livré')}
+                                disabled={isUpdating === order.id}
+                              >
+                                LIVRÉ
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                onClick={() => deleteOrder(order.id)}
+                                disabled={isUpdating === order.id}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                {filteredOrders.length === 0 && !isLoading && (
                   <div className="p-20 text-center">
-                    <Loader2 className="h-10 w-10 animate-spin text-stone-200 mx-auto mb-4" />
-                    <p className="text-gray-400 font-bold">Aucune commande active trouvée.</p>
+                    <Package className="h-12 w-12 text-stone-200 mx-auto mb-4" />
+                    <p className="text-gray-400 font-bold">Aucune commande trouvée.</p>
+                  </div>
+                )}
+                {isLoading && (
+                  <div className="p-20 text-center">
+                    <Loader2 className="h-10 w-10 animate-spin text-green-600 mx-auto mb-4" />
+                    <p className="text-gray-400 font-bold">Chargement des données...</p>
                   </div>
                 )}
               </CardContent>
@@ -289,40 +311,42 @@ const AdminDashboard = () => {
                 <CardTitle className="text-xl">Courses Thiak-Thiak</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader className="bg-stone-50">
-                    <TableRow>
-                      <TableHead className="font-black text-[10px] uppercase px-8">Service</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase">Trajet</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase">Client</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase">Prix</TableHead>
-                      <TableHead className="font-black text-[10px] uppercase text-right px-8">Statut</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rides.map((ride) => (
-                      <TableRow key={ride.id}>
-                        <TableCell className="px-8">
-                          <div className="flex items-center gap-2">
-                            {ride.service_type === 'MOTO-TAXI' ? <Bike className="h-4 w-4 text-orange-600" /> : <Truck className="h-4 w-4 text-blue-600" />}
-                            <span className="font-black text-xs">{ride.service_type}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-xs font-bold">{ride.pickup_location} → {ride.destination}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-xs font-medium">{ride.customer_name || 'Client'}</div>
-                          <div className="text-[10px] text-gray-400">{ride.phone}</div>
-                        </TableCell>
-                        <TableCell className="font-black text-green-700">{ride.price} F</TableCell>
-                        <TableCell className="text-right px-8">
-                          <Badge className="border-none font-black text-[10px] uppercase">{ride.status}</Badge>
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-stone-50">
+                      <TableRow>
+                        <TableHead className="font-black text-[10px] uppercase px-8">Service</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase">Trajet</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase">Client</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase">Prix</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase text-right px-8">Statut</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {rides.map((ride) => (
+                        <TableRow key={ride.id}>
+                          <TableCell className="px-8">
+                            <div className="flex items-center gap-2">
+                              {ride.service_type === 'MOTO-TAXI' ? <Bike className="h-4 w-4 text-orange-600" /> : <Truck className="h-4 w-4 text-blue-600" />}
+                              <span className="font-black text-xs">{ride.service_type}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-xs font-bold">{ride.pickup_location} → {ride.destination}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-xs font-medium">{ride.customer_name || 'Client'}</div>
+                            <div className="text-[10px] text-gray-400">{ride.phone}</div>
+                          </TableCell>
+                          <TableCell className="font-black text-green-700">{ride.price} F</TableCell>
+                          <TableCell className="text-right px-8">
+                            <Badge className="border-none font-black text-[10px] uppercase">{ride.status}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
