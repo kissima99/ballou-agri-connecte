@@ -92,7 +92,6 @@ const AdminDashboard = () => {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
       showSuccess(`Statut mis à jour : ${newStatus}`);
     } catch (err: any) {
-      console.error("Update error:", err);
       showError("Erreur SQL : " + err.message);
     } finally {
       setIsUpdating(null);
@@ -113,6 +112,27 @@ const AdminDashboard = () => {
       
       setOrders(prev => prev.filter(o => o.id !== orderId));
       showSuccess("Commande supprimée.");
+    } catch (err: any) {
+      showError("Erreur SQL : " + err.message);
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
+  const deleteRide = async (rideId: string) => {
+    if (!window.confirm("Supprimer définitivement cette course ?")) return;
+    
+    setIsUpdating(rideId);
+    try {
+      const { error } = await supabase
+        .from('rides')
+        .delete()
+        .eq('id', rideId);
+
+      if (error) throw error;
+      
+      setRides(prev => prev.filter(r => r.id !== rideId));
+      showSuccess("Course supprimée.");
     } catch (err: any) {
       showError("Erreur SQL : " + err.message);
     } finally {
@@ -310,7 +330,8 @@ const AdminDashboard = () => {
                         <TableHead className="font-black text-[10px] uppercase">Trajet</TableHead>
                         <TableHead className="font-black text-[10px] uppercase">Client</TableHead>
                         <TableHead className="font-black text-[10px] uppercase">Prix</TableHead>
-                        <TableHead className="font-black text-[10px] uppercase text-right px-8">Statut</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase">Statut</TableHead>
+                        <TableHead className="font-black text-[10px] uppercase text-right px-8">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -330,8 +351,25 @@ const AdminDashboard = () => {
                             <div className="text-[10px] text-gray-400">{ride.phone}</div>
                           </TableCell>
                           <TableCell className="font-black text-green-700">{ride.price} F</TableCell>
+                          <TableCell>
+                            <Badge className={`border-none font-black text-[10px] uppercase ${
+                              ride.status === 'completed' ? 'bg-green-100 text-green-700' : 
+                              ride.status === 'pending' ? 'bg-orange-100 text-orange-700' : 
+                              'bg-blue-100 text-blue-700'
+                            }`}>
+                              {ride.status}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="text-right px-8">
-                            <Badge className="border-none font-black text-[10px] uppercase">{ride.status}</Badge>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                              onClick={() => deleteRide(ride.id)}
+                              disabled={isUpdating === ride.id}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
