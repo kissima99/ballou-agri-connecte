@@ -12,8 +12,8 @@ import {
   Clock,
   ArrowRightLeft,
   Loader2,
-  Badge,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { showError } from "@/utils/toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -44,10 +44,13 @@ const Tracking = () => {
 
   const buildSteps = (order: OrderRow) => {
     const direction = order.zone === "Ballou" ? "Ballou → Dakar" : "Dakar → Ballou";
+    
+    // Normalisation du statut pour la comparaison
+    const status = order.status.toLowerCase();
 
-    const isPaid = ["Payé", "Expédié", "Livré"].includes(order.status);
-    const isShipped = ["Expédié", "Livré"].includes(order.status);
-    const isDelivered = order.status === "Livré";
+    const isPaid = ["payé", "expédié", "livré"].includes(status);
+    const isShipped = ["expédié", "livré"].includes(status);
+    const isDelivered = status === "livré";
 
     const steps: TrackingStep[] = [
       {

@@ -87,7 +87,7 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
         pickup_location: pickup,
         destination: destination,
         service_type: serviceType,
-        price: serviceType === "MOTO-TAXI" ? 500 : 1000, // Prix de base différent
+        price: serviceType === "MOTO-TAXI" ? 300 : 1000, // Prix fixé à 300 F pour Moto-taxi
         status: 'pending'
       };
 
@@ -205,7 +205,7 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
               <MotorcycleIcon className="w-10 h-10" />
             </div>
             <span className={`font-black text-sm ${serviceType === "MOTO-TAXI" ? "text-orange-900" : "text-stone-400"}`}>MOTO-TAXI</span>
-            <span className="text-[10px] font-bold text-orange-600 mt-1">Dès 500 F</span>
+            <span className="text-[10px] font-bold text-orange-600 mt-1">Dès 300 F</span>
           </button>
 
           <button
