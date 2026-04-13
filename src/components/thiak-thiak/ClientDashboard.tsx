@@ -6,24 +6,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Navigation, Phone, Loader2, CheckCircle2, Banknote, Info, User as UserIcon, Truck } from 'lucide-react';
+import { MapPin, Navigation, Phone, Loader2, CheckCircle2, Info, User as UserIcon, Truck, LocateFixed } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
 
-// Icône personnalisée pour Wotoro (Charrette/Transport marchandise)
-const WotoroIcon = ({ className }: { className?: string }) => (
-  <Truck className={className} />
+// Import Leaflet components
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icons in Leaflet
+// @ts-ignore
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
+
+const WotoroIcon = ({ className }: { className?: string }) => <Truck className={className} />;
+const MotorcycleIcon = ({ className }: { className?: string }) => (
+  <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" alt="Moto" className={className} style={{ filter: 'hue-rotate(340deg) saturate(5)' }} />
 );
 
-// Image de la moto de livraison rouge (Thiak-Thiak)
-const MotorcycleIcon = ({ className }: { className?: string }) => (
-  <img 
-    src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" 
-    alt="Moto Thiak-Thiak" 
-    className={className}
-    style={{ filter: 'hue-rotate(340deg) saturate(5)' }}
-  />
-);
+// Component to update map view
+function ChangeView({ center }: { center: [number, number] }) {
+  const map = useMap();
+  map.setView(center, 16);
+  return null;
+}
 
 const ClientDashboard = ({ user }: { user: any, profile: any }) => {
   const [pickup, setPickup] = useState("");
@@ -33,10 +44,13 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
   const [customerPhone, setCustomerPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeRide, setActiveRide] = useState<any>(null);
+  
+  // GPS State
+  const [location, setLocation] = useState<[number, number] | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-
     const fetchActiveRide = async () => {
       const { data, error } = await supabase
         .from('rides')
@@ -46,28 +60,37 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      
       if (!error && data) setActiveRide(data);
     };
-
     fetchActiveRide();
-
-    const channel = supabase
-      .channel('client-rides')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides', filter: `client_id=eq.${user.id}` }, 
-      () => {
-        fetchActiveRide();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const channel = supabase.channel('client-rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides', filter: `client_id=eq.${user.id}` }, () => fetchActiveRide()).subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [user?.id]);
+
+  const handleGetLocation = () => {
+    setIsLocating(true);
+    if (!navigator.geolocation) {
+      showError("La géolocalisation n'est pas supportée par votre navigateur.");
+      setIsLocating(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocation([position.coords.latitude, position.coords.longitude]);
+        setIsLocating(false);
+        showSuccess("Position récupérée avec succès !");
+      },
+      (error) => {
+        showError("Impossible de récupérer votre position. Vérifiez vos permissions.");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true }
+    );
+  };
 
   const handleRequestRide = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!pickup || !destination || !customerPhone) {
       showError("Veuillez remplir tous les champs obligatoires.");
       return;
@@ -83,29 +106,18 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
         destination: destination,
         service_type: serviceType,
         price: serviceType === "MOTO-TAXI" ? 300 : 1000,
-        status: 'pending'
+        status: 'pending',
+        pickup_lat: location ? location[0] : null,
+        pickup_lng: location ? location[1] : null
       };
 
-      const { error } = await supabase
-        .from('rides')
-        .insert([rideData]);
-
+      const { error } = await supabase.from('rides').insert([rideData]);
       if (error) throw error;
       
       showSuccess("Demande envoyée !");
       setPickup("");
       setDestination("");
-      
-      // On garde une trace locale pour l'affichage du message de patience
-      setActiveRide({ 
-        status: 'pending', 
-        pickup_location: pickup, 
-        destination: destination, 
-        service_type: serviceType,
-        phone: customerPhone,
-        customer_name: rideData.customer_name
-      });
-      
+      setActiveRide({ ...rideData, status: 'pending' });
     } catch (err: any) {
       showError(err.message);
     } finally {
@@ -122,54 +134,27 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
               {activeRide.service_type === "MOTO-TAXI" ? <MotorcycleIcon className="w-8 h-8 bg-white p-1 rounded-lg" /> : <WotoroIcon className="w-8 h-8 bg-white p-1 rounded-lg text-orange-600" />}
               <span>{activeRide.service_type}</span>
             </div>
-            <Badge className="bg-white/20 text-white border-white/30 uppercase text-[10px]">
-              {activeRide.status}
-            </Badge>
+            <Badge className="bg-white/20 text-white border-white/30 uppercase text-[10px]">{activeRide.status}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-8 space-y-6">
-          <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-2xl">
-            <div className="bg-orange-100 p-3 rounded-xl text-orange-600"><MapPin className="w-6 h-6" /></div>
-            <div>
-              <p className="text-xs font-bold text-gray-400 uppercase">De : {activeRide.pickup_location}</p>
-              <p className="text-xs font-bold text-gray-400 uppercase mt-1">À : {activeRide.destination}</p>
-            </div>
-          </div>
-
           <div className="bg-blue-50 border border-blue-100 p-6 rounded-3xl text-center space-y-4">
             <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto text-white animate-pulse">
               <Phone className="h-8 w-8" />
             </div>
-            <div>
-              <h3 className="text-xl font-black text-blue-900">Veuillez patienter</h3>
-              <p className="text-blue-700 font-medium mt-2">
-                Un chauffeur va vous appeler sur le <strong>{activeRide.phone}</strong> pour confirmer votre trajet.
-              </p>
-            </div>
+            <h3 className="text-xl font-black text-blue-900">Veuillez patienter</h3>
+            <p className="text-blue-700 font-medium">Un chauffeur va vous appeler sur le <strong>{activeRide.phone}</strong>.</p>
           </div>
 
           {activeRide.driver && (
             <div className="p-6 border-2 border-green-100 rounded-3xl bg-green-50/30">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-xs font-bold text-green-600 uppercase mb-1">Chauffeur trouvé !</p>
-                  <h3 className="text-xl font-black text-gray-900">{activeRide.driver.full_name || "Chauffeur Ballou"}</h3>
-                </div>
-                <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white">
-                  <CheckCircle2 className="w-6 h-6" />
-                </div>
-              </div>
+              <h3 className="text-xl font-black text-gray-900 mb-4">{activeRide.driver.full_name || "Chauffeur Ballou"}</h3>
               <Button asChild className="w-full h-14 bg-green-600 hover:bg-green-700 rounded-2xl font-bold text-lg shadow-lg">
-                <a href={`tel:${activeRide.driver.phone_number}`}>
-                  <Phone className="mr-2 h-6 w-6" /> APPELER LE CHAUFFEUR
-                </a>
+                <a href={`tel:${activeRide.driver.phone_number}`}><Phone className="mr-2 h-6 w-6" /> APPELER LE CHAUFFEUR</a>
               </Button>
             </div>
           )}
-          
-          <Button onClick={() => setActiveRide(null)} variant="ghost" className="w-full text-gray-400 text-xs font-bold">
-            RETOUR / NOUVELLE COMMANDE
-          </Button>
+          <Button onClick={() => setActiveRide(null)} variant="ghost" className="w-full text-gray-400 text-xs font-bold">RETOUR</Button>
         </CardContent>
       </Card>
     );
@@ -178,87 +163,62 @@ const ClientDashboard = ({ user }: { user: any, profile: any }) => {
   return (
     <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
       <CardHeader className="bg-orange-900 text-white p-8">
-        <CardTitle className="text-xl">Choisissez votre transport</CardTitle>
+        <CardTitle className="text-xl">Réserver un transport GPS</CardTitle>
       </CardHeader>
       <CardContent className="p-8">
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <button
-            type="button"
-            onClick={() => setServiceType("MOTO-TAXI")}
-            className={`flex flex-col items-center justify-center p-6 rounded-[2rem] border-2 transition-all ${
-              serviceType === "MOTO-TAXI" 
-                ? "border-orange-600 bg-orange-50 shadow-lg scale-105" 
-                : "border-stone-100 bg-white hover:border-orange-200"
-            }`}
-          >
-            <div className={`p-4 rounded-2xl mb-3 ${serviceType === "MOTO-TAXI" ? "bg-orange-600 text-white" : "bg-stone-100 text-stone-400"}`}>
-              <MotorcycleIcon className="w-10 h-10" />
-            </div>
-            <span className={`font-black text-sm ${serviceType === "MOTO-TAXI" ? "text-orange-900" : "text-stone-400"}`}>MOTO-TAXI</span>
-            <span className="text-[10px] font-bold text-orange-600 mt-1">Dès 300 F</span>
+          <button type="button" onClick={() => setServiceType("MOTO-TAXI")} className={`flex flex-col items-center p-6 rounded-[2rem] border-2 transition-all ${serviceType === "MOTO-TAXI" ? "border-orange-600 bg-orange-50 shadow-lg" : "border-stone-100 bg-white"}`}>
+            <div className={`p-4 rounded-2xl mb-3 ${serviceType === "MOTO-TAXI" ? "bg-orange-600 text-white" : "bg-stone-100 text-stone-400"}`}><MotorcycleIcon className="w-10 h-10" /></div>
+            <span className="font-black text-sm">MOTO-TAXI</span>
           </button>
-
-          <button
-            type="button"
-            onClick={() => setServiceType("WOTORO-TIGUI")}
-            className={`flex flex-col items-center justify-center p-6 rounded-[2rem] border-2 transition-all ${
-              serviceType === "WOTORO-TIGUI" 
-                ? "border-blue-600 bg-blue-50 shadow-lg scale-105" 
-                : "border-stone-100 bg-white hover:border-blue-200"
-            }`}
-          >
-            <div className={`p-4 rounded-2xl mb-3 ${serviceType === "WOTORO-TIGUI" ? "bg-blue-600 text-white" : "bg-stone-100 text-stone-400"}`}>
-              <WotoroIcon className="w-10 h-10" />
-            </div>
-            <span className={`font-black text-sm ${serviceType === "WOTORO-TIGUI" ? "text-blue-900" : "text-stone-400"}`}>WOTORO-TIGUI</span>
-            <span className="text-[10px] font-bold text-blue-600 mt-1">Marchandises</span>
+          <button type="button" onClick={() => setServiceType("WOTORO-TIGUI")} className={`flex flex-col items-center p-6 rounded-[2rem] border-2 transition-all ${serviceType === "WOTORO-TIGUI" ? "border-blue-600 bg-blue-50 shadow-lg" : "border-stone-100 bg-white"}`}>
+            <div className={`p-4 rounded-2xl mb-3 ${serviceType === "WOTORO-TIGUI" ? "bg-blue-600 text-white" : "bg-stone-100 text-stone-400"}`}><WotoroIcon className="w-10 h-10" /></div>
+            <span className="font-black text-sm">WOTORO-TIGUI</span>
           </button>
         </div>
 
         <form onSubmit={handleRequestRide} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-stone-50 rounded-2xl border border-stone-100 mb-4">
+          <div className="p-4 bg-stone-50 rounded-2xl border border-stone-100 space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="font-bold text-gray-700">Ma position GPS</Label>
+              <Button type="button" onClick={handleGetLocation} disabled={isLocating} variant="outline" size="sm" className="rounded-xl border-orange-200 text-orange-700">
+                {isLocating ? <Loader2 className="animate-spin h-4 w-4" /> : <LocateFixed className="h-4 w-4 mr-2" />} 
+                {location ? "Mettre à jour" : "Me localiser"}
+              </Button>
+            </div>
+            
+            {location && (
+              <div className="h-48 w-full rounded-xl overflow-hidden border border-stone-200">
+                <MapContainer center={location} zoom={16} style={{ height: '100%', width: '100%' }} zoomControl={false}>
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <Marker position={location} />
+                  <ChangeView center={location} />
+                </MapContainer>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="font-bold text-gray-700 flex items-center gap-2">
-                <UserIcon className="h-4 w-4" /> Votre Nom
-              </Label>
-              <Input 
-                value={customerName} 
-                onChange={(e) => setCustomerName(e.target.value)} 
-                placeholder="Ex: Moussa" 
-                className="h-12 rounded-xl border-stone-200 bg-white" 
-              />
+              <Label className="font-bold text-gray-700">Votre Nom</Label>
+              <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Ex: Moussa" className="h-12 rounded-xl" />
             </div>
             <div className="space-y-2">
-              <Label className="font-bold text-orange-700 flex items-center gap-2">
-                <Phone className="h-4 w-4" /> Votre Téléphone *
-              </Label>
-              <Input 
-                value={customerPhone} 
-                onChange={(e) => setCustomerPhone(e.target.value)} 
-                placeholder="Ex: 77 123 45 67" 
-                className="h-12 rounded-xl border-orange-200 bg-white focus-visible:ring-orange-500" 
-                required
-              />
+              <Label className="font-bold text-orange-700">Votre Téléphone *</Label>
+              <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="Ex: 77 123 45 67" className="h-12 rounded-xl border-orange-200" required />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="font-bold text-gray-700">Lieu de départ</Label>
+            <Label className="font-bold text-gray-700">Lieu de départ (Texte)</Label>
             <Input value={pickup} onChange={(e) => setPickup(e.target.value)} placeholder="Ex: Marché de Ballou" className="h-14 rounded-2xl" required />
           </div>
           <div className="space-y-2">
             <Label className="font-bold text-gray-700">Destination</Label>
             <Input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Ex: Gare routière" className="h-14 rounded-2xl" required />
           </div>
-          
-          <div className="bg-stone-50 p-4 rounded-2xl border border-stone-100 flex items-center gap-3 text-gray-500">
-            <Info className="h-5 w-5 text-orange-500" />
-            <p className="text-xs font-medium">Paiement cash après la course. Le chauffeur vous appellera immédiatement.</p>
-          </div>
 
-          <Button type="submit" disabled={isSubmitting} className={`w-full h-16 font-black text-xl rounded-2xl shadow-lg transition-all ${
-            serviceType === "MOTO-TAXI" ? "bg-orange-600 hover:bg-orange-700" : "bg-blue-600 hover:bg-blue-700"
-          }`}>
+          <Button type="submit" disabled={isSubmitting} className={`w-full h-16 font-black text-xl rounded-2xl shadow-lg ${serviceType === "MOTO-TAXI" ? "bg-orange-600" : "bg-blue-600"}`}>
             {isSubmitting ? <Loader2 className="animate-spin" /> : `COMMANDER ${serviceType}`}
           </Button>
         </form>
