@@ -5,14 +5,259 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { MapPin, Phone, Loader2, AlertCircle, User, Save, CheckCircle2, Navigation } from 'lucide-react';
+import { MapPin, Phone, Loader2, AlertCircle, User, Save, CheckCircle2, Navigation, Map as MapIcon } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
 
 // Leaflet imports
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icons
+// @ts-ignore
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/think
+The user is pointing out that my previous response was cut off. I need to complete the `dyad-write` block for `src/components/thiak-thiak/DriverDashboard.tsx` and then provide the final summary and chat summary.
+
+Looking at the previous output:
+`iconRetinaUrl: 'https://unpkg.com/_`
+
+I need to continue from there.
+
+The full content of `src/components/thiak-thiak/DriverDashboard.tsx` should be:
+(I will rewrite the whole file to ensure it's complete and correct as per the instructions "Only use ONE <dyad-write> block per file" and "ALWAYS write the entire file").
+
+Wait, the instructions say "Continue exactly where you left off without any preamble".
+However, the system instructions also say "Only use ONE <dyad-write> block per file" and "ALWAYS write the entire file".
+If I just continue the text, it won't be a valid `dyad-write` block.
+Actually, the user said "Continue exactly where you left off without any preamble". This usually means they want the rest of the code.
+But since I am an AI assistant that uses specific tags, I should probably provide the full file in a new `dyad-write` tag to ensure the system processes it correctly.
+
+Let's look at the previous file content I was writing.
+It was `src/components/thiak-thiak/DriverDashboard.tsx`.
+
+I will provide the full file now.
+
+Plan:
+1. Rewrite `src/components/thiak-thiak/DriverDashboard.tsx` completely.
+2. Add the final summary.
+3. Add the chat summary.
+
+Wait, the user said "Continue exactly where you left off without any preamble".
+If I output:
+`leaflet@1.7.1/dist/images/marker-icon-2x.png', ...`
+It won't be inside a tag.
+The best way to "continue" in this context is to provide the full `dyad-write` block for that file again, but complete.
+
+Actually, I'll just provide the full file.
+
+File content for `src/components/thiak-thiak/DriverDashboard.tsx`:
+- Imports (React, UI, Icons, Supabase, Toast, Leaflet)
+- Leaflet icon fix
+- `ChangeView` component
+- `MotorcycleIcon` component
+- `DriverDashboard` component
+  - State (availability, profile info, pending rides, active ride, loading)
+  - `fetchData` function
+  - `useEffect` for real-time updates
+  - `acceptRide` function
+  - `updateStatus` function
+  - `toggleAvailability` function
+  - Render logic:
+    - Loading state
+    - Availability switch
+    - Active ride card (with Map if coordinates exist)
+    - Pending rides list
+
+Let's write it.leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
+
+const MotorcycleIcon = ({ className }: { className?: string }) => (
+  <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" alt="Moto" className={className} style={{ filter: 'hue-rotate(340deg) saturate(5)' }} />
+);
+
+// Composant pour forcer le recentrage de la carte
+function ChangeView({ center }: { center: [number, number] }) {
+  const map = useMap();
+  map.setView(center, 16);
+  return null;
+}
+
+const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile: any }) => {
+  const [isAvailable, setIsAvailable] = useState(initialProfile?.is_available ?? true);
+  const [pendingRides, setPendingRides] = useState<any[]>([]);
+  const [activeRide, setActiveRide] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    // Récupérer les courses en attente
+    const { data: pending } = await supabase
+      .from('rides')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    setPendingRides(pending || []);
+
+    // Récupérer la course active du chauffeur
+    const { data: active } = await supabase
+      .from('rides')
+      .select('*')
+      .eq('driver_id', user.id)
+      .in('status', ['accepted', 'picked_up'])
+      .maybeSingle();
+    
+    setActiveRide(active);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+    
+    // Écouter les changements en temps réel sur la table rides
+    const channel = supabase
+      .channel('driver-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user.id]);
+
+  const acceptRide = async (rideId: string) => {
+    try {
+      const { error } = await supabase
+        .from('rides')
+        .update({ 
+          driver_id: user.id, 
+          status: 'accepted' 
+        })
+        .eq('id', rideId)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      showSuccess("Course acceptée !");
+      fetchData();
+    } catch (err: any) {
+      showError(err.message);
+    }
+  };
+
+  const updateStatus = async (rideId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('rides')
+        .update({ status: newStatus })
+        .eq('id', rideId);
+
+      if (error) throw error;
+      showSuccess("Statut mis à jour.");
+      fetchData();
+    } catch (err: any) {
+      showError(err.message);
+    }
+  };
+
+  const toggleAvailability = async (checked: boolean) => {
+    setIsAvailable(checked);
+    await supabase.from('profiles').update({ is_available: checked }).eq('id', user.id);
+    showSuccess(checked ? "Vous êtes maintenant en ligne" : "Vous êtes maintenant hors ligne");
+  };
+
+  if (loading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-green-600" /></div>;
+
+  return (
+    <div className="space-y-8">
+      {/* Profil & Disponibilité */}
+      <Card className="border-none shadow-xl rounded-[2rem] bg-white">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isAvailable ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                <MotorcycleIcon className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="font-black text-gray-900">Ma Disponibilité</h3>
+                <p className="text-xs text-gray-500">{isAvailable ? "En ligne - Prêt à rouler" : "Hors ligne - En pause"}</p>
+              </div>
+            </div>
+            <Switch checked={isAvailable} onCheckedChange={toggleAvailability} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Course Active */}
+      {activeRide && (
+        <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden border-4 border-green-500 animate-in fade-in zoom-in duration-300">
+          <CardHeader className="bg-green-600 text-white p-6">
+            <CardTitle className="text-lg flex items-center justify-between">
+              <span className="flex items-center gap-2"><Navigation className="h-5 w-5" /> MISSION EN COURS</span>
+              <Badge className="bg-white/20 text-white border-none font-black">{activeRide.status.toUpperCase()}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8 space-y-6">
+            {/* Carte GPS */}
+            {activeRide.pickup_lat && activeRide.pickup_lng ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-gray-400 uppercase">
+                  <span>Position GPS du client</span>
+                  <Badge variant="outline" className="text-[10px] border-green-200 text-green-700">PRÉCIS</Badge>
+                </div>
+                <div className="h-64 w-full rounded-3xl overflow-hidden border-2 border-stone-100 shadow-inner relative z-0">
+                  <MapContainer 
+                    key={activeRide.id}
+                    center={[activeRide.pickup_lat, activeRide.pickup_lng]} 
+                    zoom={16} 
+                    style={{ height: '100%', width: '100%' }}
+                  >
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <Marker position={[activeRide.pickup_lat, activeRide.pickup_lng]}>
+                      <Popup>Client : {activeRide.customer_name}</Popup>
+                    </Marker>
+                    <ChangeView center={[activeRide.pickup_lat, activeRide.pickup_lng]} />
+                  </MapContainer>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-stone-50 border-2 border-dashed border-stone-200 rounded-3xl p-8 text-center">
+                <MapIcon className="h-10 w-10 text-stone-300 mx-auto mb-3" />
+                <p className="text-sm font-bold text-gray-500">Pas de coordonnées GPS</p>
+                <p className="text-xs text-gray-400">Utilisez l'adresse textuelle ci-dessous.</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Client</p>
+                  <h4 className="text-2xl font-black text-gray-900">{activeRide.customer_name}</h4>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-orange-500 shrink-0 mt-1" />
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Trajet</p>
+                    <p className="font-bold text-gray-700">{activeRide.pickup_location} <span className="text-orange-500">→</span> {activeRide.destination}</p>
+                  </div>
+                </div>
+              </div>
+              <div className<dyad-write path="src/components/thiak-thiak/DriverDashboard.tsx" description="Optimisation de l'affichage de la carte GPS pour le chauffeur">
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Phone, Loader2, AlertCircle, User, Save, CheckCircle2, Navigation, Map as MapIcon } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
+import { showSuccess, showError } from '@/utils/toast';
+
+// Leaflet imports
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -29,33 +274,65 @@ const MotorcycleIcon = ({ className }: { className?: string }) => (
   <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" alt="Moto" className={className} style={{ filter: 'hue-rotate(340deg) saturate(5)' }} />
 );
 
+// Composant pour forcer le recentrage de la carte
+function ChangeView({ center }: { center: [number, number] }) {
+  const map = useMap();
+  map.setView(center, 16);
+  return null;
+}
+
 const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile: any }) => {
   const [isAvailable, setIsAvailable] = useState(initialProfile?.is_available ?? true);
-  const [fullName, setFullName] = useState(initialProfile?.full_name || "");
-  const [phoneNumber, setPhoneNumber] = useState(initialProfile?.phone_number || "");
   const [pendingRides, setPendingRides] = useState<any[]>([]);
   const [activeRide, setActiveRide] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const fetchData = async () => {
-    const { data: pending } = await supabase.from('rides').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+    // Récupérer les courses en attente
+    const { data: pending } = await supabase
+      .from('rides')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
     setPendingRides(pending || []);
 
-    const { data: active } = await supabase.from('rides').select('*').eq('driver_id', user.id).in('status', ['accepted', 'picked_up']).maybeSingle();
+    // Récupérer la course active du chauffeur
+    const { data: active } = await supabase
+      .from('rides')
+      .select('*')
+      .eq('driver_id', user.id)
+      .in('status', ['accepted', 'picked_up'])
+      .maybeSingle();
+    
     setActiveRide(active);
     setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
-    const channel = supabase.channel('driver-updates').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => fetchData()).subscribe();
-    return () => { supabase.removeChannel(channel); };
+    
+    // Écouter les changements en temps réel sur la table rides
+    const channel = supabase
+      .channel('driver-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user.id]);
 
   const acceptRide = async (rideId: string) => {
     try {
-      const { error } = await supabase.from('rides').update({ driver_id: user.id, status: 'accepted' }).eq('id', rideId).eq('status', 'pending');
+      const { error } = await supabase
+        .from('rides')
+        .update({ 
+          driver_id: user.id, 
+          status: 'accepted' 
+        })
+        .eq('id', rideId)
+        .eq('status', 'pending');
+
       if (error) throw error;
       showSuccess("Course acceptée !");
       fetchData();
@@ -66,7 +343,11 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
 
   const updateStatus = async (rideId: string, newStatus: string) => {
     try {
-      const { error } = await supabase.from('rides').update({ status: newStatus }).eq('id', rideId);
+      const { error } = await supabase
+        .from('rides')
+        .update({ status: newStatus })
+        .eq('id', rideId);
+
       if (error) throw error;
       showSuccess("Statut mis à jour.");
       fetchData();
@@ -78,92 +359,134 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
   const toggleAvailability = async (checked: boolean) => {
     setIsAvailable(checked);
     await supabase.from('profiles').update({ is_available: checked }).eq('id', user.id);
-    showSuccess(checked ? "En ligne" : "Hors ligne");
+    showSuccess(checked ? "Vous êtes maintenant en ligne" : "Vous êtes maintenant hors ligne");
   };
 
   if (loading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-green-600" /></div>;
 
   return (
     <div className="space-y-8">
-      {/* Profil Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-2 border-none shadow-xl rounded-[2rem] bg-white">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4 mb-4">
+      {/* Profil & Disponibilité */}
+      <Card className="border-none shadow-xl rounded-[2rem] bg-white">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isAvailable ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                 <MotorcycleIcon className="w-8 h-8" />
               </div>
-              <div className="flex-1">
-                <h3 className="font-black text-gray-900">Disponibilité</h3>
-                <p className="text-xs text-gray-500">{isAvailable ? "Vous recevez des demandes" : "Vous êtes en pause"}</p>
+              <div>
+                <h3 className="font-black text-gray-900">Ma Disponibilité</h3>
+                <p className="text-xs text-gray-500">{isAvailable ? "En ligne - Prêt à rouler" : "Hors ligne - En pause"}</p>
               </div>
-              <Switch checked={isAvailable} onCheckedChange={toggleAvailability} />
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Switch checked={isAvailable} onCheckedChange={toggleAvailability} />
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Active Ride with Map */}
+      {/* Course Active */}
       {activeRide && (
-        <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden border-4 border-green-500">
+        <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden border-4 border-green-500 animate-in fade-in zoom-in duration-300">
           <CardHeader className="bg-green-600 text-white p-6">
             <CardTitle className="text-lg flex items-center justify-between">
-              <span>COURSE EN COURS</span>
-              <Badge className="bg-white/20 text-white border-none">{activeRide.status.toUpperCase()}</Badge>
+              <span className="flex items-center gap-2"><Navigation className="h-5 w-5" /> MISSION EN COURS</span>
+              <Badge className="bg-white/20 text-white border-none font-black">{activeRide.status.toUpperCase()}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-8 space-y-6">
-            {activeRide.pickup_lat && activeRide.pickup_lng && (
-              <div className="h-64 w-full rounded-3xl overflow-hidden border-2 border-stone-100 shadow-inner">
-                <MapContainer center={[activeRide.pickup_lat, activeRide.pickup_lng]} zoom={16} style={{ height: '100%', width: '100%' }}>
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  <Marker position={[activeRide.pickup_lat, activeRide.pickup_lng]}>
-                    <Popup>Position du client : {activeRide.customer_name}</Popup>
-                  </Marker>
-                </MapContainer>
+            {/* Carte GPS */}
+            {activeRide.pickup_lat && activeRide.pickup_lng ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-gray-400 uppercase">
+                  <span>Position GPS du client</span>
+                  <Badge variant="outline" className="text-[10px] border-green-200 text-green-700">PRÉCIS</Badge>
+                </div>
+                <div className="h-64 w-full rounded-3xl overflow-hidden border-2 border-stone-100 shadow-inner relative z-0">
+                  <MapContainer 
+                    key={activeRide.id}
+                    center={[activeRide.pickup_lat, activeRide.pickup_lng]} 
+                    zoom={16} 
+                    style={{ height: '100%', width: '100%' }}
+                  >
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <Marker position={[activeRide.pickup_lat, activeRide.pickup_lng]}>
+                      <Popup>Client : {activeRide.customer_name}</Popup>
+                    </Marker>
+                    <ChangeView center={[activeRide.pickup_lat, activeRide.pickup_lng]} />
+                  </MapContainer>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-stone-50 border-2 border-dashed border-stone-200 rounded-3xl p-8 text-center">
+                <MapIcon className="h-10 w-10 text-stone-300 mx-auto mb-3" />
+                <p className="text-sm font-bold text-gray-500">Pas de coordonnées GPS</p>
+                <p className="text-xs text-gray-400">Utilisez l'adresse textuelle ci-dessous.</p>
               </div>
             )}
 
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-xs font-bold text-gray-400 uppercase">Client</p>
-                <h4 className="text-2xl font-black text-gray-900">{activeRide.customer_name}</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Client</p>
+                  <h4 className="text-2xl font-black text-gray-900">{activeRide.customer_name}</h4>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-orange-500 shrink-0 mt-1" />
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Trajet</p>
+                    <p className="font-bold text-gray-700">{activeRide.pickup_location} <span className="text-orange-500">→</span> {activeRide.destination}</p>
+                  </div>
+                </div>
               </div>
-              <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700 rounded-2xl font-bold h-14 px-8">
-                <a href={`tel:${activeRide.phone}`}><Phone className="w-5 h-5 mr-2" /> APPELER</a>
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {activeRide.status === 'accepted' && (
-                <Button onClick={() => updateStatus(activeRide.id, 'picked_up')} className="h-16 bg-blue-600 rounded-2xl font-black text-lg">CLIENT RÉCUPÉRÉ</Button>
-              )}
-              {activeRide.status === 'picked_up' && (
-                <Button onClick={() => updateStatus(activeRide.id, 'completed')} className="h-16 bg-green-600 rounded-2xl font-black text-lg col-span-full">TERMINER LA COURSE</Button>
-              )}
+              <div className="flex flex-col justify-center gap-3">
+                <Button asChild size="lg" className="h-16 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-lg shadow-lg">
+                  <a href={`tel:${activeRide.phone}`}><Phone className="w-6 h-6 mr-2" /> APPELER LE CLIENT</a>
+                </Button>
+                {activeRide.status === 'accepted' && (
+                  <Button onClick={() => updateStatus(activeRide.id, 'picked_up')} className="h-16 bg-orange-600 hover:bg-orange-700 rounded-2xl font-black text-lg">CLIENT RÉCUPÉRÉ</Button>
+                )}
+                {activeRide.status === 'picked_up' && (
+                  <Button onClick={() => updateStatus(activeRide.id, 'completed')} className="h-16 bg-green-600 hover:bg-green-700 rounded-2xl font-black text-lg">TERMINER LA COURSE</Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Pending Rides */}
+      {/* Demandes en attente */}
       <div className="space-y-4">
         <h3 className="text-xl font-black flex items-center gap-2"><AlertCircle className="w-6 h-6 text-orange-500" /> Demandes à proximité</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {pendingRides.map((ride) => (
-            <Card key={ride.id} className="border-none shadow-md hover:shadow-xl transition-all rounded-[2rem] bg-white">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h4 className="font-black text-gray-900 text-lg">{ride.pickup_location} → {ride.destination}</h4>
-                    {ride.pickup_lat && <Badge className="bg-blue-100 text-blue-700 border-none mt-2">POSITION GPS DISPONIBLE</Badge>}
-                  </div>
-                  <p className="font-black text-2xl text-green-700">{ride.price} F</p>
-                </div>
-                <Button onClick={() => acceptRide(ride.id)} disabled={!!activeRide} className="w-full h-14 bg-green-600 rounded-2xl font-black text-lg">ACCEPTER</Button>
-              </CardContent>
+          {pendingRides.length === 0 ? (
+            <Card className="col-span-full p-12 text-center border-none shadow-sm bg-white rounded-3xl">
+              <p className="text-gray-400 font-medium">Aucune demande en attente pour le moment.</p>
             </Card>
-          ))}
+          ) : (
+            pendingRides.map((ride) => (
+              <Card key={ride.id} className="border-none shadow-md hover:shadow-xl transition-all rounded-[2rem] bg-white overflow-hidden group">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge className="bg-orange-100 text-orange-700 border-none text-[10px] font-black">{ride.service_type}</Badge>
+                        {ride.pickup_lat && <Badge className="bg-blue-100 text-blue-700 border-none text-[10px] font-black">GPS</Badge>}
+                      </div>
+                      <h4 className="font-black text-gray-900 text-lg leading-tight">{ride.pickup_location} <span className="text-orange-500">→</span> {ride.destination}</h4>
+                    </div>
+                    <p className="font-black text-2xl text-green-700">{ride.price} F</p>
+                  </div>
+                  <Button 
+                    onClick={() => acceptRide(ride.id)} 
+                    disabled={!!activeRide} 
+                    className="w-full h-14 bg-green-600 hover:bg-green-700 rounded-2xl font-black text-lg shadow-md group-hover:scale-[1.02] transition-transform"
+                  >
+                    ACCEPTER LA COURSE
+                  </Button>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
       </div>
     </div>
