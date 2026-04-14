@@ -14,8 +14,8 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Import the custom motorcycle image
-import motorcycleImg from '@/assets/motorcycle.png';
+// Import the transparent motorcycle image
+import motorcycleImg from 'dyad-media://media/e-commerce-ballou/.dyad/media/9c80571acad4965813fb3eb33cd4e293.png'; // Use the transparent image URL
 
 // Fix for default marker icons in Leaflet
 // @ts-ignore
@@ -33,7 +33,7 @@ function ChangeView({ center }: { center: [number, number] }) {
   return null;
 }
 
-// Icon for the motorcycle using the custom image
+// Icon for the motorcycle using the transparent image
 const MotorcycleIcon = ({ className }: { className?: string }) => (
   <img src={motorcycleImg} alt="Moto" className={className} style={{ filter: 'hue-rotate(340deg) saturate(5)' }} />
 );
