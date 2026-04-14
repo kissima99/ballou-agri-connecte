@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Phone, Loader2, AlertCircle, User, Save, CheckCircle2, Navigation, Map as MapIcon } from 'lucide-react';
+import { MapPin, Phone, Loader2, AlertCircle, Navigation, Map as MapIcon } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
 
@@ -13,6 +13,9 @@ import { showSuccess, showError } from '@/utils/toast';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+
+// Import the custom motorcycle image
+import motorcycleImg from '@/assets/motorcycle.png';
 
 // Fix for default marker icons in Leaflet
 // @ts-ignore
@@ -30,9 +33,9 @@ function ChangeView({ center }: { center: [number, number] }) {
   return null;
 }
 
-// Icon for the motorcycle using the new image
+// Icon for the motorcycle using the custom image
 const MotorcycleIcon = ({ className }: { className?: string }) => (
-  <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" alt="Moto" className={className} style={{ filter: 'hue-rotate(340deg) saturate(5)' }} />
+  <img src={motorcycleImg} alt="Moto" className={className} style={{ filter: 'hue-rotate(340deg) saturate(5)' }} />
 );
 
 const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile: any }) => {
@@ -112,25 +115,27 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
     showSuccess(checked ? 'Vous êtes maintenant en ligne' : 'Vous êtes maintenant hors ligne');
   };
 
-  if (loading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-green-600" /></div>;
+  if (loading) return (
+    <div className="flex justify-center py-10">
+      <Loader2 className="animate-spin text-green-600" />
+    </div>
+  );
 
   return (
     <div className="space-y-8">
       {/* Profile & Availability */}
       <Card className="border-none shadow-xl rounded-[2rem] bg-white">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isAvailable ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600}`}>
-                <MotorcycleIcon className="w-8 h-8" />
-              </div>
-              <div>
-                <h3 className="font-black text-gray-900">Ma Disponibilité</h3>
-                <p className="text-xs text-gray-500">{isAvailable ? "En ligne - Prêt à rouler" : "Hors ligne - En pause"}</p>
-              </div>
+        <CardContent className="p-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isAvailable ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+              <MotorcycleIcon className="w-8 h-8" />
             </div>
-            <Switch checked={isAvailable} onCheckedChange={toggleAvailability} />
+            <div>
+              <h3 className="font-black text-gray-900">Ma Disponibilité</h3>
+              <p className="text-xs text-gray-500">{isAvailable ? "En ligne - Prêt à rouler" : "Hors ligne - En pause"}</p>
+            </div>
           </div>
+          <Switch checked={isAvailable} onCheckedChange={toggleAvailability} />
         </CardContent>
       </Card>
 
@@ -190,13 +195,20 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
               </div>
               <div className="flex flex-col justify-center gap-3">
                 <Button asChild size="lg" className="h-16 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-lg shadow-lg">
-                  <a href={`tel:${activeRide.phone}`}><Phone className="w-6 h-6 mr-2" /> APPELER LE CLIENT</a>
+                  <a href={`tel:${activeRide.phone}`}>
+                    <Phone className="w-6 h-6 mr-2" />
+                    APPELER LE CLIENT
+                  </a>
                 </Button>
                 {activeRide.status === 'accepted' && (
-                  <Button onClick={() => updateStatus(activeRide.id, 'picked_up')} className="h-16 bg-orange-600 hover:bg-orange-700 rounded-2xl font-black text-lg">CLIENT RÉCUPÉRÉ</Button>
+                  <Button onClick={() => updateStatus(activeRide.id, 'picked_up')} className="h-16 bg-orange-600 hover:bg-orange-700 rounded-2xl font-black text-lg">
+                    CLIENT RÉCUPÉRÉ
+                  </Button>
                 )}
                 {activeRide.status === 'picked_up' && (
-                  <Button onClick={() => updateStatus(activeRide.id, 'completed')} className="h-16 bg-green-600 hover:bg-green-700 rounded-2xl font-black text-lg">TERMINER LA COURSE</Button>
+                  <Button onClick={() => updateStatus(activeRide.id, 'completed')} className="h-16 bg-green-600 hover:bg-green-700 rounded-2xl font-black text-lg">
+                    TERMINER LA COURSE
+                  </Button>
                 )}
               </div>
             </div>
@@ -206,7 +218,10 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
 
       {/* Pending Rides */}
       <div className="space-y-4">
-        <h3 className="text-xl font-black flex items-center gap-2"><AlertCircle className="w-6 h-6 text-orange-500" /> Demandes à proximité</h3>
+        <h3 className="text-xl font-black flex items-center gap-2">
+          <AlertCircle className="w-6 h-6 text-orange-500" />
+          Demandes à proximité
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {pendingRides.length === 0 ? (
             <Card className="col-span-full p-12 text-center border-none shadow-sm bg-white rounded-3xl">
