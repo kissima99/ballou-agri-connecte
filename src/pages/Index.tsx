@@ -23,7 +23,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
-import motorcycleImg from '@/assets/motorcycle.png';
+
+const motorcycleImg = "dyad-media://media/e-commerce-ballou/.dyad/media/b8530d84e9f7c05e101a5cbc360e8cd1.png";
 
 const MotorcycleIcon = ({ className }: { className?: string }) => (
   <img src={motorcycleImg} alt="Thiak-Thiak" className={className} />
@@ -104,8 +105,7 @@ const Index = () => {
           <Card className="border-none shadow-sm bg-white hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 group rounded-[2.5rem] overflow-hidden">
             <CardContent className="pt-12 pb-12 px-10">
               <div className="rounded-3xl bg-green-100 w-20 h-20 flex items-center justify-center mb-8 group-hover:bg-green-600 group-hover:text-white transition-all duration-500 rotate-3 group-hover:rotate-0">
-                <Leaf className="h-10 w-10 text-green-600 group-hover:text-white" />
-              </div>
+                              </div>
               <h3 className="text-3xl font-black mb-4 text-gray-900">Produits de Ballou</h3>
               <p className="text-gray-500 mb-8 leading-relaxed font-medium">Riz de la vallée, Oignons, Sorgho et Patate douce. Le meilleur de notre terre expédié vers Dakar.</p>
               <Button asChild variant="ghost" className="p-0 h-auto font-black text-green-600 hover:text-green-700 hover:bg-transparent text-lg">

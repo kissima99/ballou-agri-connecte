@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { showSuccess, showError } from '@/utils/toast';
 import { supabase, isCurrentUserSuperAdmin } from '@/integrations/supabase/client';
-import motorcycleImg from '@/assets/motorcycle.png';
 
 // Lucide icons
 import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText, ShieldCheck, LayoutDashboard, Bike } from 'lucide-react';
@@ -13,6 +12,8 @@ import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, Shopping
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
+const motorcycleImg = "dyad-media://media/e-commerce-ballou/.dyad/media/b8530d84e9f7c05e101a5cbc360e8cd1.png";
 
 const MotorcycleIcon = ({ className }: { className?: string }) => (
   <img src={motorcycleImg} alt="Thiak-Thiak" className={className} />

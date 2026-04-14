@@ -14,10 +14,6 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Copy the transparent motorcycle image to src/assets/motorcycle.png
-// Then import it normally (Vite will handle the asset)
-import motorcycleImg from '@/assets/motorcycle.png';
-
 // Fix for default marker icons in Leaflet
 // @ts-ignore
 delete L.Icon.Default.prototype._getIconUrl;
@@ -27,6 +23,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
+const motorcycleImg = "dyad-media://media/e-commerce-ballou/.dyad/media/b8530d84e9f7c05e101a5cbc360e8cd1.png";
+
 // Component to update map view
 function ChangeView({ center }: { center: [number, number] }) {
   const map = useMap();
@@ -34,9 +32,9 @@ function ChangeView({ center }: { center: [number, number] }) {
   return null;
 }
 
-// Icon for the motorcycle using the imported transparent image
+// Icon for the motorcycle using the provided image
 const MotorcycleIcon = ({ className }: { className?: string }) => (
-  <img src={motorcycleImg} alt="Moto" className={className} style={{ filter: 'hue-rotate(340deg) saturate(5)' }} />
+  <img src={motorcycleImg} alt="Moto" className={className} />
 );
 
 const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile: any }) => {

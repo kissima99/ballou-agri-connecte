@@ -9,7 +9,8 @@ import { User, ShieldCheck, Loader2, Info } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import ClientDashboard from '@/components/thiak-thiak/ClientDashboard';
 import DriverDashboard from '@/components/thiak-thiak/DriverDashboard';
-import motorcycleImg from '@/assets/motorcycle.png';
+
+const motorcycleImg = "dyad-media://media/e-commerce-ballou/.dyad/media/b8530d84e9f7c05e101a5cbc360e8cd1.png";
 
 const MotorcycleIcon = ({ className }: { className?: string }) => (
   <img 

@@ -24,9 +24,11 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
+const motorcycleImg = "dyad-media://media/e-commerce-ballou/.dyad/media/b8530d84e9f7c05e101a5cbc360e8cd1.png";
+
 const WotoroIcon = ({ className }: { className?: string }) => <Truck className={className} />;
 const MotorcycleIcon = ({ className }: { className?: string }) => (
-  <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" alt="Moto" className={className} style={{ filter: 'hue-rotate(340deg) saturate(5)' }} />
+  <img src={motorcycleImg} alt="Moto" className={className} />
 );
 
 // Component to update map view
