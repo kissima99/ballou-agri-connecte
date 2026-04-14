@@ -9,14 +9,13 @@ import { User, ShieldCheck, Loader2, Info } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import ClientDashboard from '@/components/thiak-thiak/ClientDashboard';
 import DriverDashboard from '@/components/thiak-thiak/DriverDashboard';
+import motorcycleImg from '@/assets/motorcycle.png';
 
-// Image de la moto de livraison rouge (Thiak-Thiak)
 const MotorcycleIcon = ({ className }: { className?: string }) => (
   <img 
-    src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" 
+    src={motorcycleImg} 
     alt="Moto Thiak-Thiak" 
     className={className}
-    style={{ filter: 'hue-rotate(340deg) saturate(5)' }}
   />
 );
 
@@ -52,7 +51,7 @@ const ThiakThiak = () => {
       <Navbar />
       <div className="container px-4 py-12 mx-auto max-w-4xl">
         <div className="text-center mb-10">
-          <MotorcycleIcon className="w-20 h-20 mx-auto mb-4" />
+          <MotorcycleIcon className="w-24 h-24 mx-auto mb-4" />
           <h1 className="text-4xl font-black tracking-tighter">ALLO THIAK-THIAK</h1>
           <p className="text-gray-500 font-medium mt-2">Le transport rapide et fiable à Ballou.</p>
         </div>

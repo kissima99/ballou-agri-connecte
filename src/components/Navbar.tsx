@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { showSuccess, showError } from '@/utils/toast';
 import { supabase, isCurrentUserSuperAdmin } from '@/integrations/supabase/client';
+import motorcycleImg from '@/assets/motorcycle.png';
 
 // Lucide icons
 import { Leaf, Package, History, BarChart3, MessageSquare, ShieldAlert, ShoppingCart, LogOut, ChevronDown, Truck, User, FileText, ShieldCheck, LayoutDashboard, Bike } from 'lucide-react';
@@ -13,9 +14,8 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-// Icône Thiak-Thiak transparente
 const MotorcycleIcon = ({ className }: { className?: string }) => (
-  <Bike className={className} />
+  <img src={motorcycleImg} alt="Thiak-Thiak" className={className} />
 );
 
 const Navbar = () => {
@@ -134,7 +134,7 @@ const Navbar = () => {
         <div className="flex items-center space-x-2 sm:space-x-4">
           <Button asChild variant="default" size="sm" className="rounded-full bg-orange-600 hover:bg-orange-700 text-white font-black shadow-lg shadow-orange-200 animate-pulse-slow px-4 h-11 border-2 border-white">
             <Link to="/thiak-thiak" className="flex items-center gap-2">
-              <MotorcycleIcon className="h-5 w-5" />
+              <MotorcycleIcon className="h-6 w-6" />
               <span className="hidden xs:inline text-[10px] font-black tracking-tighter">ALLO THIAK-THIAK</span>
             </Link>
           </Button>

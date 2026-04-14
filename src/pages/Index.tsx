@@ -23,10 +23,10 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
+import motorcycleImg from '@/assets/motorcycle.png';
 
-// Icône Thiak-Thiak transparente
 const MotorcycleIcon = ({ className }: { className?: string }) => (
-  <Bike className={className} />
+  <img src={motorcycleImg} alt="Thiak-Thiak" className={className} />
 );
 
 const Index = () => {
@@ -80,7 +80,7 @@ const Index = () => {
           <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="flex items-center gap-6">
               <div className="bg-white/10 backdrop-blur-md p-4 rounded-3xl border border-white/20">
-                <MotorcycleIcon className="w-16 h-16 text-white" />
+                <MotorcycleIcon className="w-20 h-20" />
               </div>
               <div>
                 <h2 className="text-3xl font-black tracking-tight">Besoin d'un Thiak-Thiak ?</h2>
