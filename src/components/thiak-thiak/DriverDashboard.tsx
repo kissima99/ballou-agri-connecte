@@ -14,7 +14,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Fix default marker icons
+// Fix for default marker icons in Leaflet
 // @ts-ignore
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -23,14 +23,14 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
-// Component to force map re-centering
+// Component to update map view
 function ChangeView({ center }: { center: [number, number] }) {
   const map = useMap();
   map.setView(center, 16);
   return null;
 }
 
-// Icon for the motorcycle
+// Icon for the motorcycle using the new image
 const MotorcycleIcon = ({ className }: { className?: string }) => (
   <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" alt="Moto" className={className} style={{ filter: 'hue-rotate(340deg) saturate(5)' }} />
 );
@@ -43,7 +43,8 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
 
   const fetchData = async () => {
     // Get pending rides
-    const { data: pending } = await supabase      .from('rides')
+    const { data: pending } = await supabase
+      .from('rides')
       .select('*')
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
@@ -120,7 +121,7 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isAvailable ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isAvailable ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600}`}>
                 <MotorcycleIcon className="w-8 h-8" />
               </div>
               <div>
@@ -151,10 +152,10 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
                   <Badge variant="outline" className="text-[10px] border-green-200 text-green-700">PRÉCIS</Badge>
                 </div>
                 <div className="h-64 w-full rounded-3xl overflow-hidden border-2 border-stone-100 shadow-inner relative z-0">
-                  <MapContainer 
+                  <MapContainer
                     key={activeRide.id}
-                    center={[activeRide.pickup_lat, activeRide.pickup_lng]} 
-                    zoom={16} 
+                    center={[activeRide.pickup_lat, activeRide.pickup_lng]}
+                    zoom={16}
                     style={{ height: '100%', width: '100%' }}
                   >
                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -225,8 +226,10 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
                     </div>
                     <p className="font-black text-2xl text-green-700">{ride.price} F</p>
                   </div>
-                  <Button 
-                    onClick={() => acceptRide(ride.id)}                     disabled={!!activeRide}                     className="w-full h-14 bg-green-600 hover:bg-green-700 rounded-2xl font-black text-lg shadow-md group-hover:scale-[1.02] transition-transform"
+                  <Button
+                    onClick={() => acceptRide(ride.id)}
+                    disabled={!!activeRide}
+                    className="w-full h-14 bg-green-600 hover:bg-green-700 rounded-2xl font-black text-lg shadow-md group-hover:scale-[1.02] transition-transform"
                   >
                     ACCEPTER LA COURSE
                   </Button>
