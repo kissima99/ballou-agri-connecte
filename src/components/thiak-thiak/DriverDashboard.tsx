@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Phone, Loader2, AlertCircle, Navigation, Map as MapIcon } from 'lucide-react';
+import { MapPin, Phone, Loader2, AlertCircle, Navigation, Map as MapIcon, Volume2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError } from '@/utils/toast';
 
@@ -25,14 +25,15 @@ L.Icon.Default.mergeOptions({
 
 const motorcycleImg = "dyad-media://media/e-commerce-ballou/.dyad/media/b8530d84e9f7c05e101a5cbc360e8cd1.png";
 
-// Component to update map view
+// URL d'un son de notification propre
+const NOTIFICATION_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
+
 function ChangeView({ center }: { center: [number, number] }) {
   const map = useMap();
   map.setView(center, 16);
   return null;
 }
 
-// Icon for the motorcycle using the provided image
 const MotorcycleIcon = ({ className }: { className?: string }) => (
   <img src={motorcycleImg} alt="Moto" className={className} />
 );
@@ -42,9 +43,20 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
   const [pendingRides, setPendingRides] = useState<any[]>([]);
   const [activeRide, setActiveRide] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialisation du son
+  useEffect(() => {
+    audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
+  }, []);
+
+  const playNotification = () => {
+    if (audioRef.current) {
+      audioRef.current.play().catch(e => console.log("Audio play blocked by browser", e));
+    }
+  };
 
   const fetchData = async () => {
-    // Get pending rides
     const { data: pending } = await supabase
       .from('rides')
       .select('*')
@@ -52,7 +64,6 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
       .order('created_at', { ascending: false });
     setPendingRides(pending || []);
 
-    // Get active ride for this driver
     const { data: active } = await supabase
       .from('rides')
       .select('*')
@@ -66,10 +77,22 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
   useEffect(() => {
     fetchData();
 
-    // Listen for real-time updates on rides
     const channel = supabase
-      .channel('driver-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => fetchData())
+      .channel('driver-realtime')
+      .on(
+        'postgres_changes', 
+        { event: '*', schema: 'public', table: 'rides' }, 
+        (payload) => {
+          // Si c'est une nouvelle insertion ou une mise à jour vers 'pending'
+          if (payload.eventType === 'INSERT' || (payload.eventType === 'UPDATE' && payload.new.status === 'pending')) {
+            if (payload.new.status === 'pending') {
+              playNotification();
+              showSuccess("Nouvelle demande de course entrante !");
+            }
+          }
+          fetchData();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -134,7 +157,18 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
               <p className="text-xs text-gray-500">{isAvailable ? "En ligne - Prêt à rouler" : "Hors ligne - En pause"}</p>
             </div>
           </div>
-          <Switch checked={isAvailable} onCheckedChange={toggleAvailability} />
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={playNotification} 
+              title="Tester le son"
+              className="text-stone-400 hover:text-orange-500"
+            >
+              <Volume2 className="h-5 w-5" />
+            </Button>
+            <Switch checked={isAvailable} onCheckedChange={toggleAvailability} />
+          </div>
         </CardContent>
       </Card>
 
@@ -148,7 +182,6 @@ const DriverDashboard = ({ user, profile: initialProfile }: { user: any, profile
             </CardTitle>
           </CardHeader>
           <CardContent className="p-8 space-y-6">
-            {/* GPS Map */}
             {activeRide.pickup_lat && activeRide.pickup_lng ? (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold text-gray-400 uppercase">
